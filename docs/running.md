@@ -72,6 +72,7 @@ Basic controls:
 
 * `W`, `A`, `S`, `D` — driving
 * `Q` — reverse gear
+* `P` — toggle autopilot
 * `Backspace` — change vehicle
 * `C` — change weather
 * `ESC` — exit

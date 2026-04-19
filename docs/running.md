@@ -45,8 +45,7 @@ The wrapper enables `--sync` mode by default.
 
 ```bash
 conda activate carla
-cd adapters/carla/
-python manual_control.py --sync
+python -m tools.carla.manual_control --sync
 ```
 
 ---
@@ -95,8 +94,7 @@ You can run the script in two ways.
 
 ```bash
 conda activate carla
-cd adapters/carla/
-python generate_traffic.py
+python -m tools.carla.generate_traffic
 ```
 
 ---

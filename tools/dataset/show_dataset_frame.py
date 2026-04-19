@@ -8,7 +8,7 @@ from src.carla.vis.open3d_viewer import show_frame
 
 def main() -> None:
     if len(sys.argv) != 2:
-        print("Użycie: python3 tools/dataset/show_dataset_frame.py detector_dataset_run_01/frame_000000")
+        print("Usage: python3 tools/dataset/show_dataset_frame.py detector_dataset_run_01/frame_000000")
         sys.exit(1)
 
     frame_dir = sys.argv[1]

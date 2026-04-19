@@ -48,14 +48,14 @@ def main() -> None:
 
     settings = world.get_settings()
     if not settings.synchronous_mode:
-        raise RuntimeError("Uruchom manual_control.py z flagą --sync")
+        raise RuntimeError("Run manual_control.py with the --sync flag")
 
     hero = find_hero_vehicle(world)
     if hero is None:
-        raise RuntimeError("Nie znaleziono pojazdu hero")
+        raise RuntimeError("Hero vehicle not found")
 
     print(f"[info] hero id={hero.id}, type={hero.type_id}")
-    print(f"[info] zmq bind: {args.zmq_bind}")
+    print(f"[info] ZMQ bind: {args.zmq_bind}")
     print(f"[info] every_nth: {args.every_nth}")
     print(f"[info] max_range: {args.lidar_range}")
     print(f"[info] with_gt: {args.with_gt}")
@@ -83,7 +83,7 @@ def main() -> None:
         frame_buffer = LidarFrameBuffer(hero=hero, lidar=lidar)
         lidar.listen(frame_buffer.callback)
 
-        print("[info] czekam na pierwszą klatkę lidaru...")
+        print("[info] waiting for the first LiDAR frame...")
         start = time.time()
 
         while True:
@@ -97,11 +97,11 @@ def main() -> None:
                     lidar=lidar,
                     ego_bbox_padding=float(args.ego_bbox_padding),
                 )
-                print(f"[info] pierwsza klatka: frame={first_frame}, points={first_points.shape[0]}")
+                print(f"[info] first frame: frame={first_frame}, points={first_points.shape[0]}")
                 break
             except queue.Empty:
                 if time.time() - start > 10.0:
-                    raise RuntimeError("Timeout: nie przyszła żadna klatka lidaru")
+                    raise RuntimeError("Timeout: no LiDAR frame received")
 
         # time.sleep(0.3)
 

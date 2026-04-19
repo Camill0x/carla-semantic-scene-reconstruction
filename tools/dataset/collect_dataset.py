@@ -19,7 +19,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Collect CARLA detector dataset (ray_cast LiDAR)")
     parser.add_argument("--host", default="127.0.0.1", help="CARLA host")
     parser.add_argument("--port", type=int, default=2000, help="CARLA port")
-    parser.add_argument("--output-dir", default="run_01", help="Output dataset directory")
+    parser.add_argument("--output-dir", default="data/run_01", help="Output dataset directory")
     parser.add_argument("--num-frames", type=int, default=100, help="How many frames to save")
     parser.add_argument("--every-nth", type=int, default=5, help="Save every N-th LiDAR frame")
     parser.add_argument("--range", dest="lidar_range", type=float, default=50.0, help="LiDAR/object range in meters")
@@ -56,11 +56,11 @@ def main() -> None:
 
     settings = world.get_settings()
     if not settings.synchronous_mode:
-        raise RuntimeError("Uruchom manual_control.py z flagą --sync")
+        raise RuntimeError("Run manual_control.py with the --sync flag")
 
     hero = find_hero_vehicle(world)
     if hero is None:
-        raise RuntimeError("Nie znaleziono pojazdu hero")
+        raise RuntimeError("Hero vehicle not found")
 
     print(f"[info] hero id={hero.id}, type={hero.type_id}")
     print(f"[info] output dir: {config.output_dir}")
@@ -95,7 +95,7 @@ def main() -> None:
         frame_buffer = LidarFrameBuffer(hero=hero, lidar=lidar)
         lidar.listen(frame_buffer.callback)
 
-        print("[info] czekam na pierwszą klatkę lidaru...")
+        print("[info] waiting for the first LiDAR frame...")
         start = time.time()
 
         while True:
@@ -109,11 +109,11 @@ def main() -> None:
                     lidar=lidar,
                     ego_bbox_padding=config.ego_bbox_padding,
                 )
-                print(f"[info] pierwsza klatka: frame={first_frame}, points={first_points.shape[0]}")
+                print(f"[info] first frame: frame={first_frame}, points={first_points.shape[0]}")
                 break
             except queue.Empty:
                 if time.time() - start > 10.0:
-                    raise RuntimeError("Timeout: nie przyszła żadna klatka lidaru")
+                    raise RuntimeError("Timeout: no LiDAR frame received")
 
         saved_count = 0
         last_saved_frame = None

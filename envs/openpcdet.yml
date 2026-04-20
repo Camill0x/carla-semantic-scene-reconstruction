@@ -1,0 +1,20 @@
+name: openpcdet
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - numpy=1.23.5
+  - numba=0.58.1
+  - llvmlite=0.41.1
+  - pip:
+      - ninja==1.13.0
+      - tensorboardX==2.6.2.2
+      - easydict==1.13
+      - pyyaml==6.0.3
+      - scikit-image==0.21.0
+      - tqdm==4.67.3
+      - SharedArray==3.2.4
+      - opencv-python==4.13.0.92
+      - pyquaternion==0.9.9
+      - spconv-cu120==2.3.6

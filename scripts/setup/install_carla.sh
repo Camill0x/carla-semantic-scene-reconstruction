@@ -15,13 +15,17 @@ if [[ "${1:-}" == "--skip-extract" ]]; then
     SKIP_EXTRACT=1
 fi
 
+echo "[info] repo root: ${ROOT_DIR}"
+echo "[info] external dir: ${EXTERNAL_DIR}"
+echo "[info] CARLA dir: ${CARLA_DIR}"
+
 if [[ "${SKIP_EXTRACT}" -eq 0 ]]; then
     echo "[1/4] Checking CARLA archive"
     if [[ ! -f "${CARLA_ARCHIVE}" ]]; then
-        echo "Archive not found:"
-        echo "  ${CARLA_ARCHIVE}"
+        echo "[error] Archive not found:"
+        echo "[error]   ${CARLA_ARCHIVE}"
         echo
-        echo "Download CARLA_0.9.15.tar.gz manually and place it in 'external/' directory"
+        echo "[hint] Download CARLA_0.9.15.tar.gz manually and place it in 'external/' directory"
         exit 1
     fi
 
@@ -37,10 +41,10 @@ else
     echo "[2/4] Skipping CARLA extraction"
 
     if [[ ! -f "${CARLA_DIR}/CarlaUE4.sh" ]]; then
-        echo "CARLA directory does not look valid:"
-        echo "  ${CARLA_DIR}"
+        echo "[error] CARLA directory does not look valid:"
+        echo "[error]   ${CARLA_DIR}"
         echo
-        echo "Expected file not found: ${CARLA_DIR}/CarlaUE4.sh"
+        echo "[error] Expected file not found: ${CARLA_DIR}/CarlaUE4.sh"
         exit 1
     fi
 fi
@@ -61,14 +65,15 @@ cd "${CARLA_DIR}/PythonAPI/carla/dist"
 WHEEL_FILE="$(find . -maxdepth 1 -type f -name 'carla-0.9.15-cp37-*.whl' | head -n 1)"
 
 if [[ -z "${WHEEL_FILE}" ]]; then
-    echo "Could not find CARLA wheel for Python 3.7 in:"
-    echo "  ${CARLA_DIR}/PythonAPI/carla/dist"
+    echo "[error] Could not find CARLA wheel for Python 3.7 in:"
+    echo "[error]   ${CARLA_DIR}/PythonAPI/carla/dist"
     exit 1
 fi
 
+echo "[info] wheel: ${WHEEL_FILE}"
 python -m pip install "${WHEEL_FILE}"
 
 echo
-echo "Done."
-echo "CARLA directory: ${CARLA_DIR}"
-echo "Conda environment: ${CONDA_ENV_NAME}"
+echo "[done] CARLA environment is ready"
+echo "[info] CARLA directory: ${CARLA_DIR}"
+echo "[info] Conda environment: ${CONDA_ENV_NAME}"

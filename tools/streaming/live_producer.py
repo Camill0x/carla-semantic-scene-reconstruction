@@ -13,6 +13,7 @@ from src.carla.gt.collector import collect_all_gt, count_by_class
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.common.constants import NUSCENES_LIKE_CLASSES
+from src.streaming.messages import build_lidar_message
 
 
 def main() -> None:
@@ -133,18 +134,7 @@ def main() -> None:
                 ego_bbox_padding=float(args.ego_bbox_padding),
             )
 
-            message = {
-                "frame": int(frame_snapshot),
-                "timestamp": float(timestamp_snapshot),
-                "max_range": float(args.lidar_range),
-                "classes": NUSCENES_LIKE_CLASSES,
-                "num_points": int(points_snapshot.shape[0]),
-                "hero": {
-                    "id": int(hero.id),
-                    "type_id": hero.type_id,
-                },
-                "points": points_snapshot.astype(np.float32),
-            }
+            gt_payload = None
 
             if args.with_gt:
                 objects, gt_boxes, gt_names, gt_ids, gt_type_ids = collect_all_gt(
@@ -154,17 +144,26 @@ def main() -> None:
                     max_range=float(args.lidar_range),
                 )
 
-                message.update(
-                    {
-                        "num_objects": int(len(objects)),
-                        "class_counts": count_by_class(objects),
-                        "gt_ids": gt_ids,
-                        "gt_type_ids": gt_type_ids,
-                        "gt_names": gt_names.tolist(),
-                        "objects": objects,
-                        "gt_boxes": gt_boxes.astype(np.float32),
-                    }
-                )
+                gt_payload = {
+                    "num_objects": int(len(objects)),
+                    "class_counts": count_by_class(objects),
+                    "gt_ids": gt_ids,
+                    "gt_type_ids": gt_type_ids,
+                    "gt_names": gt_names.tolist(),
+                    "objects": objects,
+                    "gt_boxes": gt_boxes.astype(np.float32),
+                }
+
+            message = build_lidar_message(
+                frame=int(frame_snapshot),
+                timestamp=float(timestamp_snapshot),
+                max_range=float(args.lidar_range),
+                classes=NUSCENES_LIKE_CLASSES,
+                hero_id=int(hero.id),
+                hero_type_id=hero.type_id,
+                points=points_snapshot.astype(np.float32),
+                gt_payload=gt_payload,
+            )
 
             socket.send_pyobj(message)
 

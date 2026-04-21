@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate carla
+conda activate openpcdet
 
 cd "${ROOT_DIR}"
-python -m tools.carla.manual_control --sync "$@"
+python -m tools.streaming.live_inference "$@"

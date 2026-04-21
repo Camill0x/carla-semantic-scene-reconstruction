@@ -7,4 +7,4 @@ source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate carla
 
 cd "${ROOT_DIR}"
-python -m tools.carla.manual_control --sync "$@"
+python -m tools.streaming.live_producer "$@"

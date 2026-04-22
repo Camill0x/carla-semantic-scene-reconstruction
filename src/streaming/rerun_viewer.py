@@ -5,7 +5,6 @@ import rerun as rr
 import rerun.blueprint as rrb
 from rerun.datatypes import Angle, RotationAxisAngle
 
-
 CLASS_COLORS = {
     "car": (242, 51, 51, 235),
     "truck": (191, 26, 26, 235),

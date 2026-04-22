@@ -10,7 +10,6 @@ from src.carla.geometry.boxes import (
     level_bbox_to_gt_box,
 )
 from src.carla.geometry.transforms import distance_between_locations
-from src.common.config import CollectorConfig
 
 
 def actor_to_object_dict(actor: carla.Actor, cls_name: str) -> Dict:

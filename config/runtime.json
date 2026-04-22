@@ -1,0 +1,30 @@
+{
+  "carla": {
+    "host": "127.0.0.1",
+    "port": 2000
+  },
+  "lidar": {
+    "max_range": 50.0,
+    "channels": 32,
+    "points_per_second": 700000,
+    "upper_fov": 10.0,
+    "lower_fov": -30.0,
+    "ego_bbox_padding": 0.15
+  },
+  "streaming": {
+    "producer": {
+      "zmq_bind": "tcp://*:5555"
+    },
+    "inference": {
+      "zmq_in": "tcp://127.0.0.1:5555",
+      "zmq_out": "tcp://*:5556"
+    },
+    "visualizer": {
+      "zmq_connect": "tcp://127.0.0.1:5556",
+      "point_radius": 0.03,
+      "pred_line_radius": 0.04,
+      "gt_line_radius": 0.03,
+      "app_id": "carla_live_visualizer"
+    }
+  }
+}

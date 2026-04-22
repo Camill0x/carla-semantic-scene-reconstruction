@@ -7,6 +7,7 @@ import numpy as np
 import zmq
 
 from src.common.constants import NUSCENES_LIKE_CLASSES
+from src.common.runtime_config import build_live_inference_config
 from src.openpcdet.model import load_inference_model
 from src.openpcdet.predict import filter_predictions, run_inference
 from src.streaming.messages import build_prediction_message, parse_lidar_message
@@ -17,29 +18,31 @@ def parse_args():
     parser = argparse.ArgumentParser(description="OpenPCDet live inference node")
     parser.add_argument("--cfg-file", required=True)
     parser.add_argument("--ckpt", required=True)
-    parser.add_argument("--zmq-in", default="tcp://127.0.0.1:5555")
-    parser.add_argument("--zmq-out", default="tcp://*:5556")
-    parser.add_argument("--score-thresh", type=float, default=0.2)
-    parser.add_argument("--point-stride", type=int, default=1)
-    return parser.parse_args()
+    parser.add_argument("--score-thresh", type=float, default=0.2, help="Minimum score for exported predictions")
+    parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
+    args = parser.parse_args()
+    return build_live_inference_config(
+        cfg_file=args.cfg_file,
+        ckpt=args.ckpt,
+        score_thresh=args.score_thresh,
+        point_stride=args.point_stride,
+    )
 
 
 def main() -> None:
-    args = parse_args()
-    if args.point_stride < 1:
-        raise ValueError("--point-stride must be >= 1")
+    config = parse_args()
 
-    dataset, model, cfg, logger = load_inference_model(args.cfg_file, args.ckpt)
+    dataset, model, cfg, logger = load_inference_model(config.cfg_file, config.ckpt)
 
     logger.info("=== OpenPCDet live inference ===")
-    logger.info("ZMQ IN: %s", args.zmq_in)
-    logger.info("ZMQ OUT: %s", args.zmq_out)
-    logger.info("score_thresh: %.3f", args.score_thresh)
-    logger.info("point_stride: %d", args.point_stride)
+    logger.info("ZMQ IN: %s", config.zmq_in)
+    logger.info("ZMQ OUT: %s", config.zmq_out)
+    logger.info("score_thresh: %.3f", config.score_thresh)
+    logger.info("point_stride: %d", config.point_stride)
 
     context = zmq.Context()
-    sub_socket = create_latest_subscriber(context, args.zmq_in)
-    pub_socket = create_latest_publisher(context, args.zmq_out)
+    sub_socket = create_latest_subscriber(context, config.zmq_in)
+    pub_socket = create_latest_publisher(context, config.zmq_out)
 
     poller = zmq.Poller()
     poller.register(sub_socket, zmq.POLLIN)
@@ -78,8 +81,8 @@ def main() -> None:
                 continue
 
             points4 = parsed["points"]
-            if args.point_stride > 1:
-                points4 = points4[:: args.point_stride]
+            if config.point_stride > 1:
+                points4 = points4[:: config.point_stride]
 
             t0 = time.time()
             try:
@@ -89,7 +92,7 @@ def main() -> None:
                     pred_dict=pred_dict,
                     class_names=cfg.CLASS_NAMES,
                     allowed_classes=NUSCENES_LIKE_CLASSES,
-                    score_thresh=args.score_thresh,
+                    score_thresh=config.score_thresh,
                 )
             except Exception as exc:
                 logger.exception("Inference failed frame=%s: %s", frame_id, exc)

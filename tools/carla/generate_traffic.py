@@ -23,6 +23,7 @@ from numpy import random
 
 import carla
 from carla import VehicleLightState as vls
+from src.common.runtime_config import load_carla_connection_config
 
 
 def get_actor_blueprints(world, filter, generation):
@@ -52,12 +53,6 @@ def get_actor_blueprints(world, filter, generation):
 
 def main():
     argparser = argparse.ArgumentParser(description=__doc__)
-    argparser.add_argument(
-        "--host", metavar="H", default="127.0.0.1", help="IP of the host server (default: 127.0.0.1)"
-    )
-    argparser.add_argument(
-        "-p", "--port", metavar="P", default=2000, type=int, help="TCP port to listen to (default: 2000)"
-    )
     argparser.add_argument(
         "-n", "--number-of-vehicles", metavar="N", default=20, type=int, help="Number of vehicles (default: 20)"
     )
@@ -108,13 +103,14 @@ def main():
     argparser.add_argument("--no-rendering", action="store_true", default=False, help="Activate no rendering mode")
 
     args = argparser.parse_args()
+    carla_config = load_carla_connection_config()
 
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
 
     vehicles_list = []
     walkers_list = []
     all_id = []
-    client = carla.Client(args.host, args.port)
+    client = carla.Client(carla_config.host, carla_config.port)
     client.set_timeout(10.0)
     synchronous_master = False
     random.seed(args.seed if args.seed is not None else int(time.time()))

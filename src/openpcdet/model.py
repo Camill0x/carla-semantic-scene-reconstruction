@@ -25,9 +25,9 @@ def get_openpcdet_root() -> Path:
     return Path(__file__).resolve().parents[2] / "third_party" / "OpenPCDet"
 
 
-def load_inference_model(cfg_file: str, ckpt: str) -> Tuple[RealtimeDataset, torch.nn.Module, object, object]:
-    cfg_file_path = Path(cfg_file).expanduser().resolve()
-    ckpt_path = Path(ckpt).expanduser().resolve()
+def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[RealtimeDataset, torch.nn.Module, object, object]:
+    cfg_file_path = cfg_file.expanduser().resolve()
+    ckpt_path = ckpt.expanduser().resolve()
     openpcdet_root = get_openpcdet_root()
 
     with working_directory(openpcdet_root):

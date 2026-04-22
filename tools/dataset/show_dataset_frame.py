@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 
-import sys
+import argparse
+from pathlib import Path
 
 from src.carla.dataset.reader import load_frame
 from src.carla.vis.open3d_viewer import show_frame
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: python3 tools/dataset/show_dataset_frame.py detector_dataset_run_01/frame_000000")
-        sys.exit(1)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Show a saved dataset frame")
+    parser.add_argument("frame_dir", type=Path, help="Path to frame directory")
+    return parser.parse_args()
 
-    frame_dir = sys.argv[1]
-    points, meta, ego_box = load_frame(frame_dir)
+
+def main() -> None:
+    args = parse_args()
+    points, meta, ego_box = load_frame(args.frame_dir)
 
     print("[info] frame:", meta.get("frame"))
     print("[info] points shape:", points.shape)

@@ -63,7 +63,7 @@ def load_lidar_config() -> LidarConfig:
     )
 
 
-def build_collector_config(*, output_dir: str, num_frames: int, every_nth: int) -> CollectorConfig:
+def build_collector_config(*, output_dir: Path, num_frames: int, every_nth: int) -> CollectorConfig:
     return CollectorConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
@@ -87,8 +87,8 @@ def build_live_producer_config(*, with_gt: bool, every_nth: int) -> LiveProducer
 
 def build_live_inference_config(
     *,
-    cfg_file: str,
-    ckpt: str,
+    cfg_file: Path,
+    ckpt: Path,
     score_thresh: float,
     point_stride: int,
 ) -> LiveInferenceConfig:

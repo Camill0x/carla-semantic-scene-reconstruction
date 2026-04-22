@@ -1,6 +1,6 @@
 import json
-import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -67,7 +67,7 @@ def ego_bbox_to_gt_box(hero: carla.Actor, lidar_transform: carla.Transform) -> n
 
 
 def save_frame(
-    output_root: str,
+    output_root: Path,
     frame_index: int,
     frame_id: int,
     timestamp: float,
@@ -82,14 +82,14 @@ def save_frame(
     gt_ids: List[int],
     gt_type_ids: List[str],
     config: CollectorConfig,
-) -> str:
-    frame_dir = os.path.join(output_root, f"frame_{frame_index:06d}")
-    os.makedirs(frame_dir, exist_ok=True)
+) -> Path:
+    frame_dir = output_root / f"frame_{frame_index:06d}"
+    frame_dir.mkdir(parents=True, exist_ok=True)
 
-    np.save(os.path.join(frame_dir, "points.npy"), points)
-    np.save(os.path.join(frame_dir, "gt_boxes.npy"), gt_boxes)
-    np.save(os.path.join(frame_dir, "gt_names.npy"), gt_names)
-    np.save(os.path.join(frame_dir, "ego_box.npy"), ego_bbox_to_gt_box(hero, lidar_transform))
+    np.save(frame_dir / "points.npy", points)
+    np.save(frame_dir / "gt_boxes.npy", gt_boxes)
+    np.save(frame_dir / "gt_names.npy", gt_names)
+    np.save(frame_dir / "ego_box.npy", ego_bbox_to_gt_box(hero, lidar_transform))
 
     meta = {
         "frame": int(frame_id),
@@ -112,7 +112,7 @@ def save_frame(
         "saved_at": datetime.now().isoformat(),
     }
 
-    with open(os.path.join(frame_dir, "meta.json"), "w", encoding="utf-8") as f:
+    with open(frame_dir / "meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
 
     return frame_dir

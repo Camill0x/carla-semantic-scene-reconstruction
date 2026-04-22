@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import queue
-import time
+from pathlib import Path
 
 import carla
 from src.carla.actors.classify import find_hero_vehicle
@@ -16,18 +15,21 @@ from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.common.runtime_config import build_collector_config
 
 
-def main() -> None:
+def parse_args():
     parser = argparse.ArgumentParser(description="Collect CARLA detector dataset (ray_cast LiDAR)")
-    parser.add_argument("-o", "--output-dir", required=True, help="Output dataset directory")
+    parser.add_argument("-o", "--output-dir", type=Path, required=True, help="Output dataset directory")
     parser.add_argument("-n", "--num-frames", type=int, default=100, help="How many frames to save")
     parser.add_argument("--every-nth", type=int, default=5, help="Save every N-th LiDAR frame")
     args = parser.parse_args()
-
-    config = build_collector_config(
+    return build_collector_config(
         output_dir=args.output_dir,
         num_frames=args.num_frames,
         every_nth=args.every_nth,
     )
+
+
+def main() -> None:
+    config = parse_args()
 
     client = carla.Client(config.carla.host, config.carla.port)
     client.set_timeout(5.0)
@@ -54,32 +56,12 @@ def main() -> None:
     lidar_transform_relative = carla.Transform(carla.Location(x=-0.5, z=1.8))
     lidar = None
 
-    os.makedirs(config.output_dir, exist_ok=True)
+    config.output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         lidar = world.spawn_actor(lidar_bp, lidar_transform_relative, attach_to=hero)
         frame_buffer = LidarFrameBuffer(hero=hero, lidar=lidar)
         lidar.listen(frame_buffer.callback)
-
-        print("[info] waiting for the first LiDAR frame...")
-        start = time.time()
-
-        while True:
-            snapshot = world.wait_for_tick()
-            expected_frame = int(snapshot.frame) if hasattr(snapshot, "frame") else int(snapshot)
-            try:
-                first_raw_points, first_frame, _, _ = frame_buffer.get_frame(expected_frame)
-                first_points = preprocess_lidar_points(
-                    points=first_raw_points,
-                    hero=hero,
-                    lidar=lidar,
-                    ego_bbox_padding=config.ego_bbox_padding,
-                )
-                print(f"[info] first frame: frame={first_frame}, points={first_points.shape[0]}")
-                break
-            except queue.Empty:
-                if time.time() - start > 10.0:
-                    raise RuntimeError("Timeout: no LiDAR frame received")
 
         saved_count = 0
         last_saved_frame = None
@@ -90,9 +72,12 @@ def main() -> None:
 
             try:
                 raw_points, frame_snapshot, timestamp_snapshot, lidar_transform_snapshot = frame_buffer.get_frame(
-                    expected_frame
+                    expected_frame,
+                    timeout=2.0,
                 )
             except queue.Empty:
+                if saved_count == 0:
+                    raise RuntimeError("Timeout: no input data received")
                 continue
 
             points_snapshot = preprocess_lidar_points(

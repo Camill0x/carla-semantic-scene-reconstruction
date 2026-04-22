@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,7 @@ class LidarConfig:
 class CollectorConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
-    output_dir: str
+    output_dir: Path
     num_frames: int
     every_nth: int
 
@@ -81,8 +82,8 @@ class LiveProducerConfig:
 
 @dataclass(frozen=True)
 class LiveInferenceConfig:
-    cfg_file: str
-    ckpt: str
+    cfg_file: Path
+    ckpt: Path
     zmq_in: str
     zmq_out: str
     score_thresh: float

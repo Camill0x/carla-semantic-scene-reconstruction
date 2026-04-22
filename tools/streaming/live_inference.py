@@ -2,6 +2,7 @@
 
 import argparse
 import time
+from pathlib import Path
 
 import numpy as np
 import zmq
@@ -16,8 +17,8 @@ from src.streaming.zmq_utils import create_latest_publisher, create_latest_subsc
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OpenPCDet live inference node")
-    parser.add_argument("--cfg-file", required=True)
-    parser.add_argument("--ckpt", required=True)
+    parser.add_argument("--cfg-file", type=Path, required=True)
+    parser.add_argument("--ckpt", type=Path, required=True)
     parser.add_argument("--score-thresh", type=float, default=0.2, help="Minimum score for exported predictions")
     parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
     args = parser.parse_args()

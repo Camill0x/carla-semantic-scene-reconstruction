@@ -19,13 +19,16 @@ from src.streaming.messages import build_lidar_message
 from src.streaming.zmq_utils import create_latest_publisher
 
 
-def main() -> None:
+def parse_args():
     parser = argparse.ArgumentParser(description="CARLA live LiDAR producer")
     parser.add_argument("--with-gt", action="store_true", help="Include GT boxes in published messages")
     parser.add_argument("--every-nth", type=int, default=1, help="Publish every N-th CARLA frame")
     args = parser.parse_args()
+    return build_live_producer_config(with_gt=args.with_gt, every_nth=args.every_nth)
 
-    config = build_live_producer_config(with_gt=args.with_gt, every_nth=args.every_nth)
+
+def main() -> None:
+    config = parse_args()
 
     ctx = zmq.Context()
     socket = create_latest_publisher(ctx, config.zmq_bind)
@@ -58,28 +61,6 @@ def main() -> None:
         frame_buffer = LidarFrameBuffer(hero=hero, lidar=lidar)
         lidar.listen(frame_buffer.callback)
 
-        print("[info] waiting for the first LiDAR frame...")
-        start = time.time()
-
-        while True:
-            snapshot = world.wait_for_tick()
-            expected_frame = int(snapshot.frame) if hasattr(snapshot, "frame") else int(snapshot)
-            try:
-                raw_points, first_frame, _, _ = frame_buffer.get_frame(expected_frame)
-                first_points = preprocess_lidar_points(
-                    points=raw_points,
-                    hero=hero,
-                    lidar=lidar,
-                    ego_bbox_padding=config.ego_bbox_padding,
-                )
-                print(f"[info] first frame: frame={first_frame}, points={first_points.shape[0]}")
-                break
-            except queue.Empty:
-                if time.time() - start > 10.0:
-                    raise RuntimeError("Timeout: no LiDAR frame received")
-
-        # time.sleep(0.3)
-
         last_published_frame = None
         t_last_log = time.time()
         published_count = 0
@@ -90,15 +71,15 @@ def main() -> None:
 
             try:
                 raw_points, frame_snapshot, timestamp_snapshot, lidar_transform_snapshot = frame_buffer.get_frame(
-                    expected_frame
+                    expected_frame,
+                    timeout=2.0,
                 )
             except queue.Empty:
+                if last_published_frame is None:
+                    raise RuntimeError("Timeout: no input data received")
                 continue
 
             if last_published_frame is not None and frame_snapshot == last_published_frame:
-                continue
-
-            if frame_snapshot % config.every_nth != 0:
                 continue
 
             points_snapshot = preprocess_lidar_points(
@@ -107,6 +88,9 @@ def main() -> None:
                 lidar=lidar,
                 ego_bbox_padding=config.ego_bbox_padding,
             )
+
+            if frame_snapshot % config.every_nth != 0:
+                continue
 
             gt_payload = None
 

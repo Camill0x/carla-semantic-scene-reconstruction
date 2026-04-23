@@ -80,6 +80,35 @@ def log_lane_annotations_2d(lanes: List[dict], *, line_thickness: float) -> None
     )
 
 
+def clamp_lane_annotations_to_image(lanes: List[dict], image_width: int, image_height: int) -> List[dict]:
+    clamped_lanes: List[dict] = []
+    max_x = float(max(image_width - 1, 0))
+    max_y = float(max(image_height - 1, 0))
+
+    for lane in lanes:
+        points = lane.get("points", [])
+        if len(points) < 2:
+            continue
+
+        clamped_points = []
+        for point in points:
+            if len(point) != 2:
+                continue
+            clamped_points.append(
+                [
+                    float(np.clip(float(point[0]), 0.0, max_x)),
+                    float(np.clip(float(point[1]), 0.0, max_y)),
+                ]
+            )
+
+        if len(clamped_points) < 2:
+            continue
+
+        clamped_lanes.append({**lane, "points": clamped_points})
+
+    return clamped_lanes
+
+
 def log_dataset_status(frame: DatasetFrame) -> None:
     lines = [
         "## Status",
@@ -110,5 +139,10 @@ def log_dataset_frame(frame: DatasetFrame, config: DatasetViewerConfig) -> None:
         line_radius=config.gt_line_radius,
     )
     rr.log("camera/front/image", rr.Image(frame.image_rgb))
-    log_lane_annotations_2d(frame.lanes, line_thickness=config.lane_line_thickness)
+    clamped_lanes = clamp_lane_annotations_to_image(
+        frame.lanes,
+        image_width=int(frame.image_rgb.shape[1]),
+        image_height=int(frame.image_rgb.shape[0]),
+    )
+    log_lane_annotations_2d(clamped_lanes, line_thickness=config.lane_line_thickness)
     log_dataset_status(frame)

@@ -48,7 +48,10 @@ def main() -> None:
     print(f"[info] hero id={hero.id}, type={hero.type_id}")
     print(f"[info] ZMQ bind: {config.zmq_bind}")
     print(f"[info] every_nth: {config.every_nth}")
-    print(f"[info] max_range: {config.max_range}")
+    print(
+        f"[info] lidar: max_range={config.lidar.max_range}, channels={config.lidar.channels}, "
+        f"points_per_second={config.lidar.points_per_second}, fov=({config.lidar.lower_fov}, {config.lidar.upper_fov})"
+    )
     print(f"[info] with_gt: {config.with_gt}")
 
     lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
@@ -86,7 +89,6 @@ def main() -> None:
                 points=raw_points,
                 hero=hero,
                 lidar=lidar,
-                ego_bbox_padding=config.ego_bbox_padding,
             )
 
             if frame_snapshot % config.every_nth != 0:
@@ -95,18 +97,16 @@ def main() -> None:
             gt_payload = None
 
             if config.with_gt:
-                objects, gt_boxes, gt_names, gt_ids, gt_type_ids = collect_all_gt(
+                objects, gt_boxes, gt_names = collect_all_gt(
                     world=world,
                     hero=hero,
                     lidar_transform=lidar_transform_snapshot,
-                    max_range=config.max_range,
+                    max_range=config.lidar.max_range,
                 )
 
                 gt_payload = {
                     "num_objects": int(len(objects)),
                     "class_counts": count_by_class(objects),
-                    "gt_ids": gt_ids,
-                    "gt_type_ids": gt_type_ids,
                     "gt_names": gt_names.tolist(),
                     "objects": objects,
                     "gt_boxes": gt_boxes.astype(np.float32),
@@ -115,7 +115,7 @@ def main() -> None:
             message = build_lidar_message(
                 frame=int(frame_snapshot),
                 timestamp=float(timestamp_snapshot),
-                max_range=config.max_range,
+                max_range=config.lidar.max_range,
                 classes=NUSCENES_LIKE_CLASSES,
                 hero_id=int(hero.id),
                 hero_type_id=hero.type_id,

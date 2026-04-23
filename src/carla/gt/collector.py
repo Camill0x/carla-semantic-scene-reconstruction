@@ -93,14 +93,12 @@ def collect_city_object_gt(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     max_range: float,
-) -> Tuple[List[Dict], List[np.ndarray], List[str], List[int], List[str]]:
+) -> Tuple[List[Dict], List[np.ndarray], List[str]]:
     hero_location = hero.get_transform().location
 
     objects: List[Dict] = []
     gt_boxes: List[np.ndarray] = []
     gt_names: List[str] = []
-    gt_ids: List[int] = []
-    gt_type_ids: List[str] = []
 
     label_map = [
         (carla.CityObjectLabel.Car, "car"),
@@ -136,11 +134,9 @@ def collect_city_object_gt(
             objects.append(obj)
             gt_boxes.append(gt_box)
             gt_names.append(cls_name)
-            gt_ids.append(next_static_id)
-            gt_type_ids.append(type_id)
             next_static_id -= 1
 
-    return objects, gt_boxes, gt_names, gt_ids, gt_type_ids
+    return objects, gt_boxes, gt_names
 
 
 def collect_actor_gt(
@@ -148,14 +144,12 @@ def collect_actor_gt(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     max_range: float,
-) -> Tuple[List[Dict], List[np.ndarray], List[str], List[int], List[str]]:
+) -> Tuple[List[Dict], List[np.ndarray], List[str]]:
     hero_location = hero.get_transform().location
 
     objects: List[Dict] = []
     gt_boxes: List[np.ndarray] = []
     gt_names: List[str] = []
-    gt_ids: List[int] = []
-    gt_type_ids: List[str] = []
 
     for actor in world.get_actors():
         if actor.id == hero.id:
@@ -181,10 +175,8 @@ def collect_actor_gt(
         objects.append(obj)
         gt_boxes.append(gt_box)
         gt_names.append(cls_name)
-        gt_ids.append(int(actor.id))
-        gt_type_ids.append(actor.type_id)
 
-    return objects, gt_boxes, gt_names, gt_ids, gt_type_ids
+    return objects, gt_boxes, gt_names
 
 
 def collect_all_gt(
@@ -193,14 +185,14 @@ def collect_all_gt(
     lidar_transform: carla.Transform,
     max_range: float,
 ):
-    city_objects, city_boxes, city_names, city_ids, city_type_ids = collect_city_object_gt(
+    city_objects, city_boxes, city_names = collect_city_object_gt(
         world=world,
         hero=hero,
         lidar_transform=lidar_transform,
         max_range=max_range,
     )
 
-    actor_objects, actor_boxes, actor_names, actor_ids, actor_type_ids = collect_actor_gt(
+    actor_objects, actor_boxes, actor_names = collect_actor_gt(
         world=world,
         hero=hero,
         lidar_transform=lidar_transform,
@@ -210,8 +202,6 @@ def collect_all_gt(
     objects = city_objects + actor_objects
     gt_boxes = city_boxes + actor_boxes
     gt_names = city_names + actor_names
-    gt_ids = city_ids + actor_ids
-    gt_type_ids = city_type_ids + actor_type_ids
 
     if gt_boxes:
         gt_boxes_array = np.stack(gt_boxes, axis=0).astype(np.float32)
@@ -220,7 +210,7 @@ def collect_all_gt(
         gt_boxes_array = np.zeros((0, 7), dtype=np.float32)
         gt_names_array = np.array([], dtype="<U16")
 
-    return objects, gt_boxes_array, gt_names_array, gt_ids, gt_type_ids
+    return objects, gt_boxes_array, gt_names_array
 
 
 def count_by_class(objects: Sequence[Dict]) -> Dict[str, int]:

@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 import numpy as np
 import open3d as o3d
@@ -56,12 +56,16 @@ def make_point_cloud(points: np.ndarray) -> o3d.geometry.PointCloud:
     return pcd
 
 
-def build_geometries(points: np.ndarray, meta: Dict, ego_box: Optional[np.ndarray]):
+def build_geometries(
+    lidar_transform: Dict,
+    points: np.ndarray,
+    ego_box: np.ndarray,
+    objects: Sequence[Dict],
+):
     geometries = [make_point_cloud(points)]
 
-    objects = meta.get("objects", [])
-    sensor_location = meta["lidar_sensor"]["location"]
-    sensor_rotation = meta["lidar_sensor"]["rotation"]
+    sensor_location = lidar_transform["location"]
+    sensor_rotation = lidar_transform["rotation"]
 
     for obj in objects:
         world_corners = bbox_to_world_corners(obj)
@@ -78,8 +82,13 @@ def build_geometries(points: np.ndarray, meta: Dict, ego_box: Optional[np.ndarra
     return geometries
 
 
-def show_frame(points: np.ndarray, meta: Dict, ego_box: Optional[np.ndarray]) -> None:
-    geometries = build_geometries(points, meta, ego_box)
+def show_frame(
+        lidar_transform: Dict,
+        points: np.ndarray,
+        ego_box: np.ndarray,
+        objects: Sequence[Dict],
+) -> None:
+    geometries = build_geometries(lidar_transform, points, ego_box, objects)
 
     vis = o3d.visualization.Visualizer()
     vis.create_window(

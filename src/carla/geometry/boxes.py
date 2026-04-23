@@ -40,7 +40,7 @@ def points_inside_oriented_box(
 def get_ego_box_in_lidar_frame(
     hero: carla.Actor,
     lidar: carla.Sensor,
-    padding: float = 0.0,
+    padding: float = 0.15,
 ) -> Dict[str, np.ndarray]:
     bbox = hero.bounding_box
     actor_tf = carla_transform_to_matrix(hero.get_transform())
@@ -79,9 +79,8 @@ def filter_points_inside_ego_vehicle(
     points: np.ndarray,
     hero: carla.Actor,
     lidar: carla.Sensor,
-    padding: float,
 ) -> np.ndarray:
-    ego_box = get_ego_box_in_lidar_frame(hero, lidar, padding=padding)
+    ego_box = get_ego_box_in_lidar_frame(hero, lidar)
     inside = points_inside_oriented_box(
         points_xyz=points[:, :3],
         center_xyz=ego_box["center"],

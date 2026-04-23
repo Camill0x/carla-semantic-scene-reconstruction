@@ -8,9 +8,27 @@
     "channels": 32,
     "points_per_second": 700000,
     "upper_fov": 10.0,
-    "lower_fov": -30.0,
-    "ego_bbox_padding": 0.15
+    "lower_fov": -30.0
   },
+  "camera_front": {
+    "width": 1280,
+    "height": 720,
+    "fov": 90.0,
+    "x": 1.8,
+    "y": 0.0,
+    "z": 1.45,
+    "pitch": 0.0,
+    "yaw": 0.0,
+    "roll": 0.0
+  },
+  "lane_annotations": {
+    "distance_m": 40.0,
+    "step_m": 2.0,
+    "max_side_lanes": 2,
+    "projection_margin_px": 50.0,
+    "dedupe_distance_px": 2.0
+  },
+  "dataset_root_dir": "datasets/raw",
   "streaming": {
     "producer": {
       "zmq_bind": "tcp://*:5555"

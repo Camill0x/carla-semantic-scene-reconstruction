@@ -21,7 +21,6 @@ class LidarConfig:
     points_per_second: int
     upper_fov: float
     lower_fov: float
-    ego_bbox_padding: float
 
     def __post_init__(self) -> None:
         if self.max_range <= 0.0:
@@ -30,33 +29,67 @@ class LidarConfig:
             raise ValueError("LiDAR channels must be > 0")
         if self.points_per_second <= 0:
             raise ValueError("LiDAR points_per_second must be > 0")
-        if self.ego_bbox_padding < 0.0:
-            raise ValueError("LiDAR ego_bbox_padding must be >= 0")
+
+
+@dataclass(frozen=True)
+class CameraConfig:
+    width: int
+    height: int
+    fov: float
+    x: float
+    y: float
+    z: float
+    pitch: float
+    yaw: float
+    roll: float
+
+    def __post_init__(self) -> None:
+        if self.width <= 0:
+            raise ValueError("Camera width must be > 0")
+        if self.height <= 0:
+            raise ValueError("Camera height must be > 0")
+        if self.fov <= 0.0:
+            raise ValueError("Camera fov must be > 0")
+
+
+@dataclass(frozen=True)
+class LaneAnnotationsConfig:
+    distance_m: float
+    step_m: float
+    max_side_lanes: int
+    projection_margin_px: float
+    dedupe_distance_px: float
+
+    def __post_init__(self) -> None:
+        if self.distance_m <= 0.0:
+            raise ValueError("Lane distance_m must be > 0")
+        if self.step_m <= 0.0:
+            raise ValueError("Lane step_m must be > 0")
+        if self.max_side_lanes < 0:
+            raise ValueError("Lane max_side_lanes must be >= 0")
+        if self.projection_margin_px < 0.0:
+            raise ValueError("Lane projection_margin_px must be >= 0")
+        if self.dedupe_distance_px < 0.0:
+            raise ValueError("Lane dedupe_distance_px must be >= 0")
 
 
 @dataclass(frozen=True)
 class CollectorConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
-    output_dir: Path
+    camera_front: CameraConfig
+    lane_annotations: LaneAnnotationsConfig
+    dataset_root_dir: Path
     num_frames: int
     every_nth: int
 
     def __post_init__(self) -> None:
-        if not self.output_dir:
-            raise ValueError("Collector output_dir must not be empty")
+        if not self.dataset_root_dir:
+            raise ValueError("Collector dataset_root_dir must not be empty")
         if self.num_frames <= 0:
             raise ValueError("Collector num_frames must be > 0")
         if self.every_nth <= 0:
             raise ValueError("Collector every_nth must be >= 1")
-
-    @property
-    def max_range(self) -> float:
-        return self.lidar.max_range
-
-    @property
-    def ego_bbox_padding(self) -> float:
-        return self.lidar.ego_bbox_padding
 
 @dataclass(frozen=True)
 class LiveProducerConfig:
@@ -71,14 +104,6 @@ class LiveProducerConfig:
             raise ValueError("Producer zmq_bind must not be empty")
         if self.every_nth <= 0:
             raise ValueError("Producer every_nth must be >= 1")
-
-    @property
-    def max_range(self) -> float:
-        return self.lidar.max_range
-
-    @property
-    def ego_bbox_padding(self) -> float:
-        return self.lidar.ego_bbox_padding
 
 @dataclass(frozen=True)
 class LiveInferenceConfig:

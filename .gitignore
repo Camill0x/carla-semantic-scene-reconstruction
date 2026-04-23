@@ -210,4 +210,5 @@ __marimo__/
 external/*
 !external/.gitkeep
 data/
+datasets/
 checkpoints/

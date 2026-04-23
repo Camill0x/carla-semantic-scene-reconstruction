@@ -7,8 +7,6 @@ def empty_gt_payload() -> Dict[str, Any]:
     return {
         "num_objects": 0,
         "class_counts": {},
-        "gt_ids": [],
-        "gt_type_ids": [],
         "gt_names": [],
         "objects": [],
         "gt_boxes": np.zeros((0, 7), dtype=np.float32),

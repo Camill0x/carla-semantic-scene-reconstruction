@@ -4,7 +4,9 @@ from typing import Any, Dict, Mapping
 
 from src.common.config import (
     CarlaConnectionConfig,
+    CameraConfig,
     CollectorConfig,
+    LaneAnnotationsConfig,
     LidarConfig,
     LiveInferenceConfig,
     LiveProducerConfig,
@@ -59,15 +61,49 @@ def load_lidar_config() -> LidarConfig:
         points_per_second=int(_require_value(section, "points_per_second")),
         upper_fov=float(_require_value(section, "upper_fov")),
         lower_fov=float(_require_value(section, "lower_fov")),
-        ego_bbox_padding=float(_require_value(section, "ego_bbox_padding")),
     )
 
 
-def build_collector_config(*, output_dir: Path, num_frames: int, every_nth: int) -> CollectorConfig:
+def load_front_camera_config() -> CameraConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "camera_front")
+    return CameraConfig(
+        width=int(_require_value(section, "width")),
+        height=int(_require_value(section, "height")),
+        fov=float(_require_value(section, "fov")),
+        x=float(_require_value(section, "x")),
+        y=float(_require_value(section, "y")),
+        z=float(_require_value(section, "z")),
+        pitch=float(_require_value(section, "pitch")),
+        yaw=float(_require_value(section, "yaw")),
+        roll=float(_require_value(section, "roll")),
+    )
+
+
+def load_lane_annotations_config() -> LaneAnnotationsConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "lane_annotations")
+    return LaneAnnotationsConfig(
+        distance_m=float(_require_value(section, "distance_m")),
+        step_m=float(_require_value(section, "step_m")),
+        max_side_lanes=int(_require_value(section, "max_side_lanes")),
+        projection_margin_px=float(_require_value(section, "projection_margin_px")),
+        dedupe_distance_px=float(_require_value(section, "dedupe_distance_px")),
+    )
+
+
+def load_dataset_root_dir() -> Path:
+    data = _read_runtime_config()
+    return Path(str(_require_value(data, "dataset_root_dir")))
+
+
+def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfig:
     return CollectorConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
-        output_dir=output_dir,
+        camera_front=load_front_camera_config(),
+        lane_annotations=load_lane_annotations_config(),
+        dataset_root_dir=load_dataset_root_dir(),
         num_frames=num_frames,
         every_nth=every_nth,
     )

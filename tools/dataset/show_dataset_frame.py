@@ -15,15 +15,19 @@ def parse_args():
 
 def main() -> None:
     args = parse_args()
-    points, meta, ego_box = load_frame(args.frame_dir)
+    meta, points, ego_box, objects, lanes = load_frame(args.frame_dir)
+    lidar_transform = {
+        "location": meta["lidar"]["location"],
+        "rotation": meta["lidar"]["rotation"],
+    }
 
-    print("[info] frame:", meta.get("frame"))
+    print("[info] frame_index:", meta["frame_index"])
+    print("[info] sim_frame:", meta["sim_frame"])
     print("[info] points shape:", points.shape)
-    print("[info] num_objects:", len(meta.get("objects", [])))
-    if "class_counts" in meta:
-        print("[info] class_counts:", meta["class_counts"])
+    print("[info] num_objects:", len(objects))
+    print("[info] num_lanes:", len(lanes))
 
-    show_frame(points, meta, ego_box)
+    show_frame(lidar_transform, points, ego_box, objects)
 
 
 if __name__ == "__main__":

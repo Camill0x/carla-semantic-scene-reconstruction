@@ -157,6 +157,7 @@ def main() -> None:
             lane_annotations = collect_lane_annotations(
                 world=world,
                 hero=hero,
+                lidar_transform=lidar_transform_snapshot,
                 camera_transform=camera_transform_snapshot,
                 image_width=config.camera_front.width,
                 image_height=config.camera_front.height,

@@ -6,7 +6,12 @@ import rerun as rr
 import rerun.blueprint as rrb
 from src.carla.dataset.reader import DatasetFrame
 from src.common.config import DatasetViewerConfig
-from src.rerun.scene3d import log_ego_box, log_gt_boxes, log_points
+from src.rerun.scene3d import (
+    log_ego_box,
+    log_gt_boxes,
+    log_lane_annotations_3d,
+    log_points,
+)
 
 LANE_LEFT_COLOR = (0, 255, 0, 255)
 LANE_RIGHT_COLOR = (0, 200, 255, 255)
@@ -75,7 +80,7 @@ def log_lane_annotations_2d(lanes: List[dict], *, line_thickness: float) -> None
             colors=colors,
             radii=line_thickness,
             labels=labels,
-            show_labels=True,
+            show_labels=False,
         ),
     )
 
@@ -136,6 +141,10 @@ def log_dataset_frame(frame: DatasetFrame, config: DatasetViewerConfig) -> None:
     )
     log_ego_box(
         frame.ego_box,
+        line_radius=config.gt_line_radius,
+    )
+    log_lane_annotations_3d(
+        frame.lanes,
         line_radius=config.gt_line_radius,
     )
     rr.log("camera/front/image", rr.Image(frame.image_rgb))

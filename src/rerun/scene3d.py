@@ -16,6 +16,8 @@ CLASS_COLORS = {
 
 GT_COLOR = (77, 163, 255, 210)
 EGO_COLOR = (64, 255, 255, 235)
+LANE_LEFT_COLOR = (0, 255, 0, 255)
+LANE_RIGHT_COLOR = (0, 200, 255, 255)
 EMPTY_POINTS = np.zeros((0, 3), dtype=np.float32)
 EMPTY_COLORS = np.zeros((0, 4), dtype=np.uint8)
 
@@ -160,5 +162,46 @@ def log_prediction_boxes(
             show_labels=True,
             radii=line_radius,
             fill_mode="solid",
+        ),
+    )
+
+
+def lane_color(lane: dict) -> tuple[int, int, int, int]:
+    if str(lane.get("side", "")) == "left":
+        return LANE_LEFT_COLOR
+    if str(lane.get("side", "")) == "right":
+        return LANE_RIGHT_COLOR
+    return (255, 255, 255, 255)
+
+
+def log_lane_annotations_3d(
+    lanes: Sequence[dict],
+    *,
+    line_radius: float,
+) -> None:
+    strips = []
+    colors = []
+    labels = []
+
+    for lane in lanes:
+        points_lidar = lane.get("points_lidar", [])
+        if len(points_lidar) < 2:
+            continue
+        strips.append(np.asarray(points_lidar, dtype=np.float32))
+        colors.append(lane_color(lane))
+        labels.append(f"lane {lane.get('lane_id', '?')} {lane.get('side', '?')} {lane.get('marking_type', '?')}")
+
+    if not strips:
+        rr.log("world/lanes", rr.LineStrips3D(strips=[]))
+        return
+
+    rr.log(
+        "world/lanes",
+        rr.LineStrips3D(
+            strips=strips,
+            colors=colors,
+            radii=line_radius,
+            labels=labels,
+            show_labels=False,
         ),
     )

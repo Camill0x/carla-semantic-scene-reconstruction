@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 import carla
+from src.carla.geometry.transforms import world_to_sensor
 from src.common.config import LaneAnnotationsConfig
 
 
@@ -252,15 +253,15 @@ def sample_boundary_points(
     return points, metadata
 
 
-def project_polyline(
+def project_polyline_with_world_points(
     world_points: List[carla.Location],
     intrinsics: np.ndarray,
     world_to_camera: np.ndarray,
     image_width: int,
     image_height: int,
     projection_margin_px: float,
-) -> List[List[float]]:
-    projected_points: List[List[float]] = []
+) -> List[Tuple[np.ndarray, np.ndarray]]:
+    projected_samples: List[Tuple[np.ndarray, np.ndarray]] = []
 
     for point in world_points:
         image_point = project_world_point(point, intrinsics, world_to_camera)
@@ -273,17 +274,22 @@ def project_polyline(
             -projection_margin_px <= u < image_width + projection_margin_px
             and -projection_margin_px <= v < image_height + projection_margin_px
         ):
-            projected_points.append([float(u), float(v)])
+            projected_samples.append(
+                (
+                    np.asarray([float(u), float(v)], dtype=np.float64),
+                    np.asarray([float(point.x), float(point.y), float(point.z)], dtype=np.float64),
+                )
+            )
 
-    return projected_points
+    return projected_samples
 
 
-def clip_line_segment_to_image(
-    start: List[float],
-    end: List[float],
+def clip_line_segment_to_image_with_params(
+    start: np.ndarray,
+    end: np.ndarray,
     image_width: int,
     image_height: int,
-) -> Optional[Tuple[List[float], List[float]]]:
+) -> Optional[Tuple[np.ndarray, np.ndarray, float, float]]:
     x0, y0 = float(start[0]), float(start[1])
     x1, y1 = float(end[0]), float(end[1])
     dx = x1 - x0
@@ -312,50 +318,80 @@ def clip_line_segment_to_image(
             if t < u2:
                 u2 = t
 
-    clipped_start = [x0 + u1 * dx, y0 + u1 * dy]
-    clipped_end = [x0 + u2 * dx, y0 + u2 * dy]
-    return clipped_start, clipped_end
+    clipped_start = start + (end - start) * u1
+    clipped_end = start + (end - start) * u2
+    return clipped_start, clipped_end, float(u1), float(u2)
 
 
-def clip_polyline_to_image(
-    points: List[List[float]],
+def world_points_to_lidar(points_world: np.ndarray, lidar_transform: carla.Transform) -> List[List[float]]:
+    if points_world.size == 0:
+        return []
+
+    points_lidar = world_to_sensor(points_world, lidar_transform)
+    points_lidar[:, 1] *= -1.0
+    return points_lidar.astype(np.float32).tolist()
+
+
+def clip_projected_polyline_to_image_and_lidar(
+    projected_samples: List[Tuple[np.ndarray, np.ndarray]],
     image_width: int,
     image_height: int,
-) -> Tuple[List[List[float]], int]:
-    if len(points) < 2:
-        return [], 0
+    lidar_transform: carla.Transform,
+) -> Tuple[List[List[float]], List[List[float]], int]:
+    if len(projected_samples) < 2:
+        return [], [], 0
 
-    fragments: List[List[List[float]]] = []
-    current_fragment: List[List[float]] = []
+    fragments_2d: List[List[np.ndarray]] = []
+    fragments_world: List[List[np.ndarray]] = []
+    current_fragment_2d: List[np.ndarray] = []
+    current_fragment_world: List[np.ndarray] = []
 
-    for start, end in zip(points[:-1], points[1:]):
-        clipped_segment = clip_line_segment_to_image(start, end, image_width, image_height)
+    for (start_2d, start_world), (end_2d, end_world) in zip(projected_samples[:-1], projected_samples[1:]):
+        clipped_segment = clip_line_segment_to_image_with_params(
+            start_2d,
+            end_2d,
+            image_width,
+            image_height,
+        )
         if clipped_segment is None:
-            if current_fragment:
-                fragments.append(current_fragment)
-                current_fragment = []
+            if current_fragment_2d:
+                fragments_2d.append(current_fragment_2d)
+                fragments_world.append(current_fragment_world)
+                current_fragment_2d = []
+                current_fragment_world = []
             continue
 
-        clipped_start, clipped_end = clipped_segment
-        if not current_fragment:
-            current_fragment = [clipped_start, clipped_end]
+        clipped_start_2d, clipped_end_2d, u1, u2 = clipped_segment
+        clipped_start_world = start_world + (end_world - start_world) * u1
+        clipped_end_world = start_world + (end_world - start_world) * u2
+
+        if not current_fragment_2d:
+            current_fragment_2d = [clipped_start_2d, clipped_end_2d]
+            current_fragment_world = [clipped_start_world, clipped_end_world]
             continue
 
-        if np.linalg.norm(np.asarray(current_fragment[-1]) - np.asarray(clipped_start)) > 1e-3:
-            fragments.append(current_fragment)
-            current_fragment = [clipped_start, clipped_end]
+        if np.linalg.norm(current_fragment_2d[-1] - clipped_start_2d) > 1e-3:
+            fragments_2d.append(current_fragment_2d)
+            fragments_world.append(current_fragment_world)
+            current_fragment_2d = [clipped_start_2d, clipped_end_2d]
+            current_fragment_world = [clipped_start_world, clipped_end_world]
             continue
 
-        current_fragment.append(clipped_end)
+        current_fragment_2d.append(clipped_end_2d)
+        current_fragment_world.append(clipped_end_world)
 
-    if current_fragment:
-        fragments.append(current_fragment)
+    if current_fragment_2d:
+        fragments_2d.append(current_fragment_2d)
+        fragments_world.append(current_fragment_world)
 
-    if not fragments:
-        return [], 0
+    if not fragments_2d:
+        return [], [], 0
 
-    longest_fragment = max(fragments, key=len)
-    return longest_fragment, len(fragments)
+    best_index = max(range(len(fragments_2d)), key=lambda idx: len(fragments_2d[idx]))
+    points_2d = [point.astype(np.float32).tolist() for point in fragments_2d[best_index]]
+    points_world = np.asarray(fragments_world[best_index], dtype=np.float64)
+    points_lidar = world_points_to_lidar(points_world, lidar_transform)
+    return points_2d, points_lidar, len(fragments_2d)
 
 
 def dedupe_consecutive_points(points: List[List[float]], min_dist: float) -> List[List[float]]:
@@ -374,6 +410,7 @@ def dedupe_consecutive_points(points: List[List[float]], min_dist: float) -> Lis
 def collect_lane_annotations(
     world: carla.World,
     hero: carla.Actor,
+    lidar_transform: carla.Transform,
     camera_transform: carla.Transform,
     image_width: int,
     image_height: int,
@@ -417,7 +454,7 @@ def collect_lane_annotations(
             if metadata.get("marking_type") == "NONE":
                 continue
 
-            projected_points = project_polyline(
+            projected_samples = project_polyline_with_world_points(
                 points_3d,
                 intrinsics,
                 world_to_camera,
@@ -425,18 +462,21 @@ def collect_lane_annotations(
                 image_height,
                 projection_margin_px=config.projection_margin_px,
             )
-            clipped_points, visible_fragments = clip_polyline_to_image(
-                projected_points,
+            clipped_points, clipped_points_lidar, visible_fragments = clip_projected_polyline_to_image_and_lidar(
+                projected_samples,
                 image_width=image_width,
                 image_height=image_height,
+                lidar_transform=lidar_transform,
             )
             if len(clipped_points) < 2:
                 continue
 
             points_2d = dedupe_consecutive_points(clipped_points, min_dist=config.dedupe_distance_px)
+            points_3d_lidar = dedupe_consecutive_points(clipped_points_lidar, min_dist=0.05)
             if len(points_2d) < 2:
                 continue
-
+            if len(points_3d_lidar) < 2:
+                continue
             if visible_fragments < 1:
                 continue
 
@@ -445,6 +485,7 @@ def collect_lane_annotations(
                     "id": len(annotations),
                     **metadata,
                     "points": points_2d,
+                    "points_lidar": points_3d_lidar,
                 }
             )
 

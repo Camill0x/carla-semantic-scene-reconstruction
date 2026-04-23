@@ -6,6 +6,7 @@ from src.common.config import (
     CarlaConnectionConfig,
     CameraConfig,
     CollectorConfig,
+    DatasetViewerConfig,
     LaneAnnotationsConfig,
     LidarConfig,
     LiveInferenceConfig,
@@ -156,5 +157,15 @@ def build_live_visualizer_config(
         point_radius=float(_require_value(section, "point_radius")),
         pred_line_radius=float(_require_value(section, "pred_line_radius")),
         gt_line_radius=float(_require_value(section, "gt_line_radius")),
-        app_id=str(_require_value(section, "app_id")),
+    )
+
+
+def build_dataset_viewer_config(*, show_grid: bool) -> DatasetViewerConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "dataset_viewer")
+    return DatasetViewerConfig(
+        show_grid=show_grid,
+        point_radius=float(_require_value(section, "point_radius")),
+        gt_line_radius=float(_require_value(section, "gt_line_radius")),
+        lane_line_thickness=float(_require_value(section, "lane_line_thickness")),
     )

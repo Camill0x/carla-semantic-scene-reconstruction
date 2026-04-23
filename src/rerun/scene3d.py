@@ -1,8 +1,8 @@
 from typing import Iterable, Sequence, Tuple
 
 import numpy as np
+
 import rerun as rr
-import rerun.blueprint as rrb
 from rerun.datatypes import Angle, RotationAxisAngle
 
 CLASS_COLORS = {
@@ -15,73 +15,9 @@ CLASS_COLORS = {
 }
 
 GT_COLOR = (77, 163, 255, 210)
+EGO_COLOR = (64, 255, 255, 235)
 EMPTY_POINTS = np.zeros((0, 3), dtype=np.float32)
 EMPTY_COLORS = np.zeros((0, 4), dtype=np.uint8)
-
-
-def initialize_viewer(application_id: str, *, show_grid: bool) -> None:
-    rr.init(application_id, spawn=True)
-    rr.send_blueprint(make_blueprint(show_grid=show_grid))
-    rr.log("world", rr.ViewCoordinates.FLU, static=True)
-
-
-def make_blueprint(show_grid: bool):
-    return rrb.Blueprint(
-        rrb.Horizontal(
-            rrb.Spatial3DView(
-                origin="/world",
-                name="Live Scene",
-                line_grid=rrb.LineGrid3D(visible=show_grid),
-                eye_controls=rrb.EyeControls3D(
-                    position=(-22.0, 0.0, 10.5),
-                    look_target=(8.0, 0.0, 0.0),
-                    eye_up=(0.0, 0.0, 1.0),
-                    speed=18.0,
-                ),
-            ),
-            rrb.Vertical(
-                rrb.TextDocumentView(origin="/status", name="Status"),
-                rrb.TextDocumentView(origin="/legend", name="Legend"),
-                row_shares=[0.65, 0.35],
-            ),
-            column_shares=[0.82, 0.18],
-        ),
-        collapse_panels=False,
-    )
-
-
-def log_status(
-    *,
-    frame: int,
-    num_points: int,
-    num_gt: int,
-    num_pred: int,
-    score_thresh: float | None = None,
-) -> None:
-    lines = [
-        f"Frame: {frame}",
-        f"Points: {num_points}",
-        f"GT boxes: {num_gt}",
-        f"Pred boxes: {num_pred}",
-    ]
-    if score_thresh is not None:
-        lines.append(f"Score threshold: {score_thresh:.2f}")
-    rr.log("status", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN))
-
-
-def log_legend() -> None:
-    lines = [
-        "# Colors",
-        "- GT boxes: blue",
-        "- Car: red",
-        "- Truck: dark red",
-        "- Bus: orange",
-        "- Motorcycle: amber",
-        "- Bicycle: yellow",
-        "- Pedestrian: green",
-        "- Points: intensity shaded",
-    ]
-    rr.log("legend", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN), static=True)
 
 
 def boxes_to_rerun(boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
@@ -94,10 +30,7 @@ def boxes_to_rerun(boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
 
     centers = boxes[:, 0:3].astype(np.float32)
     half_sizes = (boxes[:, 3:6] * 0.5).astype(np.float32)
-    rotations = [
-        RotationAxisAngle(axis=[0.0, 0.0, 1.0], angle=Angle(rad=float(yaw)))
-        for yaw in boxes[:, 6]
-    ]
+    rotations = [RotationAxisAngle(axis=[0.0, 0.0, 1.0], angle=Angle(rad=float(yaw))) for yaw in boxes[:, 6]]
     return centers, half_sizes, rotations
 
 
@@ -175,6 +108,32 @@ def log_gt_boxes(
             rotation_axis_angles=rotations,
             colors=[GT_COLOR for _ in range(len(centers))],
             labels=gt_labels(gt_boxes, gt_names),
+            show_labels=True,
+            radii=line_radius,
+            fill_mode="solid",
+        ),
+    )
+
+
+def log_ego_box(
+    ego_box: np.ndarray,
+    *,
+    line_radius: float,
+) -> None:
+    if ego_box.size == 0:
+        rr.log("world/ego", rr.Boxes3D(centers=np.zeros((0, 3), dtype=np.float32)))
+        return
+
+    ego_boxes = np.asarray(ego_box, dtype=np.float32).reshape(1, 7)
+    centers, half_sizes, rotations = boxes_to_rerun(ego_boxes)
+    rr.log(
+        "world/ego",
+        rr.Boxes3D(
+            centers=centers,
+            half_sizes=half_sizes,
+            rotation_axis_angles=rotations,
+            colors=[EGO_COLOR],
+            labels=["Ego"],
             show_labels=True,
             radii=line_radius,
             fill_mode="solid",

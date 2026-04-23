@@ -8,5 +8,4 @@ dependencies:
   - pyzmq=23.2.0
   - pip:
     - pygame==2.6.1
-    - open3d==0.16.0
     - opencv-python==4.13.0.92

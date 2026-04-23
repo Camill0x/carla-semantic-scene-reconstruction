@@ -7,15 +7,9 @@ import rerun as rr
 import zmq
 
 from src.common.runtime_config import build_live_visualizer_config
+from src.rerun.live_viewer import initialize_live_viewer, log_legend, log_live_status
+from src.rerun.scene3d import log_gt_boxes, log_points, log_prediction_boxes
 from src.streaming.messages import parse_lidar_message
-from src.streaming.rerun_viewer import (
-    initialize_viewer,
-    log_gt_boxes,
-    log_legend,
-    log_points,
-    log_prediction_boxes,
-    log_status,
-)
 from src.streaming.zmq_utils import create_latest_subscriber
 
 
@@ -38,7 +32,7 @@ def main() -> None:
     context = zmq.Context()
     socket = create_latest_subscriber(context, config.zmq_connect)
 
-    initialize_viewer(config.app_id, show_grid=config.show_grid)
+    initialize_live_viewer("carla_live_visualizer", show_grid=config.show_grid)
     log_legend()
 
     try:
@@ -75,7 +69,7 @@ def main() -> None:
                 pred_names,
                 line_radius=config.pred_line_radius,
             )
-            log_status(
+            log_live_status(
                 frame=frame,
                 num_points=int(points.shape[0]),
                 num_gt=int(gt_boxes.shape[0]),

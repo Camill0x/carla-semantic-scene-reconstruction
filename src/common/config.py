@@ -136,16 +136,29 @@ class LiveVisualizerConfig:
     point_radius: float
     pred_line_radius: float
     gt_line_radius: float
-    app_id: str
 
     def __post_init__(self) -> None:
         if not self.zmq_connect:
             raise ValueError("Visualizer zmq_connect must not be empty")
-        if not self.app_id:
-            raise ValueError("Visualizer app_id must not be empty")
         if self.point_radius <= 0.0:
             raise ValueError("Visualizer point_radius must be > 0")
         if self.pred_line_radius <= 0.0:
             raise ValueError("Visualizer pred_line_radius must be > 0")
         if self.gt_line_radius <= 0.0:
             raise ValueError("Visualizer gt_line_radius must be > 0")
+
+
+@dataclass(frozen=True)
+class DatasetViewerConfig:
+    show_grid: bool
+    point_radius: float
+    gt_line_radius: float
+    lane_line_thickness: float
+
+    def __post_init__(self) -> None:
+        if self.point_radius <= 0.0:
+            raise ValueError("Dataset viewer point_radius must be > 0")
+        if self.gt_line_radius <= 0.0:
+            raise ValueError("Dataset viewer gt_line_radius must be > 0")
+        if self.lane_line_thickness <= 0.0:
+            raise ValueError("Dataset viewer lane_line_thickness must be > 0")

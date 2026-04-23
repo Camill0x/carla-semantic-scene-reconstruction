@@ -1,0 +1,220 @@
+from typing import Dict, List, Optional, Tuple
+
+import carla
+
+
+def waypoint_key(waypoint: carla.Waypoint) -> Tuple[int, int, int, int]:
+    return (
+        int(waypoint.road_id),
+        int(waypoint.section_id),
+        int(waypoint.lane_id),
+        int(round(float(waypoint.s) * 100.0)),
+    )
+
+
+def choose_best_next_waypoint(current: carla.Waypoint, candidates: List[carla.Waypoint]) -> carla.Waypoint:
+    if len(candidates) == 1:
+        return candidates[0]
+
+    current_forward = current.transform.get_forward_vector()
+
+    def score(candidate: carla.Waypoint) -> Tuple[int, float]:
+        candidate_forward = candidate.transform.get_forward_vector()
+        alignment = (
+            current_forward.x * candidate_forward.x
+            + current_forward.y * candidate_forward.y
+            + current_forward.z * candidate_forward.z
+        )
+        same_lane = int(
+            candidate.road_id == current.road_id
+            and candidate.section_id == current.section_id
+            and candidate.lane_id == current.lane_id
+        )
+        return same_lane, float(alignment)
+
+    return max(candidates, key=score)
+
+
+def waypoint_chain_forward(start_waypoint: carla.Waypoint, distance_m: float, step_m: float) -> List[carla.Waypoint]:
+    waypoints = [start_waypoint]
+    traveled = 0.0
+    current = start_waypoint
+    seen = {waypoint_key(start_waypoint)}
+
+    while traveled < distance_m:
+        next_candidates = current.next(step_m)
+        if not next_candidates:
+            break
+        current = choose_best_next_waypoint(current, next_candidates)
+        current_key = waypoint_key(current)
+        if current_key in seen:
+            break
+        seen.add(current_key)
+        waypoints.append(current)
+        traveled += step_m
+
+    return waypoints
+
+
+def _lane_side_sign(reference: carla.Waypoint, candidate: carla.Waypoint) -> float:
+    delta_x = candidate.transform.location.x - reference.transform.location.x
+    delta_y = candidate.transform.location.y - reference.transform.location.y
+    delta_z = candidate.transform.location.z - reference.transform.location.z
+    right = reference.transform.get_right_vector()
+    return delta_x * right.x + delta_y * right.y + delta_z * right.z
+
+
+def find_adjacent_driving_lane(
+    carla_map: carla.Map,
+    waypoint: carla.Waypoint,
+    side: str,
+    max_lane_id_delta: int = 8,
+) -> Optional[carla.Waypoint]:
+    adjacent = waypoint.get_left_lane() if side == "left" else waypoint.get_right_lane()
+    if adjacent and adjacent.lane_type == carla.LaneType.Driving:
+        return adjacent
+
+    best_candidate: Optional[carla.Waypoint] = None
+    best_distance = float("inf")
+
+    for lane_id in range(-max_lane_id_delta, max_lane_id_delta + 1):
+        if lane_id == 0 or lane_id == waypoint.lane_id:
+            continue
+        candidate = carla_map.get_waypoint_xodr(waypoint.road_id, lane_id, waypoint.s)
+        if candidate is None:
+            continue
+        if candidate.section_id != waypoint.section_id:
+            continue
+        if candidate.lane_type != carla.LaneType.Driving:
+            continue
+
+        side_sign = _lane_side_sign(waypoint, candidate)
+        if side == "left" and side_sign >= 0.0:
+            continue
+        if side == "right" and side_sign <= 0.0:
+            continue
+
+        lateral_distance = abs(float(side_sign))
+        if lateral_distance < best_distance:
+            best_distance = lateral_distance
+            best_candidate = candidate
+
+    return best_candidate
+
+
+def collect_adjacent_driving_lanes(
+    carla_map: carla.Map,
+    base_waypoint: carla.Waypoint,
+    max_side_lanes: int,
+) -> List[carla.Waypoint]:
+    lanes = [base_waypoint]
+
+    current = base_waypoint
+    for _ in range(max_side_lanes):
+        left = find_adjacent_driving_lane(carla_map, current, side="left")
+        if left and left.lane_type == carla.LaneType.Driving:
+            lanes.append(left)
+            current = left
+        else:
+            break
+
+    current = base_waypoint
+    for _ in range(max_side_lanes):
+        right = find_adjacent_driving_lane(carla_map, current, side="right")
+        if right and right.lane_type == carla.LaneType.Driving:
+            lanes.append(right)
+            current = right
+        else:
+            break
+
+    unique = {}
+    for waypoint in lanes:
+        unique[(waypoint.road_id, waypoint.section_id, waypoint.lane_id)] = waypoint
+    return list(unique.values())
+
+
+def lane_marking_type_name(marking_type: carla.LaneMarkingType) -> str:
+    return str(marking_type).split(".")[-1]
+
+
+def lane_marking_color_name(color: carla.LaneMarkingColor) -> str:
+    return str(color).split(".")[-1]
+
+
+def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> Tuple:
+    if side == "left":
+        neighbor = find_adjacent_driving_lane(carla_map, waypoint, side="left")
+        if (
+            neighbor
+            and neighbor.lane_type == carla.LaneType.Driving
+            and neighbor.road_id == waypoint.road_id
+            and neighbor.section_id == waypoint.section_id
+        ):
+            lane_a, lane_b = sorted([waypoint.lane_id, neighbor.lane_id])
+            return (waypoint.road_id, waypoint.section_id, lane_a, lane_b)
+        return (waypoint.road_id, waypoint.section_id, waypoint.lane_id, "left_edge")
+
+    neighbor = find_adjacent_driving_lane(carla_map, waypoint, side="right")
+    if (
+        neighbor
+        and neighbor.lane_type == carla.LaneType.Driving
+        and neighbor.road_id == waypoint.road_id
+        and neighbor.section_id == waypoint.section_id
+    ):
+        lane_a, lane_b = sorted([waypoint.lane_id, neighbor.lane_id])
+        return (waypoint.road_id, waypoint.section_id, lane_a, lane_b)
+    return (waypoint.road_id, waypoint.section_id, waypoint.lane_id, "right_edge")
+
+
+def sample_boundary_points(
+    waypoint_chain: List[carla.Waypoint],
+    side: str,
+) -> Tuple[List[carla.Location], Dict]:
+    points: List[carla.Location] = []
+    metadata: Dict = {}
+    has_non_none_marking = False
+
+    for waypoint in waypoint_chain:
+        transform = waypoint.transform
+        location = transform.location
+        right_vector = transform.get_right_vector()
+        half_width = 0.5 * waypoint.lane_width
+
+        if side == "left":
+            lane_marking = waypoint.left_lane_marking
+            point = carla.Location(
+                x=location.x - right_vector.x * half_width,
+                y=location.y - right_vector.y * half_width,
+                z=location.z + 0.05,
+            )
+        else:
+            lane_marking = waypoint.right_lane_marking
+            point = carla.Location(
+                x=location.x + right_vector.x * half_width,
+                y=location.y + right_vector.y * half_width,
+                z=location.z + 0.05,
+            )
+
+        points.append(point)
+        marking_type = lane_marking_type_name(lane_marking.type)
+        marking_color = lane_marking_color_name(lane_marking.color)
+        if marking_type != "NONE":
+            has_non_none_marking = True
+
+        sample_metadata = {
+            "road_id": waypoint.road_id,
+            "section_id": waypoint.section_id,
+            "lane_id": waypoint.lane_id,
+            "side": side,
+            "lane_width": float(waypoint.lane_width),
+            "marking_type": marking_type,
+            "marking_color": marking_color,
+            "marking_width": float(lane_marking.width),
+        }
+        if not metadata or marking_type != "NONE":
+            metadata = sample_metadata
+
+    if metadata and not has_non_none_marking:
+        metadata = {**metadata, "marking_type": "NONE"}
+
+    return points, metadata

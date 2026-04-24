@@ -76,6 +76,7 @@ import weakref
 
 import carla
 from carla import ColorConverter as cc
+from src.carla.world.maps import load_requested_world
 from src.common.runtime_config import load_carla_connection_config
 
 # ==============================================================================
@@ -1284,7 +1285,9 @@ def game_loop(args):
         client = carla.Client(args.host, args.port)
         client.set_timeout(2000.0)
 
-        sim_world = client.get_world()
+        sim_world, map_name = load_requested_world(client, args.map)
+        logging.info("active map: %s", map_name)
+
         if args.sync:
             original_settings = sim_world.get_settings()
             settings = sim_world.get_settings()
@@ -1366,6 +1369,12 @@ def main():
         help='restrict to certain actor generation (values: "1","2","All" - default: "2")',
     )
     argparser.add_argument("--rolename", metavar="NAME", default="hero", help='actor role name (default: "hero")')
+    argparser.add_argument(
+        "--map",
+        metavar="NAME",
+        default="Town10HD",
+        help='load a specific CARLA map before spawning the ego vehicle (default: "Town10HD")',
+    )
     argparser.add_argument("--gamma", default=2.2, type=float, help="Gamma correction of the camera (default: 2.2)")
     argparser.add_argument(
         "--client-fps",
@@ -1408,6 +1417,9 @@ def main():
 
         game_loop(args)
 
+    except ValueError as error:
+        logging.error("%s", error)
+        sys.exit(1)
     except KeyboardInterrupt:
         print("\nCancelled by user. Bye!")
 

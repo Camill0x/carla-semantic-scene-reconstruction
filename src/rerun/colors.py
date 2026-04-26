@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Tuple
 
 
 CLASS_COLORS = {
@@ -20,7 +20,7 @@ def prediction_colors(pred_names: Iterable[str]) -> list:
     return [CLASS_COLORS.get(str(name), (255, 255, 255, 235)) for name in pred_names]
 
 
-def lane_color(lane: dict) -> tuple[int, int, int, int]:
+def lane_color(lane: dict) -> Tuple[int, int, int, int]:
     if str(lane.get("side", "")) == "left":
         return LANE_LEFT_COLOR
     if str(lane.get("side", "")) == "right":

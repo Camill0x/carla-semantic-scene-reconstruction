@@ -209,6 +209,6 @@ __marimo__/
 # Project-specific ignores
 external/*
 !external/.gitkeep
-data/
 datasets/
 checkpoints/
+results/

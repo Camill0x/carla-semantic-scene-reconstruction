@@ -1,4 +1,6 @@
 import rerun as rr
+from typing import Optional
+
 from src.carla.dataset.reader import DatasetFrame
 
 
@@ -22,7 +24,7 @@ def log_live_status(
     num_points: int,
     num_gt: int,
     num_pred: int,
-    score_thresh: float | None = None,
+    score_thresh: Optional[float] = None,
 ) -> None:
     lines = [
         "## Status",

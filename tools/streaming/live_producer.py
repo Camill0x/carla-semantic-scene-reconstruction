@@ -9,7 +9,8 @@ import zmq
 
 import carla
 from src.carla.actors.classify import find_hero_vehicle
-from src.carla.gt.collector import collect_all_gt, count_by_class
+from src.carla.gt.collector import collect_gt, count_by_class
+from src.carla.gt.filtering import filter_gt
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.carla.lidar.sensor import configure_lidar_blueprint
@@ -97,11 +98,19 @@ def main() -> None:
             gt_payload = None
 
             if config.with_gt:
-                objects, gt_boxes, gt_names = collect_all_gt(
+                objects, gt_boxes, gt_names = collect_gt(
                     world=world,
                     hero=hero,
                     lidar_transform=lidar_transform_snapshot,
                     max_range=config.lidar.max_range,
+                )
+
+                objects, gt_boxes, gt_names = filter_gt(
+                    points=points_snapshot,
+                    objects=objects,
+                    gt_boxes=gt_boxes,
+                    gt_names=gt_names,
+                    min_points_in_box=config.gt_annotations.min_lidar_points_in_box,
                 )
 
                 gt_payload = {

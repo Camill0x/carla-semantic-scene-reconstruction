@@ -74,11 +74,21 @@ class LaneAnnotationsConfig:
 
 
 @dataclass(frozen=True)
+class GtAnnotationsConfig:
+    min_lidar_points_in_box: int
+
+    def __post_init__(self) -> None:
+        if self.min_lidar_points_in_box < 0:
+            raise ValueError("GT annotations min_lidar_points_in_box must be >= 0")
+
+
+@dataclass(frozen=True)
 class CollectorConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
     camera_front: CameraConfig
     lane_annotations: LaneAnnotationsConfig
+    gt_annotations: GtAnnotationsConfig
     dataset_root_dir: Path
     num_frames: int
     every_nth: int
@@ -95,6 +105,7 @@ class CollectorConfig:
 class LiveProducerConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
+    gt_annotations: GtAnnotationsConfig
     zmq_bind: str
     every_nth: int
     with_gt: bool

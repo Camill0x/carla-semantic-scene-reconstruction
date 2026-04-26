@@ -179,7 +179,7 @@ def collect_actor_gt(
     return objects, gt_boxes, gt_names
 
 
-def collect_all_gt(
+def collect_gt(
     world: carla.World,
     hero: carla.Actor,
     lidar_transform: carla.Transform,

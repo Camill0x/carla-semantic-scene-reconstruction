@@ -6,10 +6,14 @@ import queue
 import carla
 from src.carla.actors.classify import find_hero_vehicle
 from src.carla.camera.frame_buffer import CameraFrameBuffer
-from src.carla.camera.sensor import configure_front_camera_blueprint, front_camera_transform
+from src.carla.camera.sensor import (
+    configure_front_camera_blueprint,
+    front_camera_transform,
+)
 from src.carla.dataset.paths import ensure_dataset_run_dir
 from src.carla.dataset.writer import save_multimodal_frame
-from src.carla.gt.collector import collect_all_gt, count_by_class
+from src.carla.gt.collector import collect_gt, count_by_class
+from src.carla.gt.filtering import filter_gt
 from src.carla.lanes.collector import collect_lane_annotations
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
@@ -20,7 +24,7 @@ from src.common.runtime_config import build_collector_config
 def parse_args():
     parser = argparse.ArgumentParser(description="Collect raw multimodal CARLA dataset frames")
     parser.add_argument("-n", "--num-frames", type=int, default=100, help="How many frames to save")
-    parser.add_argument("--every-nth", type=int, default=5, help="Save every N-th synchronized world frame")
+    parser.add_argument("--every-nth", type=int, default=10, help="Save every N-th synchronized world frame")
     args = parser.parse_args()
     return build_collector_config(
         num_frames=args.num_frames,
@@ -62,6 +66,7 @@ def main() -> None:
         f"[info] lane annotations: distance={config.lane_annotations.distance_m}m, "
         f"step={config.lane_annotations.step_m}m, max_side_lanes={config.lane_annotations.max_side_lanes}"
     )
+    print(f"[info] gt annotations: min_lidar_points_in_box={config.gt_annotations.min_lidar_points_in_box}")
 
     lidar_bp = configure_lidar_blueprint(
         world,
@@ -147,12 +152,21 @@ def main() -> None:
                 lidar=lidar,
             )
 
-            objects, gt_boxes, gt_names = collect_all_gt(
+            objects, gt_boxes, gt_names = collect_gt(
                 world=world,
                 hero=hero,
                 lidar_transform=lidar_transform_snapshot,
                 max_range=config.lidar.max_range,
             )
+
+            objects, gt_boxes, gt_names = filter_gt(
+                points=points_snapshot,
+                objects=objects,
+                gt_boxes=gt_boxes,
+                gt_names=gt_names,
+                min_points_in_box=config.gt_annotations.min_lidar_points_in_box,
+            )
+
             class_counts = count_by_class(objects)
             lane_annotations = collect_lane_annotations(
                 world=world,

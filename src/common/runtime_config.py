@@ -7,6 +7,7 @@ from src.common.config import (
     CameraConfig,
     CollectorConfig,
     DatasetViewerConfig,
+    GtAnnotationsConfig,
     LaneAnnotationsConfig,
     LidarConfig,
     LiveInferenceConfig,
@@ -93,6 +94,14 @@ def load_lane_annotations_config() -> LaneAnnotationsConfig:
     )
 
 
+def load_gt_annotations_config() -> GtAnnotationsConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "gt_annotations")
+    return GtAnnotationsConfig(
+        min_lidar_points_in_box=int(_require_value(section, "min_lidar_points_in_box")),
+    )
+
+
 def load_dataset_root_dir() -> Path:
     data = _read_runtime_config()
     return Path(str(_require_value(data, "dataset_root_dir")))
@@ -104,6 +113,7 @@ def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfi
         lidar=load_lidar_config(),
         camera_front=load_front_camera_config(),
         lane_annotations=load_lane_annotations_config(),
+        gt_annotations=load_gt_annotations_config(),
         dataset_root_dir=load_dataset_root_dir(),
         num_frames=num_frames,
         every_nth=every_nth,
@@ -116,6 +126,7 @@ def build_live_producer_config(*, with_gt: bool, every_nth: int) -> LiveProducer
     return LiveProducerConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
+        gt_annotations=load_gt_annotations_config(),
         zmq_bind=str(_require_value(section, "zmq_bind")),
         every_nth=every_nth,
         with_gt=with_gt,

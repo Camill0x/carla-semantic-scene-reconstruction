@@ -1,3 +1,6 @@
 [submodule "third_party/OpenPCDet"]
 	path = third_party/OpenPCDet
 	url = https://github.com/Camill0x/OpenPCDet.git
+[submodule "third_party/lanedet"]
+	path = third_party/lanedet
+	url = https://github.com/Camill0x/lanedet.git

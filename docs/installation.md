@@ -2,11 +2,11 @@
 
 ## CARLA 0.9.15
 
-### 1. Download CARLA package
+### CARLA package
 
 Download `CARLA_0.9.15.tar.gz` from the official [CARLA releases page](https://github.com/carla-simulator/carla/releases) and place it in `external/` directory.
 
-### 2. Install CARLA environment and Python API
+### Installation
 
 Run:
 
@@ -63,9 +63,9 @@ export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
 ```
 
-### Instalation
+### Installation
 
-Simply run:
+Run:
 
 ```bash
 ./scripts/setup/install_openpcdet.sh
@@ -76,3 +76,55 @@ The script:
 * creates or updates the `openpcdet` conda environment,
 * installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index,
 * installs the `pcdet` package from `third_party/OpenPCDet`.
+
+## LaneDet
+
+LaneDet is kept as a third-party submodule under `third_party/lanedet` and uses a dedicated Conda environment because it is pinned to an older PyTorch stack and builds a CUDA extension.
+
+### Prerequisites
+
+Before installing LaneDet, make sure you have:
+
+* a working NVIDIA driver (`nvidia-smi` should succeed),
+* CUDA Toolkit installed, including `nvcc`,
+* exported CUDA paths in your shell,
+* a GPU with compute capability compatible with this LaneDet environment. The current setup targets `sm_75` (compute capability `7.5`) - check [CUDA GPU Compute Capability](https://developer.nvidia.com/cuda/gpus).
+
+Typical shell exports:
+
+```bash
+export CUDA_HOME=/usr/local/cuda
+export PATH="$CUDA_HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
+```
+
+### Installation
+
+Run:
+
+```bash
+./scripts/setup/install_lanedet.sh
+```
+
+The script:
+
+* creates or updates the `lanedet` conda environment from `envs/lanedet.yml`,
+* installs `pytorch==1.8.0` and `torchvision==0.9.0` through the environment file,
+* installs LaneDet from `third_party/lanedet` in editable mode.
+
+## Rerun
+
+The project uses a small dedicated Conda environment for Rerun-based dataset and live-scene visualization.
+
+### Installation
+
+Run:
+
+```bash
+./scripts/setup/install_rerun.sh
+```
+
+The script:
+
+* creates or updates the `rerun` conda environment from `envs/rerun.yml`,
+* installs `rerun-sdk` and the lightweight runtime dependencies used by the dataset viewer and live visualizer.

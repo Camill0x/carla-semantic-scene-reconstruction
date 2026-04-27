@@ -16,8 +16,8 @@ if [[ "${1:-}" == "--skip-extract" ]]; then
 fi
 
 echo "[info] repo root: ${ROOT_DIR}"
+echo "[info] env file: ${ENV_FILE}"
 echo "[info] external dir: ${EXTERNAL_DIR}"
-echo "[info] CARLA dir: ${CARLA_DIR}"
 
 if [[ "${SKIP_EXTRACT}" -eq 0 ]]; then
     echo "[1/4] Checking CARLA archive"
@@ -48,6 +48,8 @@ else
         exit 1
     fi
 fi
+
+echo "[info] CARLA dir: ${CARLA_DIR}"
 
 echo "[3/4] Creating or updating conda environment: ${CONDA_ENV_NAME}"
 source "$(conda info --base)/etc/profile.d/conda.sh"

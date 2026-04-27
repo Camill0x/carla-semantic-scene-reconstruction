@@ -12,7 +12,16 @@ TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
 echo "[info] repo root: ${ROOT_DIR}"
+echo "[info] env file: ${ENV_FILE}"
 echo "[info] OpenPCDet dir: ${OPENPCDET_DIR}"
+
+if [[ ! -f "${OPENPCDET_DIR}/setup.py" ]]; then
+    echo "[error] OpenPCDet submodule does not look initialized:"
+    echo "[error]   ${OPENPCDET_DIR}"
+    echo
+    echo "[hint] Run: git submodule update --init --recursive third_party/OpenPCDet"
+    exit 1
+fi
 
 if ! command -v nvcc >/dev/null 2>&1; then
     echo "[error] nvcc not found in PATH"

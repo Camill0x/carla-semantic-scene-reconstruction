@@ -14,10 +14,6 @@ def lanedet_root() -> Path:
     return repo_path(*LANEDET_THIRD_PARTY_DIR)
 
 
-def lanedet_config_dir() -> Path:
-    return lanedet_root() / "configs"
-
-
 def resolve_lanedet_cfg(preset: str) -> Path:
     try:
         return lanedet_root().joinpath(*LANEDET_PRESETS[preset])

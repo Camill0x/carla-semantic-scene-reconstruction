@@ -20,11 +20,15 @@ def ensure_map_name_exists(client: carla.Client, requested_map: str) -> None:
     raise ValueError("Map %r does not exist. Choose one of: %s" % (requested_map, ", ".join(available_map_names)))
 
 
+def get_current_world(client: carla.Client) -> Tuple[carla.World, str]:
+    world = client.get_world()
+    return world, _map_basename(world.get_map().name)
+
+
 def load_requested_world(client: carla.Client, requested_map: str) -> Tuple[carla.World, str]:
     ensure_map_name_exists(client, requested_map)
 
-    world = client.get_world()
-    current_map_name = _map_basename(world.get_map().name)
+    world, current_map_name = get_current_world(client)
     if current_map_name == requested_map:
         return world, current_map_name
 

@@ -76,7 +76,7 @@ import weakref
 
 import carla
 from carla import ColorConverter as cc
-from src.carla.world.maps import load_requested_world
+from src.carla.world.maps import get_current_world, load_requested_world
 from src.common.runtime_config import load_carla_connection_config
 
 # ==============================================================================
@@ -1285,7 +1285,10 @@ def game_loop(args):
         client = carla.Client(args.host, args.port)
         client.set_timeout(2000.0)
 
-        sim_world, map_name = load_requested_world(client, args.map)
+        if args.map:
+            sim_world, map_name = load_requested_world(client, args.map)
+        else:
+            sim_world, map_name = get_current_world(client)
         logging.info("active map: %s", map_name)
 
         if args.sync:
@@ -1372,8 +1375,8 @@ def main():
     argparser.add_argument(
         "--map",
         metavar="NAME",
-        default="Town10HD",
-        help='load a specific CARLA map before spawning the ego vehicle (default: "Town10HD")',
+        default=None,
+        help="load a specific CARLA map before spawning the ego vehicle",
     )
     argparser.add_argument("--gamma", default=2.2, type=float, help="Gamma correction of the camera (default: 2.2)")
     argparser.add_argument(

@@ -101,56 +101,100 @@ class CollectorConfig:
         if self.every_nth <= 0:
             raise ValueError("Collector every_nth must be >= 1")
 
+
 @dataclass(frozen=True)
 class LiveProducerConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
+    camera_front: CameraConfig
     gt_annotations: GtAnnotationsConfig
-    zmq_bind: str
+    lidar_bind: str
+    camera_front_bind: str
+    state_bind: str
+    gt_bind: str
     every_nth: int
     with_gt: bool
 
     def __post_init__(self) -> None:
-        if not self.zmq_bind:
-            raise ValueError("Producer zmq_bind must not be empty")
+        if not self.lidar_bind:
+            raise ValueError("Producer lidar_bind must not be empty")
+        if not self.camera_front_bind:
+            raise ValueError("Producer camera_front_bind must not be empty")
+        if not self.state_bind:
+            raise ValueError("Producer state_bind must not be empty")
+        if not self.gt_bind:
+            raise ValueError("Producer gt_bind must not be empty")
         if self.every_nth <= 0:
             raise ValueError("Producer every_nth must be >= 1")
 
+
 @dataclass(frozen=True)
-class LiveInferenceConfig:
+class LiveOpenPCDetInferenceConfig:
     cfg_file: Path
     ckpt: Path
-    zmq_in: str
+    lidar_in: str
     zmq_out: str
     score_thresh: float
     point_stride: int
 
     def __post_init__(self) -> None:
         if not self.cfg_file:
-            raise ValueError("Inference cfg_file must not be empty")
+            raise ValueError("OpenPCDet inference cfg_file must not be empty")
         if not self.ckpt:
-            raise ValueError("Inference ckpt must not be empty")
-        if not self.zmq_in:
-            raise ValueError("Inference zmq_in must not be empty")
+            raise ValueError("OpenPCDet inference ckpt must not be empty")
+        if not self.lidar_in:
+            raise ValueError("OpenPCDet inference lidar_in must not be empty")
         if not self.zmq_out:
-            raise ValueError("Inference zmq_out must not be empty")
+            raise ValueError("OpenPCDet inference zmq_out must not be empty")
         if self.point_stride < 1:
-            raise ValueError("Inference point_stride must be >= 1")
+            raise ValueError("OpenPCDet inference point_stride must be >= 1")
+
+
+@dataclass(frozen=True)
+class LiveLaneDetInferenceConfig:
+    cfg_file: Path
+    ckpt: Path
+    camera_front_in: str
+    state_in: str
+    zmq_out: str
+    score_thresh: float
+
+    def __post_init__(self) -> None:
+        if not self.cfg_file:
+            raise ValueError("LaneDet inference cfg_file must not be empty")
+        if not self.ckpt:
+            raise ValueError("LaneDet inference ckpt must not be empty")
+        if not self.camera_front_in:
+            raise ValueError("LaneDet inference camera_front_in must not be empty")
+        if not self.state_in:
+            raise ValueError("LaneDet inference state_in must not be empty")
+        if not self.zmq_out:
+            raise ValueError("LaneDet inference zmq_out must not be empty")
 
 
 @dataclass(frozen=True)
 class LiveVisualizerConfig:
-    zmq_connect: str
+    objects_3d_connect: str
+    lanes_3d_connect: str
+    lidar_connect: str
+    state_connect: str
+    gt_connect: str
     show_grid: bool
-    hide_points: bool
-    hide_gt: bool
     point_radius: float
     pred_line_radius: float
     gt_line_radius: float
 
     def __post_init__(self) -> None:
-        if not self.zmq_connect:
-            raise ValueError("Visualizer zmq_connect must not be empty")
+        if not self.objects_3d_connect:
+            raise ValueError("Visualizer objects_3d_connect must not be empty")
+        if not self.lanes_3d_connect:
+            raise ValueError("Visualizer lanes_3d_connect must not be empty")
+        if not self.lidar_connect:
+            raise ValueError("Visualizer lidar_connect must not be empty")
+        if not self.state_connect:
+            raise ValueError("Visualizer state_connect must not be empty")
+        if not self.gt_connect:
+            raise ValueError("Visualizer gt_connect must not be empty")
         if self.point_radius <= 0.0:
             raise ValueError("Visualizer point_radius must be > 0")
         if self.pred_line_radius <= 0.0:

@@ -95,3 +95,41 @@ def log_lane_annotations_3d(
             show_labels=False,
         ),
     )
+
+
+def log_prediction_lanes_3d(lanes_3d: dict, *, line_radius: float) -> None:
+    strips_payload = lanes_3d.get("strips", []) if isinstance(lanes_3d, dict) else []
+    scores = lanes_3d.get("scores", []) if isinstance(lanes_3d, dict) else []
+    names = lanes_3d.get("names", []) if isinstance(lanes_3d, dict) else []
+
+    strips = []
+    colors = []
+    labels = []
+
+    for index, strip in enumerate(strips_payload):
+        points = np.asarray(strip, dtype=np.float32)
+        if points.ndim != 2 or points.shape[0] < 2 or points.shape[1] != 3:
+            continue
+
+        name = str(names[index]) if index < len(names) else f"lane {index}"
+        score = scores[index] if index < len(scores) else None
+        label = f"{name}  {float(score):.2f}" if score is not None else name
+
+        strips.append(points)
+        colors.append((255, 255, 255, 235))
+        labels.append(label)
+
+    if not strips:
+        rr.log("world/predicted_lanes", rr.LineStrips3D(strips=[]))
+        return
+
+    rr.log(
+        "world/predicted_lanes",
+        rr.LineStrips3D(
+            strips=strips,
+            colors=colors,
+            radii=line_radius,
+            labels=labels,
+            show_labels=False,
+        ),
+    )

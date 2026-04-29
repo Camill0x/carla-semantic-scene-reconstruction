@@ -1,6 +1,6 @@
-import rerun as rr
 from typing import Optional
 
+import rerun as rr
 from src.carla.dataset.reader import DatasetFrame
 
 
@@ -24,6 +24,10 @@ def log_live_status(
     num_points: int,
     num_gt: int,
     num_pred: int,
+    num_lanes: int = 0,
+    objects_frame: Optional[int] = None,
+    lanes_frame: Optional[int] = None,
+    frame_skew: Optional[int] = None,
     score_thresh: Optional[float] = None,
 ) -> None:
     lines = [
@@ -33,7 +37,14 @@ def log_live_status(
         f"- Points: {num_points}",
         f"- GT boxes: {num_gt}",
         f"- Pred boxes: {num_pred}",
+        f"- Pred lanes 3D: {num_lanes}",
     ]
+    if objects_frame is not None:
+        lines.append(f"- Objects frame: {objects_frame}")
+    if lanes_frame is not None:
+        lines.append(f"- Lanes frame: {lanes_frame}")
+    if frame_skew is not None:
+        lines.append(f"- Frame skew: {frame_skew}")
     if score_thresh is not None:
         lines.append(f"- Score threshold: {score_thresh:.2f}")
     rr.log("status", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN))

@@ -42,7 +42,9 @@ def filter_predictions(
         )
 
     keep_array = np.array(keep, dtype=np.int64)
-    return pred_boxes[keep_array], pred_scores[keep_array], pred_labels[keep_array], names
+
+    # Drop optional fields such as velocity; downstream code uses 7D boxes.
+    return pred_boxes[keep_array, :7], pred_scores[keep_array], pred_labels[keep_array], names
 
 
 def run_inference(dataset, model, points4: np.ndarray, frame_id: int):

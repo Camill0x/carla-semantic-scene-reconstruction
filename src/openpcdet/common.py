@@ -69,7 +69,11 @@ def read_train_eval_metrics(work_dir: Path, epoch: int) -> Dict:
     return read_json(candidates[0])
 
 
-def collect_validation_history(work_dir: Path, checkpoints: Sequence[Path], best_metric: str) -> Tuple[List[Dict], Dict]:
+def collect_validation_history(
+    work_dir: Path,
+    checkpoints: Sequence[Path],
+    best_metric: str,
+) -> Tuple[List[Dict], Dict]:
     val_history = []
     best_item = None
     best_value = float("-inf")
@@ -145,7 +149,9 @@ def build_training_summary(
             "best_metric": args.best_metric,
             "checkpoint_interval": 1,
             "keep_all_ckpt": args.keep_all_ckpt,
-            "pretrained_model": repo_relative_or_absolute(args.pretrained_model) if args.pretrained_model is not None else None,
+            "pretrained_model": (
+                repo_relative_or_absolute(args.pretrained_model) if args.pretrained_model is not None else None
+            ),
             "resume_checkpoint": repo_relative_or_absolute(args.ckpt) if args.ckpt is not None else None,
             "dataset_name": args.dataset_name,
         },
@@ -250,7 +256,11 @@ def copy_eval_artifacts(work_dir: Path, run_name: str, eval_tag: str, checkpoint
         final_lines = [
             f"checkpoint: {repo_relative_or_absolute(checkpoint)}",
             f"metrics: {repo_relative_or_absolute(target_dir / 'metrics.json')}",
-            f"result_pkl: {repo_relative_or_absolute(target_dir / 'result.pkl')}" if result_path is not None else "result_pkl: not produced",
+            (
+                f"result_pkl: {repo_relative_or_absolute(target_dir / 'result.pkl')}"
+                if result_path is not None
+                else "result_pkl: not produced"
+            ),
         ]
         append_log_summary(final_log_path, final_lines)
         print_artifact_summary(final_lines)

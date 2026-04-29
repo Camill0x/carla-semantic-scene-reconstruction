@@ -23,7 +23,7 @@ def checkpoint_epoch(path: Path) -> int:
     stem = Path(path).stem
     for prefix in ("checkpoint_epoch_", "epoch_"):
         if stem.startswith(prefix):
-            stem = stem[len(prefix):]
+            stem = stem[len(prefix) :]
             break
     try:
         return int(float(stem))
@@ -61,11 +61,13 @@ def resolve_checkpoint_selector(run_name: str, selector: str = "last") -> Path:
 
     if selector.isdigit():
         epoch = int(selector)
-        candidates.extend([
-            ckpt_dir / "epochs" / f"epoch_{epoch:03d}.ckpt",
-            ckpt_dir / "epochs" / f"epoch_{epoch}.ckpt",
-            ckpt_dir / f"checkpoint_epoch_{epoch}.pth",
-        ])
+        candidates.extend(
+            [
+                ckpt_dir / "epochs" / f"epoch_{epoch:03d}.ckpt",
+                ckpt_dir / "epochs" / f"epoch_{epoch}.ckpt",
+                ckpt_dir / f"checkpoint_epoch_{epoch}.pth",
+            ]
+        )
 
     for candidate in candidates:
         if candidate.exists():

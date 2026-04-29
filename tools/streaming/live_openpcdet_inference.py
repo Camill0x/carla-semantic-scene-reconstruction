@@ -8,10 +8,13 @@ import numpy as np
 import zmq
 
 from src.common.constants import NUSCENES_LIKE_CLASSES
-from src.common.runtime_config import build_live_inference_config
+from src.common.runtime_config import build_live_openpcdet_inference_config
 from src.openpcdet.model import load_inference_model
 from src.openpcdet.predict import filter_predictions, run_inference
-from src.streaming.messages import build_prediction_message, parse_lidar_message
+from src.streaming.messages import (
+    build_objects_3d_frame_message,
+    parse_lidar_frame_message,
+)
 from src.streaming.zmq_utils import create_latest_publisher, create_latest_subscriber
 
 
@@ -22,12 +25,13 @@ def parse_args():
     parser.add_argument("--score-thresh", type=float, default=0.2, help="Minimum score for exported predictions")
     parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
     args = parser.parse_args()
-    return build_live_inference_config(
+    config = build_live_openpcdet_inference_config(
         cfg_file=args.cfg_file,
         ckpt=args.ckpt,
         score_thresh=args.score_thresh,
         point_stride=args.point_stride,
     )
+    return config
 
 
 def main() -> None:
@@ -36,13 +40,13 @@ def main() -> None:
     dataset, model, cfg, logger = load_inference_model(config.cfg_file, config.ckpt)
 
     logger.info("=== OpenPCDet live inference ===")
-    logger.info("ZMQ IN: %s", config.zmq_in)
+    logger.info("ZMQ lidar IN: %s", config.lidar_in)
     logger.info("ZMQ OUT: %s", config.zmq_out)
     logger.info("score_thresh: %.3f", config.score_thresh)
     logger.info("point_stride: %d", config.point_stride)
 
     context = zmq.Context()
-    sub_socket = create_latest_subscriber(context, config.zmq_in)
+    sub_socket = create_latest_subscriber(context, config.lidar_in)
     pub_socket = create_latest_publisher(context, config.zmq_out)
 
     poller = zmq.Poller()
@@ -72,7 +76,7 @@ def main() -> None:
                 continue
 
             try:
-                parsed = parse_lidar_message(message)
+                parsed = parse_lidar_frame_message(message)
             except Exception as exc:
                 logger.warning("Skipping invalid input message: %s", exc)
                 continue
@@ -99,20 +103,19 @@ def main() -> None:
                 logger.exception("Inference failed frame=%s: %s", frame_id, exc)
                 continue
 
-            out_message = build_prediction_message(
-                input_message=message,
-                points=points4,
+            t2 = time.time()
+            out_message = build_objects_3d_frame_message(
+                lidar_message=message,
                 pred_boxes=pred_boxes,
                 pred_scores=pred_scores,
                 pred_names=pred_names,
             )
             pub_socket.send_pyobj(out_message)
 
-            t2 = time.time()
             last_frame = frame_id
             processed += 1
             infer_times.append(t1 - t0)
-            total_times.append(t2 - t0)
+            total_times.append(time.time() - t0)
 
             now = time.time()
             if now - last_log_t >= 1.0 and infer_times and total_times:

@@ -16,6 +16,21 @@ class CameraFrameBuffer:
     def callback(self, image: carla.Image) -> None:
         self.queue.put(image)
 
+    def discard_before(self, min_frame: int) -> None:
+        while True:
+            if self.pending_image is not None:
+                image = self.pending_image
+                self.pending_image = None
+            else:
+                try:
+                    image = self.queue.get_nowait()
+                except queue.Empty:
+                    return
+
+            if int(image.frame) >= min_frame:
+                self.pending_image = image
+                return
+
     def get_frame(
         self,
         expected_frame: Optional[int] = None,

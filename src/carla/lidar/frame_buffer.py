@@ -16,6 +16,21 @@ class LidarFrameBuffer:
     def callback(self, point_cloud: carla.LidarMeasurement) -> None:
         self.queue.put(point_cloud)
 
+    def discard_before(self, min_frame: int) -> None:
+        while True:
+            if self.pending_measurement is not None:
+                point_cloud = self.pending_measurement
+                self.pending_measurement = None
+            else:
+                try:
+                    point_cloud = self.queue.get_nowait()
+                except queue.Empty:
+                    return
+
+            if int(point_cloud.frame) >= min_frame:
+                self.pending_measurement = point_cloud
+                return
+
     def get_frame(
         self,
         expected_frame: Optional[int] = None,

@@ -2,6 +2,7 @@
 
 import argparse
 import queue
+from typing import Optional
 
 import carla
 from src.carla.actors.classify import find_hero_vehicle
@@ -30,6 +31,10 @@ def parse_args():
         num_frames=args.num_frames,
         every_nth=args.every_nth,
     )
+
+
+def should_process_frame(frame: int, last_processed_frame: Optional[int], every_nth: int) -> bool:
+    return last_processed_frame is None or frame - last_processed_frame >= every_nth
 
 
 def main() -> None:
@@ -105,6 +110,12 @@ def main() -> None:
             snapshot = world.wait_for_tick()
             expected_frame = int(snapshot.frame) if hasattr(snapshot, "frame") else int(snapshot)
 
+            if not should_process_frame(expected_frame, last_saved_frame, config.every_nth):
+                next_frame = last_saved_frame + config.every_nth
+                lidar_frame_buffer.discard_before(next_frame)
+                camera_frame_buffer.discard_before(next_frame)
+                continue
+
             try:
                 lidar_data = lidar_frame_buffer.get_frame(
                     expected_frame=expected_frame,
@@ -143,7 +154,7 @@ def main() -> None:
             if last_saved_frame is not None and sim_frame == last_saved_frame:
                 continue
 
-            if sim_frame % config.every_nth != 0:
+            if not should_process_frame(sim_frame, last_saved_frame, config.every_nth):
                 continue
 
             points_snapshot = preprocess_lidar_points(

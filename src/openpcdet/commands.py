@@ -8,15 +8,22 @@ from src.openpcdet.runner import extend_with_set_args, run_openpcdet_tool
 
 def build_train_command(cfg_file: Path, work_dir: Path, args: Namespace) -> List[str]:
     command = [
-        "--cfg_file", relative_to_openpcdet(cfg_file),
-        "--workers", str(args.workers),
-        "--extra_tag", args.name,
-        "--max_waiting_mins", "0",
-        "--max_ckpt_save_num", "100000",
-        "--num_epochs_to_eval", "100000",
+        "--cfg_file",
+        relative_to_openpcdet(cfg_file),
+        "--workers",
+        str(args.workers),
+        "--extra_tag",
+        args.name,
+        "--max_waiting_mins",
+        "0",
+        "--max_ckpt_save_num",
+        "100000",
+        "--num_epochs_to_eval",
+        "100000",
         "--wo_gpu_stat",
         "--quiet_config",
-        "--output_dir", str(work_dir),
+        "--output_dir",
+        str(work_dir),
     ]
     if args.pretrained_model is not None:
         command.extend(["--pretrained_model", str(args.pretrained_model.expanduser().resolve())])
@@ -35,21 +42,30 @@ def build_train_command(cfg_file: Path, work_dir: Path, args: Namespace) -> List
 
 def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_tag: str, args: Namespace) -> List[str]:
     command = [
-        "--cfg_file", relative_to_openpcdet(cfg_file),
-        "--ckpt", str(checkpoint),
-        "--workers", str(args.workers),
-        "--extra_tag", args.name,
-        "--eval_tag", eval_tag,
-        "--output_dir", str(work_dir),
+        "--cfg_file",
+        relative_to_openpcdet(cfg_file),
+        "--ckpt",
+        str(checkpoint),
+        "--workers",
+        str(args.workers),
+        "--extra_tag",
+        args.name,
+        "--eval_tag",
+        eval_tag,
+        "--output_dir",
+        str(work_dir),
         "--quiet_config",
     ]
     if args.batch_size is not None:
         command.extend(["--batch_size", str(args.batch_size)])
 
     set_cfgs = [
-        "DATA_CONFIG.DATA_PATH", prepared_dataset_data_path(args.dataset_name),
-        "DATA_CONFIG.DATA_SPLIT.test", "test",
-        "DATA_CONFIG.INFO_PATH.test", "['infos/infos_test.pkl']",
+        "DATA_CONFIG.DATA_PATH",
+        prepared_dataset_data_path(args.dataset_name),
+        "DATA_CONFIG.DATA_SPLIT.test",
+        "test",
+        "DATA_CONFIG.INFO_PATH.test",
+        "['infos/infos_test.pkl']",
     ]
     if args.set_cfgs:
         set_cfgs.extend(args.set_cfgs)

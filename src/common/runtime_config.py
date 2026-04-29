@@ -10,7 +10,8 @@ from src.common.config import (
     GtAnnotationsConfig,
     LaneAnnotationsConfig,
     LidarConfig,
-    LiveInferenceConfig,
+    LiveLaneDetInferenceConfig,
+    LiveOpenPCDetInferenceConfig,
     LiveProducerConfig,
     LiveVisualizerConfig,
 )
@@ -126,45 +127,71 @@ def build_live_producer_config(*, with_gt: bool, every_nth: int) -> LiveProducer
     return LiveProducerConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
+        camera_front=load_front_camera_config(),
         gt_annotations=load_gt_annotations_config(),
-        zmq_bind=str(_require_value(section, "zmq_bind")),
+        lidar_bind=str(_require_value(section, "lidar_bind")),
+        camera_front_bind=str(_require_value(section, "camera_front_bind")),
+        state_bind=str(_require_value(section, "state_bind")),
+        gt_bind=str(_require_value(section, "gt_bind")),
         every_nth=every_nth,
         with_gt=with_gt,
     )
 
 
-def build_live_inference_config(
+def build_live_openpcdet_inference_config(
     *,
     cfg_file: Path,
     ckpt: Path,
     score_thresh: float,
     point_stride: int,
-) -> LiveInferenceConfig:
+) -> LiveOpenPCDetInferenceConfig:
     data = _read_runtime_config()
-    section = _get_section(data, "streaming", "inference")
-    return LiveInferenceConfig(
+    try:
+        section = _get_section(data, "streaming", "openpcdet_inference")
+    except KeyError:
+        section = _get_section(data, "streaming", "inference")
+    return LiveOpenPCDetInferenceConfig(
         cfg_file=cfg_file,
         ckpt=ckpt,
-        zmq_in=str(_require_value(section, "zmq_in")),
+        lidar_in=str(_require_value(section, "lidar_in")),
         zmq_out=str(_require_value(section, "zmq_out")),
         score_thresh=score_thresh,
         point_stride=point_stride,
     )
 
 
+def build_live_lanedet_inference_config(
+    *,
+    cfg_file: Path,
+    ckpt: Path,
+    score_thresh: float,
+) -> LiveLaneDetInferenceConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming", "lanedet_inference")
+    return LiveLaneDetInferenceConfig(
+        cfg_file=cfg_file,
+        ckpt=ckpt,
+        camera_front_in=str(_require_value(section, "camera_front_in")),
+        state_in=str(_require_value(section, "state_in")),
+        zmq_out=str(_require_value(section, "zmq_out")),
+        score_thresh=score_thresh,
+    )
+
+
 def build_live_visualizer_config(
     *,
     show_grid: bool,
-    hide_points: bool,
-    hide_gt: bool,
 ) -> LiveVisualizerConfig:
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "visualizer")
+    objects_3d_connect = section.get("objects_3d_connect", section.get("zmq_connect"))
     return LiveVisualizerConfig(
-        zmq_connect=str(_require_value(section, "zmq_connect")),
+        objects_3d_connect=str(objects_3d_connect),
+        lanes_3d_connect=str(_require_value(section, "lanes_3d_connect")),
+        lidar_connect=str(_require_value(section, "lidar_connect")),
+        state_connect=str(_require_value(section, "state_connect")),
+        gt_connect=str(_require_value(section, "gt_connect")),
         show_grid=show_grid,
-        hide_points=hide_points,
-        hide_gt=hide_gt,
         point_radius=float(_require_value(section, "point_radius")),
         pred_line_radius=float(_require_value(section, "pred_line_radius")),
         gt_line_radius=float(_require_value(section, "gt_line_radius")),

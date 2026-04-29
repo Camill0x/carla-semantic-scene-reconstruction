@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate openpcdet
+conda activate lanedet
 
 cd "${ROOT_DIR}"
-python -m tools.streaming.live_openpcdet_inference "$@"
+python -m tools.streaming.live_lanedet_inference "$@"

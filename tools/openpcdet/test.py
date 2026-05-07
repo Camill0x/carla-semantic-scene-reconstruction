@@ -14,21 +14,20 @@ from src.openpcdet.common import (
     make_checkpoint_link,
     recreate_dir,
 )
-from src.openpcdet.constants import CLASS_FILTERS, OPENPCDET_PRESETS
-from src.openpcdet.paths import RESULTS_ROOT, generated_run_name, resolve_openpcdet_cfg
+from src.openpcdet.constants import OPENPCDET_PRESETS
+from src.openpcdet.paths import (
+    RESULTS_ROOT,
+    cfg_file_class_filter,
+    generated_run_name,
+    resolve_openpcdet_preset,
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate an OpenPCDet checkpoint on the held-out test split")
-    parser.add_argument(
-        "--class-filter",
-        choices=sorted(CLASS_FILTERS),
-        default="carla_nuscenes6",
-        help="Class/config filter",
-    )
     parser.add_argument("--dataset-name", default="default", help="Prepared dataset variant name")
     cfg_source = parser.add_mutually_exclusive_group(required=True)
-    cfg_source.add_argument("--preset", choices=OPENPCDET_PRESETS, help="Project config preset")
+    cfg_source.add_argument("--preset", choices=sorted(OPENPCDET_PRESETS), help="Project config preset")
     cfg_source.add_argument("--cfg-file", type=Path, help="OpenPCDet config path")
     parser.add_argument("--ckpt", type=Path, required=True, help="Checkpoint path")
     parser.add_argument("--batch-size", type=int)
@@ -39,14 +38,15 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    if args.preset is not None:
+        args.class_filter, cfg_file = resolve_openpcdet_preset(args.preset)
+    else:
+        cfg_file = args.cfg_file.expanduser().resolve()
+        args.class_filter = cfg_file_class_filter(cfg_file)
+
     test_results_root = RESULTS_ROOT / "test" / args.class_filter
     args.name = generated_run_name(test_results_root)
-
-    cfg_file = (
-        resolve_openpcdet_cfg(args.class_filter, args.preset)
-        if args.cfg_file is None
-        else args.cfg_file.expanduser().resolve()
-    )
 
     checkpoint = args.ckpt.expanduser().resolve()
     if not checkpoint.exists():

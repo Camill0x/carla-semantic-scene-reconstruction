@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 
 from src.common.paths import repo_path
-from src.openpcdet.constants import OPENPCDET_PRESETS
+from src.openpcdet.constants import CLASS_FILTERS, OPENPCDET_PRESETS
 
 OPENPCDET_ROOT = repo_path("third_party", "OpenPCDet")
 OPENPCDET_CFG_ROOT = OPENPCDET_ROOT / "tools" / "cfgs"
@@ -12,14 +13,22 @@ DATASET_ROOT = repo_path("datasets", "openpcdet")
 RESULTS_ROOT = repo_path("results", "openpcdet")
 
 
-def resolve_openpcdet_cfg(class_filter: str, preset: str) -> Path:
+def cfg_file_class_filter(cfg_file: Path) -> str:
+    cfg_dir = cfg_file.parent.name
+    for class_filter in CLASS_FILTERS:
+        if cfg_dir == f"{class_filter}_models":
+            return class_filter
+    return next(iter(CLASS_FILTERS))
+
+
+def resolve_openpcdet_preset(preset: str) -> Tuple[str, Path]:
     if preset not in OPENPCDET_PRESETS:
         raise ValueError(f"Unknown OpenPCDet preset: {preset}")
-
-    cfg_path = OPENPCDET_CFG_ROOT / f"{class_filter}_models" / f"{class_filter}_{preset.replace('-', '_')}.yaml"
+    class_filter, cfg_file = OPENPCDET_PRESETS[preset]
+    cfg_path = OPENPCDET_CFG_ROOT / f"{class_filter}_models" / cfg_file
     if not cfg_path.exists():
         raise FileNotFoundError(cfg_path)
-    return cfg_path
+    return class_filter, cfg_path
 
 
 def relative_to_openpcdet(path: Path) -> str:

@@ -16,25 +16,20 @@ from src.openpcdet.common import (
     recreate_dir,
     select_best_validation_checkpoint,
 )
-from src.openpcdet.constants import CLASS_FILTERS, OPENPCDET_PRESETS
+from src.openpcdet.constants import OPENPCDET_PRESETS
 from src.openpcdet.paths import (
     RESULTS_ROOT,
+    cfg_file_class_filter,
     generated_run_name,
-    resolve_openpcdet_cfg,
+    resolve_openpcdet_preset,
 )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train an OpenPCDet model from the main project repo")
-    parser.add_argument(
-        "--class-filter",
-        choices=sorted(CLASS_FILTERS),
-        default="carla_nuscenes6",
-        help="Class/config filter",
-    )
     parser.add_argument("--dataset-name", default="default", help="Prepared dataset variant name")
     cfg_source = parser.add_mutually_exclusive_group(required=True)
-    cfg_source.add_argument("--preset", choices=OPENPCDET_PRESETS, help="Project config preset")
+    cfg_source.add_argument("--preset", choices=sorted(OPENPCDET_PRESETS), help="Project config preset")
     cfg_source.add_argument("--cfg-file", type=Path, help="OpenPCDet config path")
     parser.add_argument("--pretrained-model", type=Path)
     parser.add_argument("--ckpt", type=Path)
@@ -49,13 +44,15 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    if args.preset is not None:
+        args.class_filter, cfg_file = resolve_openpcdet_preset(args.preset)
+    else:
+        cfg_file = args.cfg_file.expanduser().resolve()
+        args.class_filter = cfg_file_class_filter(cfg_file)
+
     train_results_root = RESULTS_ROOT / "train" / args.class_filter
     args.name = generated_run_name(train_results_root)
-    cfg_file = (
-        resolve_openpcdet_cfg(args.class_filter, args.preset)
-        if args.cfg_file is None
-        else args.cfg_file.expanduser().resolve()
-    )
     output_dir = train_results_root / args.name
     output_dir.mkdir(parents=True, exist_ok=True)
 

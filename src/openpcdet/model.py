@@ -6,7 +6,7 @@ from pcdet.config import cfg, cfg_from_yaml_file
 from pcdet.models import build_network
 from pcdet.utils import common_utils
 
-from src.openpcdet.paths import openpcdet_root
+from src.openpcdet.paths import OPENPCDET_ROOT
 from src.openpcdet.runner import working_directory
 from src.openpcdet.runtime_dataset import RealtimeDataset
 
@@ -15,7 +15,7 @@ def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[RealtimeDataset, t
     cfg_file_path = cfg_file.expanduser().resolve()
     ckpt_path = ckpt.expanduser().resolve()
 
-    with working_directory(openpcdet_root()):
+    with working_directory(OPENPCDET_ROOT):
         cfg_from_yaml_file(str(cfg_file_path), cfg)
     logger = common_utils.create_logger()
 

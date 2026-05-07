@@ -34,13 +34,14 @@ def build_train_command(cfg_file: Path, work_dir: Path, args: Namespace) -> List
     if args.epochs is not None:
         command.extend(["--epochs", str(args.epochs)])
 
-    set_cfgs = ["DATA_CONFIG.DATA_PATH", prepared_dataset_data_path(args.dataset_name)]
+    set_cfgs = ["DATA_CONFIG.DATA_PATH", prepared_dataset_data_path(args.class_filter, args.dataset_name)]
     if args.set_cfgs:
         set_cfgs.extend(args.set_cfgs)
     return extend_with_set_args(command, set_cfgs)
 
 
 def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_tag: str, args: Namespace) -> List[str]:
+    run_name = getattr(args, "name", "test")
     command = [
         "--cfg_file",
         relative_to_openpcdet(cfg_file),
@@ -49,7 +50,7 @@ def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_ta
         "--workers",
         str(args.workers),
         "--extra_tag",
-        args.name,
+        run_name,
         "--eval_tag",
         eval_tag,
         "--output_dir",
@@ -61,7 +62,7 @@ def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_ta
 
     set_cfgs = [
         "DATA_CONFIG.DATA_PATH",
-        prepared_dataset_data_path(args.dataset_name),
+        prepared_dataset_data_path(args.class_filter, args.dataset_name),
         "DATA_CONFIG.DATA_SPLIT.test",
         "test",
         "DATA_CONFIG.INFO_PATH.test",

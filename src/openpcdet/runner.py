@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence
 
-from src.openpcdet.paths import openpcdet_root
+from src.openpcdet.paths import OPENPCDET_ROOT
 
 
 @contextmanager
@@ -19,9 +19,8 @@ def working_directory(path: Path):
 
 
 def run_openpcdet_tool(tool_name: str, args: Sequence[str]) -> int:
-    root = openpcdet_root()
-    command = [sys.executable, str(root / "tools" / tool_name), *args]
-    completed = subprocess.run(command, cwd=root, check=False)
+    command = [sys.executable, str(OPENPCDET_ROOT / "tools" / tool_name), *args]
+    completed = subprocess.run(command, cwd=OPENPCDET_ROOT, check=False)
     return int(completed.returncode)
 
 

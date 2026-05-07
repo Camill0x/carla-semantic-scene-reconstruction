@@ -29,7 +29,7 @@
     "dedupe_distance_px": 2.0
   },
   "gt_annotations": {
-    "min_lidar_points_in_box": 1
+    "min_lidar_points_in_box": 5
   },
   "dataset_root_dir": "datasets/raw",
   "dataset_viewer": {

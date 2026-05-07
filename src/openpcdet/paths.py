@@ -1,78 +1,47 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
-from src.common.paths import repo_path, validate_directory_name
-from src.openpcdet.constants import (
-    DATASET_FAMILY,
-    DEFAULT_DATASET_NAME,
-    OPENPCDET_PRESETS,
-    OPENPCDET_RESULTS_DIR,
-    OPENPCDET_THIRD_PARTY_DIR,
-)
+from src.common.paths import repo_path
+from src.openpcdet.constants import OPENPCDET_PRESETS
+
+OPENPCDET_ROOT = repo_path("third_party", "OpenPCDet")
+OPENPCDET_CFG_ROOT = OPENPCDET_ROOT / "tools" / "cfgs"
+RAW_DATASET_ROOT = repo_path("datasets", "raw")
+DATASET_ROOT = repo_path("datasets", "openpcdet")
+RESULTS_ROOT = repo_path("results", "openpcdet")
 
 
-def openpcdet_root() -> Path:
-    return repo_path(*OPENPCDET_THIRD_PARTY_DIR)
+def resolve_openpcdet_cfg(class_filter: str, preset: str) -> Path:
+    if preset not in OPENPCDET_PRESETS:
+        raise ValueError(f"Unknown OpenPCDet preset: {preset}")
 
-
-def openpcdet_models_cfg_dir() -> Path:
-    return openpcdet_root() / "tools" / "cfgs" / f"{DATASET_FAMILY}_models"
-
-
-def resolve_openpcdet_cfg(preset: str) -> Path:
-    try:
-        return openpcdet_models_cfg_dir() / OPENPCDET_PRESETS[preset]
-    except KeyError as exc:
-        raise ValueError(f"Unknown OpenPCDet preset: {preset}") from exc
+    cfg_path = OPENPCDET_CFG_ROOT / f"{class_filter}_models" / f"{class_filter}_{preset.replace('-', '_')}.yaml"
+    if not cfg_path.exists():
+        raise FileNotFoundError(cfg_path)
+    return cfg_path
 
 
 def relative_to_openpcdet(path: Path) -> str:
-    return os.path.relpath(Path(path), openpcdet_root())
+    return os.path.relpath(Path(path), OPENPCDET_ROOT)
 
 
-def raw_dataset_root() -> Path:
-    return repo_path("datasets", "raw")
+def prepared_dataset_root(class_filter: str, dataset_name: str) -> Path:
+    return DATASET_ROOT / class_filter / dataset_name
 
 
-def dataset_root() -> Path:
-    return repo_path("datasets", OPENPCDET_RESULTS_DIR, DATASET_FAMILY)
+def prepared_dataset_data_path(class_filter: str, dataset_name: str) -> str:
+    return relative_to_openpcdet(prepared_dataset_root(class_filter, dataset_name))
 
 
-def prepared_dataset_root(name: str = DEFAULT_DATASET_NAME) -> Path:
-    return dataset_root() / validate_directory_name(name)
+def generated_run_name(parent_dir: Path) -> str:
+    base_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if not (parent_dir / base_name).exists():
+        return base_name
 
-
-def prepared_dataset_data_path(name: str = DEFAULT_DATASET_NAME) -> str:
-    return relative_to_openpcdet(prepared_dataset_root(name))
-
-
-def results_root() -> Path:
-    return repo_path("results", OPENPCDET_RESULTS_DIR)
-
-
-def run_dir(run_name: str) -> Path:
-    return results_root() / validate_directory_name(run_name)
-
-
-def config_dir(run_name: str) -> Path:
-    return run_dir(run_name) / "config"
-
-
-def checkpoints_dir(run_name: str) -> Path:
-    return run_dir(run_name) / "checkpoints"
-
-
-def evaluations_dir(run_name: str) -> Path:
-    return run_dir(run_name) / "evaluations"
-
-
-def best_checkpoint_path(run_name: str) -> Path:
-    return checkpoints_dir(run_name) / "best.ckpt"
-
-
-def last_checkpoint_path(run_name: str) -> Path:
-    return checkpoints_dir(run_name) / "last.ckpt"
-
-
-def summary_path(run_name: str) -> Path:
-    return run_dir(run_name) / "summary.json"
+    index = 2
+    while True:
+        candidate = f"{base_name}_{index}"
+        if not (parent_dir / candidate).exists():
+            return candidate
+        index += 1

@@ -4,21 +4,26 @@ import argparse
 import shutil
 
 from src.common.paths import repo_relative_or_absolute
-from src.openpcdet.constants import CLASS_FILTERS, DEFAULT_DATASET_NAME
+from src.openpcdet.constants import CLASS_FILTERS
 from src.openpcdet.infos import (
     iter_frame_dirs,
     load_infos,
     selected_run_dirs,
     write_infos,
 )
-from src.openpcdet.paths import prepared_dataset_root, raw_dataset_root
+from src.openpcdet.paths import RAW_DATASET_ROOT, prepared_dataset_root
 from src.openpcdet.splits import train_val_test_split
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build OpenPCDet metadata for collected CARLA dataset runs")
-    parser.add_argument("--name", default=DEFAULT_DATASET_NAME, help="Prepared dataset variant name")
-    parser.add_argument("--class-filter", choices=sorted(CLASS_FILTERS), default="nuscenes6")
+    parser.add_argument(
+        "--class-filter",
+        choices=sorted(CLASS_FILTERS),
+        default="carla_nuscenes6",
+        help="Class/config filter",
+    )
+    parser.add_argument("--name", default="default", help="Prepared dataset variant name")
     run_selection = parser.add_mutually_exclusive_group(required=True)
     run_selection.add_argument("--all", action="store_true", help="Use all run_XXXX directories under datasets/raw")
     run_selection.add_argument("--runs", nargs="+", metavar="RUN", help="Use selected raw run directories")
@@ -30,14 +35,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    source_root = raw_dataset_root().resolve()
-    output_root = prepared_dataset_root(args.name).resolve()
+    source_root = RAW_DATASET_ROOT
+    output_root = prepared_dataset_root(args.class_filter, args.name)
     class_names = CLASS_FILTERS[args.class_filter]
 
     if not source_root.exists():
         raise FileNotFoundError(source_root)
     if output_root.exists() and any(output_root.iterdir()):
-        if args.name == DEFAULT_DATASET_NAME:
+        if args.name == "default":
             shutil.rmtree(output_root)
         else:
             raise FileExistsError(f"Prepared dataset directory is not empty: {repo_relative_or_absolute(output_root)}")

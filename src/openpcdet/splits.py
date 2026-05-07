@@ -37,7 +37,7 @@ def train_val_test_split(infos: Sequence[dict], val_ratio: float, test_ratio: fl
         num_val = min(num_val, max(0, len(indices) - num_test - 1))
 
     test_indices = set(indices[:num_test])
-    val_indices = set(indices[num_test:num_test + num_val])
+    val_indices = set(indices[num_test : num_test + num_val])
 
     train = []
     val = []

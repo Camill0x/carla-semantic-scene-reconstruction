@@ -1,3 +1,4 @@
+import importlib.util
 from pathlib import Path
 from typing import Optional
 
@@ -48,3 +49,21 @@ def write_runtime_config(
 
     target_cfg.write_text(text + "\n".join(overrides), encoding="utf-8")
     return target_cfg
+
+
+def load_config_module(config_path: Path):
+    spec = importlib.util.spec_from_file_location("_lanedet_runtime_config", config_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load config: {config_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def dataset_family_from_config(config_path: Path) -> str:
+    module = load_config_module(config_path)
+    try:
+        dataset_type = module.dataset["train"]["type"]
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise ValueError(f"Could not read dataset.train.type from {config_path}") from exc
+    return str(dataset_type).lower()

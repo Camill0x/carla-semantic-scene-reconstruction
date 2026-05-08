@@ -15,9 +15,3 @@ def repo_relative_or_absolute(path: Path) -> str:
         return str(resolved.relative_to(repo_root()))
     except ValueError:
         return str(resolved)
-
-
-def validate_directory_name(name: str) -> str:
-    if "/" in name or "\\" in name:
-        raise ValueError("Name must be a single directory name, not a path")
-    return name

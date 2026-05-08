@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from src.common.paths import repo_relative_or_absolute
+from src.lanedet.metrics import build_tusimple_metrics
 
 
 def latest_lanedet_work_dir(work_root: Path) -> Path:
@@ -61,12 +62,49 @@ def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> Dict[str,
     return {"best": best_target, "last": last_target}
 
 
+def copy_common_outputs(source_work_dir: Path, output_dir: Path, gt_json: Path) -> None:
+    copy_config(source_work_dir, output_dir / "config.py")
+
+    predictions_source = source_work_dir / "tusimple_predictions.json"
+    if predictions_source.exists():
+        predictions_target = output_dir / "predictions.json"
+        shutil.copy2(predictions_source, predictions_target)
+        write_json(output_dir / "metrics.json", build_tusimple_metrics(predictions_target, gt_json))
+
+    visualization_source = source_work_dir / "visualization"
+    if visualization_source.exists():
+        shutil.copytree(visualization_source, output_dir / "visualization")
+
+
+def write_run_metadata(
+    *,
+    output_dir: Path,
+    mode: str,
+    run_name: str,
+    dataset: str,
+    model: str,
+    data_root: Optional[Path],
+    preset: Optional[str],
+    source_config: Path,
+    load_from: Optional[Path],
+    finetune_from: Optional[Path],
+) -> Path:
+    payload = {
+        "mode": mode,
+        "run": run_name,
+        "dataset": dataset,
+        "model": model,
+        "data_root": repo_relative_or_absolute(data_root) if data_root is not None else None,
+        "preset": preset,
+        "source_config": repo_relative_or_absolute(source_config),
+        "load_from": repo_relative_or_absolute(load_from) if load_from is not None else None,
+        "finetune_from": repo_relative_or_absolute(finetune_from) if finetune_from is not None else None,
+    }
+    return write_json(output_dir / "meta.json", payload)
+
+
 def write_json(path: Path, payload: dict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
     return path
-
-
-def rel(path: Optional[Path]) -> Optional[str]:
-    return repo_relative_or_absolute(path) if path is not None else None

@@ -121,10 +121,7 @@ def analyze_predictions(
         image_matched = 0.0
 
         for gt_idx, (gt_lane, threshold) in enumerate(zip(gt_lanes, thresholds)):
-            accuracies = [
-                tusimple_line_accuracy(pred_lane, gt_lane, threshold)
-                for pred_lane in pred_lanes
-            ]
+            accuracies = [tusimple_line_accuracy(pred_lane, gt_lane, threshold) for pred_lane in pred_lanes]
             best_accuracy = max(accuracies) if accuracies else 0.0
             best_pred_idx = accuracies.index(best_accuracy) if accuracies else None
             line_accuracies.append(best_accuracy)

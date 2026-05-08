@@ -3,16 +3,11 @@
 import argparse
 import shutil
 
+from src.common.dataset import iter_frame_dirs, selected_run_dirs, train_val_test_split
 from src.common.paths import repo_relative_or_absolute
 from src.openpcdet.constants import CLASS_FILTERS
-from src.openpcdet.infos import (
-    iter_frame_dirs,
-    load_infos,
-    selected_run_dirs,
-    write_infos,
-)
+from src.openpcdet.infos import load_infos, write_infos
 from src.openpcdet.paths import RAW_DATASET_ROOT, prepared_dataset_root
-from src.openpcdet.splits import train_val_test_split
 
 
 def parse_args() -> argparse.Namespace:
@@ -56,7 +51,7 @@ def main() -> None:
     print(f"Loaded {len(infos)} valid samples")
 
     splits = train_val_test_split(
-        infos=infos,
+        items=infos,
         val_ratio=args.val_ratio,
         test_ratio=args.test_ratio,
         seed=args.seed,

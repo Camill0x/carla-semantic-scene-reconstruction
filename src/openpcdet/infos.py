@@ -2,35 +2,11 @@ import json
 import os
 import pickle
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
-from src.openpcdet.splits import DatasetSplits
-
-
-def selected_run_dirs(source_root: Path, run_names: Optional[Sequence[str]]) -> List[Path]:
-    if run_names is None:
-        return sorted(path for path in source_root.iterdir() if path.is_dir() and path.name.startswith("run_"))
-
-    run_dirs = []
-    for run_name in run_names:
-        run_dir = source_root / run_name
-        if not run_dir.exists():
-            raise FileNotFoundError(run_dir)
-        if not run_dir.is_dir():
-            raise NotADirectoryError(run_dir)
-        run_dirs.append(run_dir)
-    return run_dirs
-
-
-def iter_frame_dirs(run_dirs: Sequence[Path]) -> List[Path]:
-    return [
-        frame_dir
-        for run_dir in run_dirs
-        for frame_dir in sorted(run_dir.iterdir())
-        if frame_dir.is_dir() and frame_dir.name.startswith("frame_")
-    ]
+from src.common.dataset import DatasetSplits
 
 
 def frame_has_class_counts(meta: dict, class_names: Sequence[str]) -> bool:

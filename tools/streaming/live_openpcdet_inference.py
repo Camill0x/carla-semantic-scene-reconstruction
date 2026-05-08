@@ -10,7 +10,7 @@ import zmq
 from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.common.runtime_config import build_live_openpcdet_inference_config
 from src.openpcdet.model import load_inference_model
-from src.openpcdet.predict import filter_predictions, run_inference
+from src.openpcdet.predict import filter_object_predictions, run_inference
 from src.streaming.messages import (
     build_objects_3d_frame_message,
     parse_lidar_frame_message,
@@ -22,7 +22,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="OpenPCDet live inference node")
     parser.add_argument("--cfg-file", type=Path, required=True)
     parser.add_argument("--ckpt", type=Path, required=True)
-    parser.add_argument("--score-thresh", type=float, default=0.2, help="Minimum score for exported predictions")
+    parser.add_argument("--score-thresh", type=float, default=0.05, help="Score threshold for predictions")
     parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
     args = parser.parse_args()
     config = build_live_openpcdet_inference_config(
@@ -85,20 +85,20 @@ def main() -> None:
             if frame_id == last_frame:
                 continue
 
-            points4 = parsed["points"]
-            if config.point_stride > 1:
-                points4 = points4[:: config.point_stride]
-
             t0 = time.time()
             try:
+                points4 = parsed["points"]
+                if config.point_stride > 1:
+                    points4 = points4[:: config.point_stride]
+
                 pred_dict = run_inference(dataset, model, points4, frame_id)
-                t1 = time.time()
-                pred_boxes, pred_scores, _, pred_names = filter_predictions(
+                prediction = filter_object_predictions(
                     pred_dict=pred_dict,
                     class_names=cfg.CLASS_NAMES,
                     allowed_classes=NUSCENES_LIKE_CLASSES,
                     score_thresh=config.score_thresh,
                 )
+                t1 = time.time()
             except Exception as exc:
                 logger.exception("Inference failed frame=%s: %s", frame_id, exc)
                 continue
@@ -106,9 +106,9 @@ def main() -> None:
             t2 = time.time()
             out_message = build_objects_3d_frame_message(
                 lidar_message=message,
-                pred_boxes=pred_boxes,
-                pred_scores=pred_scores,
-                pred_names=pred_names,
+                pred_boxes=prediction.boxes,
+                pred_scores=prediction.scores,
+                pred_names=prediction.names,
             )
             pub_socket.send_pyobj(out_message)
 
@@ -125,7 +125,7 @@ def main() -> None:
                 logger.info(
                     "frame=%s | preds=%s | infer=%.1f ms | total=%.1f ms | fps=%.2f",
                     frame_id,
-                    len(pred_names),
+                    len(prediction.names),
                     infer_ms,
                     total_ms,
                     fps,

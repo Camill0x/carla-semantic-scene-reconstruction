@@ -12,8 +12,8 @@ from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_fram
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Show a saved dataset run in Rerun")
-    parser.add_argument("run_dir", type=Path, help="Path to run_XXXX directory")
-    parser.add_argument("--fps", type=float, default=10.0, help="Playback speed in frames per second")
+    parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
+    parser.add_argument("--fps", type=float, default=20.0, help="Playback speed in frames per second")
     parser.add_argument("--show-grid", action="store_true", help="Show the ground grid in the 3D view")
     return parser.parse_args()
 

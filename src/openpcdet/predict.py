@@ -1,8 +1,17 @@
-from typing import Iterable, Sequence, Tuple
+from dataclasses import dataclass
+from typing import Iterable, List, Sequence
 
 import numpy as np
 import torch
 from pcdet.models import load_data_to_gpu
+
+
+@dataclass(frozen=True)
+class Objects3DPrediction:
+    boxes: np.ndarray
+    scores: np.ndarray
+    labels: np.ndarray
+    names: List[str]
 
 
 def append_zero_timestamps(points4: np.ndarray) -> np.ndarray:
@@ -10,12 +19,12 @@ def append_zero_timestamps(points4: np.ndarray) -> np.ndarray:
     return np.hstack([points4.astype(np.float32), timestamps])
 
 
-def filter_predictions(
+def filter_object_predictions(
     pred_dict,
     class_names: Sequence[str],
     allowed_classes: Iterable[str],
     score_thresh: float,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list]:
+) -> Objects3DPrediction:
     pred_boxes = pred_dict["pred_boxes"].detach().cpu().numpy()
     pred_scores = pred_dict["pred_scores"].detach().cpu().numpy()
     pred_labels = pred_dict["pred_labels"].detach().cpu().numpy()
@@ -34,17 +43,22 @@ def filter_predictions(
         names.append(class_name)
 
     if not keep:
-        return (
-            np.zeros((0, 7), dtype=np.float32),
-            np.zeros((0,), dtype=np.float32),
-            np.zeros((0,), dtype=np.int64),
-            [],
+        return Objects3DPrediction(
+            boxes=np.zeros((0, 7), dtype=np.float32),
+            scores=np.zeros((0,), dtype=np.float32),
+            labels=np.zeros((0,), dtype=np.int64),
+            names=[],
         )
 
     keep_array = np.array(keep, dtype=np.int64)
 
     # Drop optional fields such as velocity; downstream code uses 7D boxes.
-    return pred_boxes[keep_array, :7], pred_scores[keep_array], pred_labels[keep_array], names
+    return Objects3DPrediction(
+        boxes=pred_boxes[keep_array, :7].astype(np.float32),
+        scores=pred_scores[keep_array].astype(np.float32),
+        labels=pred_labels[keep_array].astype(np.int64),
+        names=names,
+    )
 
 
 def run_inference(dataset, model, points4: np.ndarray, frame_id: int):

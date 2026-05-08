@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import cv2
 import numpy as np
@@ -17,6 +17,20 @@ class DatasetFrame:
     gt_names: List[str]
     objects: List[Dict[str, Any]]
     lanes: List[Dict[str, Any]]
+    image_rgb: np.ndarray
+
+
+@dataclass(frozen=True)
+class PointsFrame:
+    frame_dir: Path
+    meta: Dict[str, Any]
+    points: np.ndarray
+
+
+@dataclass(frozen=True)
+class CameraFrame:
+    frame_dir: Path
+    meta: Dict[str, Any]
     image_rgb: np.ndarray
 
 
@@ -41,6 +55,27 @@ def _load_image_rgb(path: Path) -> np.ndarray:
     if image_bgr is None:
         raise RuntimeError(f"Failed to read image: {path}")
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+
+def load_points_frame(frame_dir: Path) -> PointsFrame:
+    meta = _load_json(_require_path(frame_dir, "meta.json"))
+    points = _load_npy(_require_path(frame_dir, "points.npy"))
+
+    return PointsFrame(
+        frame_dir=frame_dir,
+        meta=meta,
+        points=points,
+    )
+
+
+def load_camera_frame(frame_dir: Path) -> CameraFrame:
+    meta = _load_json(_require_path(frame_dir, "meta.json"))
+    image_rgb = _load_image_rgb(_require_path(frame_dir, "front_rgb.png"))
+    return CameraFrame(
+        frame_dir=frame_dir,
+        meta=meta,
+        image_rgb=image_rgb,
+    )
 
 
 def load_dataset_frame(frame_dir: Path) -> DatasetFrame:

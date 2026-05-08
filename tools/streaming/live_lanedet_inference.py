@@ -9,7 +9,7 @@ import zmq
 
 from src.common.runtime_config import build_live_lanedet_inference_config
 from src.lanedet.detector import LaneDetector
-from src.streaming.lane_geometry import lanes_2d_to_lanes_3d_payload
+from src.lanedet.projection import lanes_2d_to_lanes_3d_payload
 from src.streaming.messages import (
     build_lanes_3d_frame_message,
     parse_camera_frame_message,
@@ -22,7 +22,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="LaneDet live inference node")
     parser.add_argument("--config", type=Path, required=True, help="LaneDet config file")
     parser.add_argument("--ckpt", type=Path, required=True)
-    parser.add_argument("--score-thresh", type=float, default=0.0, help="Minimum lane score for exported predictions")
+    parser.add_argument("--score-thresh", type=float, default=0.2, help="Score threshold for predictions")
     args = parser.parse_args()
     config = build_live_lanedet_inference_config(
         cfg_file=args.config.expanduser().resolve(),
@@ -106,13 +106,13 @@ def main() -> None:
             t0 = time.time()
             try:
                 lanes_2d = detector.infer_lanes_2d(image_bgr)
-                t1 = time.time()
                 lanes_3d = lanes_2d_to_lanes_3d_payload(
                     lanes_2d,
                     camera_frame=latest_camera,
                     state_frame=latest_state,
                     score_thresh=config.score_thresh,
                 )
+                t1 = time.time()
             except Exception as exc:
                 print(f"[warn] LaneDet inference failed frame={frame_id}: {exc}")
                 continue

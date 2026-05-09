@@ -9,7 +9,7 @@ from lanedet.models.registry import build_net
 from lanedet.utils.config import Config
 from lanedet.utils.net_utils import load_network
 
-from src.lanedet.predict import Lanes2DPrediction
+from src.lanedet.prediction import Lanes2DPrediction
 
 
 def _to_device(data: dict, device: torch.device) -> dict:
@@ -80,6 +80,7 @@ class LaneDetector:
             out.append((points, score))
 
         lanes_2d = Lanes2DPrediction.from_detector_output(out)
+
         if return_forward_time:
             return lanes_2d, forward_time_s
 

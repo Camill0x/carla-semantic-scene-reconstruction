@@ -9,8 +9,8 @@ import zmq
 
 from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.common.runtime_config import build_live_openpcdet_inference_config
-from src.openpcdet.model import load_inference_model
-from src.openpcdet.predict import filter_object_predictions, run_inference
+from src.openpcdet.model import load_inference_model, run_inference
+from src.openpcdet.postprocess import filter_object_predictions
 from src.streaming.messages import (
     build_objects_3d_frame_message,
     parse_lidar_frame_message,
@@ -91,9 +91,9 @@ def main() -> None:
                 if config.point_stride > 1:
                     points4 = points4[:: config.point_stride]
 
-                pred_dict = run_inference(dataset, model, points4, frame_id)
-                prediction = filter_object_predictions(
-                    pred_dict=pred_dict,
+                raw_objects_3d = run_inference(dataset, model, points4, frame_id)
+                objects_3d = filter_object_predictions(
+                    objects_3d=raw_objects_3d,
                     class_names=cfg.CLASS_NAMES,
                     allowed_classes=NUSCENES_LIKE_CLASSES,
                     score_thresh=config.score_thresh,
@@ -106,9 +106,7 @@ def main() -> None:
             t2 = time.time()
             out_message = build_objects_3d_frame_message(
                 lidar_message=message,
-                pred_boxes=prediction.boxes,
-                pred_scores=prediction.scores,
-                pred_names=prediction.names,
+                objects_3d=objects_3d,
             )
             pub_socket.send_pyobj(out_message)
 
@@ -125,7 +123,7 @@ def main() -> None:
                 logger.info(
                     "frame=%s | preds=%s | infer=%.1f ms | total=%.1f ms | fps=%.2f",
                     frame_id,
-                    len(prediction.names),
+                    len(objects_3d),
                     infer_ms,
                     total_ms,
                     fps,

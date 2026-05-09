@@ -1,19 +1,9 @@
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional
 
 import numpy as np
 
-EMPTY_LANES_3D: Dict[str, Any] = {
-    "strips": [],
-    "scores": [],
-    "names": [],
-}
-
-
-def ensure_boxes7(boxes: Any, *, name: str) -> np.ndarray:
-    boxes_array = np.asarray(boxes, dtype=np.float32)
-    if boxes_array.ndim != 2 or boxes_array.shape[1] < 7:
-        raise ValueError(f"Invalid {name} shape: {boxes_array.shape}")
-    return boxes_array[:, :7]
+from src.lanedet.prediction import Lanes3DPrediction
+from src.openpcdet.prediction import Objects3DPrediction
 
 
 def empty_gt_payload() -> Dict[str, Any]:
@@ -186,62 +176,54 @@ def parse_gt_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
 def build_objects_3d_frame_message(
     *,
     lidar_message: Mapping[str, Any],
-    pred_boxes: np.ndarray,
-    pred_scores: np.ndarray,
-    pred_names: Sequence[str],
+    objects_3d: Objects3DPrediction,
 ) -> Dict[str, Any]:
     return {
         "schema": "objects_3d_frame",
         "frame": int(lidar_message.get("frame", -1)),
         "timestamp": float(lidar_message.get("timestamp", -1.0)),
-        "objects_3d": {
-            "boxes": np.asarray(pred_boxes, dtype=np.float32),
-            "scores": np.asarray(pred_scores, dtype=np.float32),
-            "names": list(pred_names),
-        },
+        "objects_3d": objects_3d.to_payload(),
     }
 
 
 def build_lanes_3d_frame_message(
     *,
     camera_message: Mapping[str, Any],
-    lanes_3d: Mapping[str, Any],
+    lanes_3d: Lanes3DPrediction,
 ) -> Dict[str, Any]:
     return {
         "schema": "lanes_3d_frame",
         "frame": int(camera_message.get("frame", -1)),
         "timestamp": float(camera_message.get("timestamp", -1.0)),
-        "lanes_3d": dict(lanes_3d),
+        "lanes_3d": lanes_3d.to_payload(),
     }
 
 
 def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
-    objects_3d = message.get("objects_3d", {})
-    if not isinstance(objects_3d, Mapping):
-        objects_3d = {}
+    payload = message.get("objects_3d", {})
+    if not isinstance(payload, Mapping):
+        payload = {}
 
-    pred_boxes = ensure_boxes7(objects_3d.get("boxes", np.zeros((0, 7))), name="objects_3d boxes")
-
-    pred_scores = np.asarray(objects_3d.get("scores", np.zeros((0,))), dtype=np.float32)
-    pred_names = [str(name) for name in objects_3d.get("names", [])]
+    objects_3d = Objects3DPrediction.from_payload(payload)
 
     return {
         "schema": str(message.get("schema", "objects_3d_frame")),
         "frame": int(message.get("frame", -1)),
         "timestamp": float(message.get("timestamp", -1.0)),
-        "pred_boxes": pred_boxes,
-        "pred_scores": pred_scores,
-        "pred_names": pred_names,
+        "objects_3d": objects_3d,
     }
 
 
 def parse_lanes_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
-    lanes_3d = message.get("lanes_3d", EMPTY_LANES_3D)
-    if not isinstance(lanes_3d, Mapping):
-        lanes_3d = EMPTY_LANES_3D
+    payload = message.get("lanes_3d", {})
+    if not isinstance(payload, Mapping):
+        payload = {}
+
+    lanes_3d = Lanes3DPrediction.from_payload(payload)
+
     return {
         "schema": str(message.get("schema", "lanes_3d_frame")),
         "frame": int(message.get("frame", -1)),
         "timestamp": float(message.get("timestamp", -1.0)),
-        "lanes_3d": dict(lanes_3d),
+        "lanes_3d": lanes_3d,
     }

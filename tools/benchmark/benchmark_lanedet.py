@@ -12,7 +12,7 @@ from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.frame_payloads import camera_frame_shape, state_frame_from_meta
 from src.benchmark.predictions import save_lanes_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_camera_frame
-from src.lanedet.detector import LaneDetector
+from src.lanedet.model import LaneDetector
 from src.lanedet.projection import lanes_2d_to_lanes_3d
 
 

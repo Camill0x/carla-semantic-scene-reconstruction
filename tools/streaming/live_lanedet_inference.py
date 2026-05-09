@@ -8,7 +8,7 @@ import numpy as np
 import zmq
 
 from src.common.runtime_config import build_live_lanedet_inference_config
-from src.lanedet.detector import LaneDetector
+from src.lanedet.model import LaneDetector
 from src.lanedet.projection import lanes_2d_to_lanes_3d
 from src.streaming.messages import (
     build_lanes_3d_frame_message,
@@ -120,7 +120,7 @@ def main() -> None:
             t2 = time.time()
             out_message = build_lanes_3d_frame_message(
                 camera_message=latest_camera,
-                lanes_3d=lanes_3d.to_payload(),
+                lanes_3d=lanes_3d,
             )
             pub_socket.send_pyobj(out_message)
 

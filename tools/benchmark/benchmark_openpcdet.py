@@ -12,8 +12,8 @@ from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.predictions import save_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_points_frame
 from src.common.constants import NUSCENES_LIKE_CLASSES
-from src.openpcdet.model import load_inference_model
-from src.openpcdet.predict import filter_object_predictions, run_inference
+from src.openpcdet.model import load_inference_model, run_inference
+from src.openpcdet.postprocess import filter_object_predictions
 
 
 def parse_args():
@@ -85,10 +85,10 @@ def main() -> None:
 
         frame_id = int(frame.meta.get("frame_index", index))
 
-        pred_dict, model_forward_s = run_inference(dataset, model, points, frame_id, return_forward_time=True)
+        raw_objects_3d, model_forward_s = run_inference(dataset, model, points, frame_id, return_forward_time=True)
 
-        prediction = filter_object_predictions(
-            pred_dict=pred_dict,
+        objects_3d = filter_object_predictions(
+            objects_3d=raw_objects_3d,
             class_names=cfg.CLASS_NAMES,
             allowed_classes=NUSCENES_LIKE_CLASSES,
             score_thresh=args.score_thresh,
@@ -99,9 +99,7 @@ def main() -> None:
         if args.save_pred:
             save_objects_prediction(
                 predictions_dir / f"{frame_dir.name}.npz",
-                boxes=prediction.boxes,
-                scores=prediction.scores,
-                names=prediction.names,
+                objects_3d=objects_3d,
             )
 
         item = {
@@ -110,7 +108,7 @@ def main() -> None:
             "model_forward_ms": 1000.0 * model_forward_s,
             "runtime_ms": 1000.0 * (t1 - t0),
             "num_points": int(points.shape[0]),
-            "num_predictions": len(prediction.names),
+            "num_predictions": len(objects_3d),
         }
         metrics.append(item)
 

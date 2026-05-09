@@ -4,26 +4,34 @@ from typing import Any, Dict
 
 import numpy as np
 
-from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
+from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
+from src.openpcdet.prediction import Objects3DPrediction
 
 
-def save_objects_prediction(path: Path, *, boxes: np.ndarray, scores: np.ndarray, names) -> None:
+def save_objects_prediction(path: Path, objects_3d: Objects3DPrediction) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
         path,
-        boxes=np.asarray(boxes, dtype=np.float32),
-        scores=np.asarray(scores, dtype=np.float32),
-        names=np.asarray(list(names), dtype=str),
+        boxes=np.asarray(objects_3d.boxes, dtype=np.float32),
+        scores=np.asarray(objects_3d.scores, dtype=np.float32),
+        labels=np.asarray(objects_3d.labels, dtype=np.int64),
+        names=np.asarray(objects_3d.names, dtype=str),
     )
 
 
-def load_objects_prediction(path: Path) -> Dict[str, Any]:
+def load_objects_prediction(path: Path) -> Objects3DPrediction:
     with np.load(path, allow_pickle=False) as data:
-        return {
-            "pred_boxes": np.asarray(data["boxes"], dtype=np.float32),
-            "pred_scores": np.asarray(data["scores"], dtype=np.float32),
-            "pred_names": [str(name) for name in data["names"].tolist()],
+        payload = {
+            "boxes": np.asarray(data["boxes"], dtype=np.float32),
+            "scores": np.asarray(data["scores"], dtype=np.float32),
+            "labels": (
+                np.asarray(data["labels"], dtype=np.int64)
+                if "labels" in data
+                else np.zeros((len(data["names"]),), dtype=np.int64)
+            ),
+            "names": [str(name) for name in data["names"].tolist()],
         }
+    return Objects3DPrediction.from_payload(payload)
 
 
 def _jsonify(value):

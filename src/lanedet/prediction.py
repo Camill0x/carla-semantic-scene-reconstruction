@@ -59,14 +59,13 @@ class Lanes3DPrediction:
     strips: List[np.ndarray]
     scores: np.ndarray
     names: List[str]
-    projection: str
 
     def __len__(self) -> int:
         return len(self.strips)
 
     @classmethod
-    def empty(cls, *, projection: str) -> "Lanes3DPrediction":
-        return cls(strips=[], scores=np.zeros((0,), dtype=np.float32), names=[], projection=projection)
+    def empty(cls) -> "Lanes3DPrediction":
+        return cls(strips=[], scores=np.zeros((0,), dtype=np.float32), names=[])
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "Lanes3DPrediction":
@@ -79,7 +78,6 @@ class Lanes3DPrediction:
             strips=strips,
             scores=np.asarray(payload.get("scores", []), dtype=np.float32),
             names=[str(name) for name in payload.get("names", [])],
-            projection=str(payload.get("projection", "unknown")),
         )
 
     def to_payload(self) -> Dict[str, Any]:
@@ -87,5 +85,4 @@ class Lanes3DPrediction:
             "strips": self.strips,
             "scores": self.scores,
             "names": self.names,
-            "projection": self.projection,
         }

@@ -2,7 +2,7 @@ from typing import Mapping
 
 import numpy as np
 
-from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
+from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 
 
 def transform_dict_to_matrix(transform: Mapping[str, object]) -> np.ndarray:
@@ -125,19 +125,19 @@ def lanes_2d_to_lanes_3d(
     state_camera = state_frame.get("camera_front") or {}
     lidar = state_frame.get("lidar") or {}
     if not isinstance(camera, Mapping) or not isinstance(state_camera, Mapping) or not isinstance(lidar, Mapping):
-        return Lanes3DPrediction.empty(projection="missing_sensor_state")
+        return Lanes3DPrediction.empty()
 
     camera_transform = state_camera.get("transform")
     lidar_transform = lidar.get("transform")
     if camera_transform is None or lidar_transform is None:
-        return Lanes3DPrediction.empty(projection="missing_transforms")
+        return Lanes3DPrediction.empty()
 
     image_width = int(camera.get("width", 0))
     image_height = int(camera.get("height", 0))
     camera_fov = float(state_camera.get("fov", 0.0))
     ground_z = float(lidar.get("ground_z", -1.8))
     if image_width <= 0 or image_height <= 0 or camera_fov <= 0.0:
-        return Lanes3DPrediction.empty(projection="missing_camera_intrinsics")
+        return Lanes3DPrediction.empty()
 
     strips = []
     scores = []
@@ -169,5 +169,4 @@ def lanes_2d_to_lanes_3d(
         strips=strips,
         scores=np.asarray(scores, dtype=np.float32),
         names=names,
-        projection="flat_ground_lidar",
     )

@@ -4,6 +4,7 @@ import numpy as np
 
 import rerun as rr
 from rerun.datatypes import Angle, RotationAxisAngle
+from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.colors import EGO_COLOR, GT_COLOR, prediction_colors
 
 EMPTY_POINTS = np.zeros((0, 3), dtype=np.float32)
@@ -127,22 +128,20 @@ def log_ego_box(
     )
 
 
-def log_prediction_boxes(
-    pred_boxes: np.ndarray,
-    pred_scores: np.ndarray,
-    pred_names: Sequence[str],
+def log_prediction_objects_3d(
+    objects_3d: Objects3DPrediction,
     *,
     line_radius: float,
 ) -> None:
-    centers, half_sizes, rotations = boxes_to_rerun(pred_boxes)
+    centers, half_sizes, rotations = boxes_to_rerun(objects_3d.boxes)
     rr.log(
         "world/predictions",
         rr.Boxes3D(
             centers=centers,
             half_sizes=half_sizes,
             rotation_axis_angles=rotations,
-            colors=prediction_colors(pred_names),
-            labels=prediction_labels(pred_names, pred_scores),
+            colors=prediction_colors(objects_3d.names),
+            labels=prediction_labels(objects_3d.names, objects_3d.scores),
             show_labels=True,
             radii=line_radius,
             fill_mode="solid",

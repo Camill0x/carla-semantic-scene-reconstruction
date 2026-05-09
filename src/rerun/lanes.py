@@ -3,7 +3,7 @@ from typing import List, Sequence
 import numpy as np
 
 import rerun as rr
-from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
+from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 from src.rerun.colors import lane_color
 
 

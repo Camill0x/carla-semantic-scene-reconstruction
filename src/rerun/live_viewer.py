@@ -4,13 +4,15 @@ import numpy as np
 
 import rerun as rr
 from src.common.config import LiveVisualizerConfig
+from src.lanedet.prediction import Lanes3DPrediction
+from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.blueprints import make_live_blueprint
 from src.rerun.lanes import log_prediction_lanes_3d
 from src.rerun.scene3d import (
     log_ego_box,
     log_gt_boxes,
     log_points,
-    log_prediction_boxes,
+    log_prediction_objects_3d,
 )
 from src.rerun.text import log_live_status
 
@@ -89,15 +91,9 @@ class LiveRenderState:
         ego_box = np.asarray(ego_payload.get("box", np.zeros((0,), dtype=np.float32)), dtype=np.float32)
         gt_boxes = gt_for_frame["gt_boxes"] if gt_for_frame is not None else np.zeros((0, 7), dtype=np.float32)
         gt_names = gt_for_frame["gt_names"] if gt_for_frame is not None else []
-        pred_boxes = (
-            objects_for_frame["pred_boxes"] if objects_for_frame is not None else np.zeros((0, 7), dtype=np.float32)
-        )
-        pred_scores = (
-            objects_for_frame["pred_scores"] if objects_for_frame is not None else np.zeros((0,), dtype=np.float32)
-        )
-        pred_names = objects_for_frame["pred_names"] if objects_for_frame is not None else []
-        lanes_3d = lanes_for_frame["lanes_3d"] if lanes_for_frame is not None else {"strips": []}
-        num_lanes = len(lanes_3d.get("strips", [])) if isinstance(lanes_3d, dict) else 0
+        objects_3d = objects_for_frame["objects_3d"] if objects_for_frame is not None else Objects3DPrediction.empty()
+        lanes_3d = lanes_for_frame["lanes_3d"] if lanes_for_frame is not None else Lanes3DPrediction.empty()
+        num_lanes = len(lanes_3d)
 
         rr.set_time("frame", sequence=frame)
 
@@ -109,12 +105,7 @@ class LiveRenderState:
             visible=gt_boxes.shape[0] > 0,
         )
         log_ego_box(ego_box, line_radius=config.gt_line_radius)
-        log_prediction_boxes(
-            pred_boxes,
-            pred_scores,
-            pred_names,
-            line_radius=config.pred_line_radius,
-        )
+        log_prediction_objects_3d(objects_3d, line_radius=config.pred_line_radius)
         log_prediction_lanes_3d(
             lanes_3d,
             line_radius=config.pred_line_radius,
@@ -123,7 +114,7 @@ class LiveRenderState:
             frame=frame,
             num_points=int(points.shape[0]),
             num_gt=int(gt_boxes.shape[0]),
-            num_pred=int(pred_boxes.shape[0]),
+            num_pred=len(objects_3d),
             num_lanes=num_lanes,
             objects_frame=objects_frame,
             lanes_frame=lanes_frame,

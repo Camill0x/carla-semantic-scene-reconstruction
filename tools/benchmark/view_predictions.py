@@ -4,15 +4,15 @@ import argparse
 import time
 from pathlib import Path
 
-import numpy as np
 import rerun as rr
 
 from src.benchmark.predictions import load_lanes_prediction, load_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
 from src.common.runtime_config import build_dataset_viewer_config, build_live_visualizer_config
+from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
 from src.rerun.lanes import log_prediction_lanes_2d, log_prediction_lanes_3d
-from src.rerun.scene3d import log_prediction_boxes
+from src.rerun.scene3d import log_prediction_objects_3d
 from src.rerun.text import log_legend
 
 
@@ -62,20 +62,10 @@ def main() -> None:
 
         objects_path = args.objects / f"{frame_dir.name}.npz" if args.objects else None
         if objects_path and objects_path.exists():
-            objects = load_objects_prediction(objects_path)
-            log_prediction_boxes(
-                objects["pred_boxes"],
-                objects["pred_scores"],
-                objects["pred_names"],
-                line_radius=live_config.pred_line_radius,
-            )
+            objects_3d = load_objects_prediction(objects_path)
+            log_prediction_objects_3d(objects_3d, line_radius=live_config.pred_line_radius)
         else:
-            log_prediction_boxes(
-                np.zeros((0, 7), dtype=np.float32),
-                np.zeros((0,), dtype=np.float32),
-                [],
-                line_radius=live_config.pred_line_radius,
-            )
+            log_prediction_objects_3d(Objects3DPrediction.empty(), line_radius=live_config.pred_line_radius)
 
         lanes_path = args.lanes / f"{frame_dir.name}.json" if args.lanes else None
         if lanes_path and lanes_path.exists():

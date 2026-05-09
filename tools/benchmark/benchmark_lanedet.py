@@ -9,11 +9,11 @@ from tqdm import tqdm
 
 from src.benchmark.artifacts import build_lanedet_meta, create_benchmark_output_dir, write_meta_json
 from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
-from src.benchmark.offline_frames import camera_frame_shape, state_frame_from_meta
+from src.benchmark.frame_payloads import camera_frame_shape, state_frame_from_meta
 from src.benchmark.predictions import save_lanes_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_camera_frame
 from src.lanedet.detector import LaneDetector
-from src.lanedet.projection import lanes_2d_to_lanes_3d_payload
+from src.lanedet.projection import lanes_2d_to_lanes_3d
 
 
 def parse_args():
@@ -79,7 +79,7 @@ def main() -> None:
 
         lanes_2d, model_forward_s = detector.infer_lanes_2d(image_bgr, return_forward_time=True)
 
-        lanes_3d = lanes_2d_to_lanes_3d_payload(
+        lanes_3d = lanes_2d_to_lanes_3d(
             lanes_2d,
             camera_frame=camera_frame_shape(frame.image_rgb),
             state_frame=state_frame_from_meta(frame.meta),
@@ -89,10 +89,14 @@ def main() -> None:
         t1 = now_synchronized()
 
         if args.save_pred:
-            save_lanes_prediction(predictions_dir / f"{frame_dir.name}.json", lanes_3d)
+            save_lanes_prediction(
+                predictions_dir / f"{frame_dir.name}.json",
+                lanes_2d=lanes_2d,
+                lanes_3d=lanes_3d,
+            )
 
         frame_id = int(frame.meta.get("frame_index", index))
-        num_lanes = len(lanes_3d.get("strips", []))
+        num_lanes = len(lanes_3d)
         item = {
             "frame": frame_id,
             "warmup": bool(index < args.warmup),

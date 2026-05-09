@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Dict
 
 import numpy as np
+
+from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
 
 
 def save_objects_prediction(path: Path, *, boxes: np.ndarray, scores: np.ndarray, names) -> None:
@@ -36,19 +38,33 @@ def _jsonify(value):
     return value
 
 
-def save_lanes_prediction(path: Path, lanes_3d: Mapping[str, Any]) -> None:
+def save_lanes_prediction(
+    path: Path,
+    *,
+    lanes_2d: Lanes2DPrediction,
+    lanes_3d: Lanes3DPrediction,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "lanes_2d": lanes_2d.to_payload(),
+        "lanes_3d": lanes_3d.to_payload(),
+    }
     with path.open("w", encoding="utf-8") as handle:
-        json.dump(_jsonify(dict(lanes_3d)), handle, indent=2)
+        json.dump(_jsonify(payload), handle, indent=2)
 
 
 def load_lanes_prediction(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
-    strips = [np.asarray(strip, dtype=np.float32) for strip in payload.get("strips", [])]
+
+    if "lanes_2d" in payload or "lanes_3d" in payload:
+        lanes_2d = payload.get("lanes_2d", {})
+        lanes_3d = payload.get("lanes_3d", {})
+    else:
+        lanes_2d = {}
+        lanes_3d = payload
+
     return {
-        **payload,
-        "strips": strips,
-        "scores": [float(score) for score in payload.get("scores", [])],
-        "names": [str(name) for name in payload.get("names", [])],
+        "lanes_2d": Lanes2DPrediction.from_payload(lanes_2d),
+        "lanes_3d": Lanes3DPrediction.from_payload(lanes_3d),
     }

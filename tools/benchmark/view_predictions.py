@@ -11,7 +11,7 @@ from src.benchmark.predictions import load_lanes_prediction, load_objects_predic
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
 from src.common.runtime_config import build_dataset_viewer_config, build_live_visualizer_config
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
-from src.rerun.lanes import log_prediction_lanes_3d
+from src.rerun.lanes import log_prediction_lanes_2d, log_prediction_lanes_3d
 from src.rerun.scene3d import log_prediction_boxes
 from src.rerun.text import log_legend
 
@@ -79,9 +79,11 @@ def main() -> None:
 
         lanes_path = args.lanes / f"{frame_dir.name}.json" if args.lanes else None
         if lanes_path and lanes_path.exists():
-            lanes_3d = load_lanes_prediction(lanes_path)
-            log_prediction_lanes_3d(lanes_3d, line_radius=live_config.pred_line_radius)
+            lanes_prediction = load_lanes_prediction(lanes_path)
+            log_prediction_lanes_2d(lanes_prediction["lanes_2d"], line_thickness=dataset_config.lane_line_thickness)
+            log_prediction_lanes_3d(lanes_prediction["lanes_3d"], line_radius=live_config.pred_line_radius)
         else:
+            log_prediction_lanes_2d({"strips": []}, line_thickness=dataset_config.lane_line_thickness)
             log_prediction_lanes_3d({"strips": []}, line_radius=live_config.pred_line_radius)
 
         time.sleep(frame_delay_s)

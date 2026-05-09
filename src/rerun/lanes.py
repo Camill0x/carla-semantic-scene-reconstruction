@@ -3,6 +3,7 @@ from typing import List, Sequence
 import numpy as np
 
 import rerun as rr
+from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
 from src.rerun.colors import lane_color
 
 
@@ -97,10 +98,58 @@ def log_lane_annotations_3d(
     )
 
 
-def log_prediction_lanes_3d(lanes_3d: dict, *, line_radius: float) -> None:
-    strips_payload = lanes_3d.get("strips", []) if isinstance(lanes_3d, dict) else []
-    scores = lanes_3d.get("scores", []) if isinstance(lanes_3d, dict) else []
-    names = lanes_3d.get("names", []) if isinstance(lanes_3d, dict) else []
+def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thickness: float) -> None:
+    if isinstance(lanes_2d, Lanes2DPrediction):
+        strips_payload = lanes_2d.strips
+        scores = lanes_2d.scores
+        names = lanes_2d.names
+    else:
+        strips_payload = lanes_2d.get("strips", []) if isinstance(lanes_2d, dict) else []
+        scores = lanes_2d.get("scores", []) if isinstance(lanes_2d, dict) else []
+        names = lanes_2d.get("names", []) if isinstance(lanes_2d, dict) else []
+
+    strips = []
+    colors = []
+    labels = []
+
+    for index, strip in enumerate(strips_payload):
+        points = np.asarray(strip, dtype=np.float32)
+        if points.ndim != 2 or points.shape[0] < 2 or points.shape[1] != 2:
+            continue
+
+        name = str(names[index]) if index < len(names) else f"lane {index}"
+        score = scores[index] if index < len(scores) else None
+        label = f"{name}  {float(score):.2f}" if score is not None else name
+
+        strips.append(points)
+        colors.append((255, 255, 255, 235))
+        labels.append(label)
+
+    if not strips:
+        rr.log("camera/front/predicted_lanes", rr.LineStrips2D(strips=[]))
+        return
+
+    rr.log(
+        "camera/front/predicted_lanes",
+        rr.LineStrips2D(
+            strips=strips,
+            colors=colors,
+            radii=line_thickness,
+            labels=labels,
+            show_labels=False,
+        ),
+    )
+
+
+def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | dict, *, line_radius: float) -> None:
+    if isinstance(lanes_3d, Lanes3DPrediction):
+        strips_payload = lanes_3d.strips
+        scores = lanes_3d.scores
+        names = lanes_3d.names
+    else:
+        strips_payload = lanes_3d.get("strips", []) if isinstance(lanes_3d, dict) else []
+        scores = lanes_3d.get("scores", []) if isinstance(lanes_3d, dict) else []
+        names = lanes_3d.get("names", []) if isinstance(lanes_3d, dict) else []
 
     strips = []
     colors = []

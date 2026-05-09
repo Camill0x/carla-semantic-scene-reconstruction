@@ -1,6 +1,8 @@
-from typing import Dict, List, Mapping, Tuple
+from typing import Mapping
 
 import numpy as np
+
+from src.lanedet.predict import Lanes2DPrediction, Lanes3DPrediction
 
 
 def transform_dict_to_matrix(transform: Mapping[str, object]) -> np.ndarray:
@@ -112,30 +114,30 @@ def image_points_to_lidar_ground(
     return points_lidar.astype(np.float32)
 
 
-def lanes_2d_to_lanes_3d_payload(
-    lanes_2d: List[Tuple[np.ndarray, float]],
+def lanes_2d_to_lanes_3d(
+    lanes_2d: Lanes2DPrediction,
     *,
     camera_frame: Mapping[str, object],
     state_frame: Mapping[str, object],
     score_thresh: float,
-) -> Dict[str, object]:
+) -> Lanes3DPrediction:
     camera = camera_frame.get("camera_front") or {}
     state_camera = state_frame.get("camera_front") or {}
     lidar = state_frame.get("lidar") or {}
     if not isinstance(camera, Mapping) or not isinstance(state_camera, Mapping) or not isinstance(lidar, Mapping):
-        return {"strips": [], "scores": [], "names": [], "projection": "missing_sensor_state"}
+        return Lanes3DPrediction.empty(projection="missing_sensor_state")
 
     camera_transform = state_camera.get("transform")
     lidar_transform = lidar.get("transform")
     if camera_transform is None or lidar_transform is None:
-        return {"strips": [], "scores": [], "names": [], "projection": "missing_transforms"}
+        return Lanes3DPrediction.empty(projection="missing_transforms")
 
     image_width = int(camera.get("width", 0))
     image_height = int(camera.get("height", 0))
     camera_fov = float(state_camera.get("fov", 0.0))
     ground_z = float(lidar.get("ground_z", -1.8))
     if image_width <= 0 or image_height <= 0 or camera_fov <= 0.0:
-        return {"strips": [], "scores": [], "names": [], "projection": "missing_camera_intrinsics"}
+        return Lanes3DPrediction.empty(projection="missing_camera_intrinsics")
 
     strips = []
     scores = []
@@ -144,7 +146,7 @@ def lanes_2d_to_lanes_3d_payload(
     camera_to_world = transform_dict_to_matrix(camera_transform)
     world_to_lidar = world_to_lidar_matrix(lidar_transform)
 
-    for index, (lane_points_2d, score) in enumerate(lanes_2d):
+    for index, (lane_points_2d, score) in enumerate(zip(lanes_2d.strips, lanes_2d.scores)):
         if score < score_thresh:
             continue
 
@@ -161,11 +163,11 @@ def lanes_2d_to_lanes_3d_payload(
             continue
         strips.append(np.asarray(lane_points_3d, dtype=np.float32))
         scores.append(float(score))
-        names.append(f"lane_{index}")
+        names.append(lanes_2d.names[index])
 
-    return {
-        "strips": strips,
-        "scores": scores,
-        "names": names,
-        "projection": "flat_ground_lidar",
-    }
+    return Lanes3DPrediction(
+        strips=strips,
+        scores=np.asarray(scores, dtype=np.float32),
+        names=names,
+        projection="flat_ground_lidar",
+    )

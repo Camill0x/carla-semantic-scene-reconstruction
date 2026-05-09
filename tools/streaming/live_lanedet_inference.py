@@ -9,7 +9,7 @@ import zmq
 
 from src.common.runtime_config import build_live_lanedet_inference_config
 from src.lanedet.detector import LaneDetector
-from src.lanedet.projection import lanes_2d_to_lanes_3d_payload
+from src.lanedet.projection import lanes_2d_to_lanes_3d
 from src.streaming.messages import (
     build_lanes_3d_frame_message,
     parse_camera_frame_message,
@@ -106,7 +106,7 @@ def main() -> None:
             t0 = time.time()
             try:
                 lanes_2d = detector.infer_lanes_2d(image_bgr)
-                lanes_3d = lanes_2d_to_lanes_3d_payload(
+                lanes_3d = lanes_2d_to_lanes_3d(
                     lanes_2d,
                     camera_frame=latest_camera,
                     state_frame=latest_state,
@@ -120,7 +120,7 @@ def main() -> None:
             t2 = time.time()
             out_message = build_lanes_3d_frame_message(
                 camera_message=latest_camera,
-                lanes_3d=lanes_3d,
+                lanes_3d=lanes_3d.to_payload(),
             )
             pub_socket.send_pyobj(out_message)
 
@@ -135,7 +135,7 @@ def main() -> None:
                 total_ms = 1000.0 * float(np.mean(total_times))
                 fps = processed / (now - last_log_t)
                 print(
-                    f"[lanedet] frame={frame_id} | lanes={len(lanes_3d.get('strips', []))} | "
+                    f"[lanedet] frame={frame_id} | lanes={len(lanes_3d)} | "
                     f"infer={infer_ms:.1f} ms | total={total_ms:.1f} ms | fps={fps:.2f}"
                 )
                 infer_times = []

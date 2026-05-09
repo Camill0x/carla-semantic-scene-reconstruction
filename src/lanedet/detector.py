@@ -1,6 +1,5 @@
 from pathlib import Path
 import time
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -9,6 +8,8 @@ from lanedet.datasets.process import Process
 from lanedet.models.registry import build_net
 from lanedet.utils.config import Config
 from lanedet.utils.net_utils import load_network
+
+from src.lanedet.predict import Lanes2DPrediction
 
 
 def _to_device(data: dict, device: torch.device) -> dict:
@@ -78,7 +79,8 @@ class LaneDetector:
             score = float(lane.metadata.get("conf", 1.0)) if hasattr(lane, "metadata") else 1.0
             out.append((points, score))
 
+        lanes_2d = Lanes2DPrediction.from_detector_output(out)
         if return_forward_time:
-            return out, forward_time_s
+            return lanes_2d, forward_time_s
 
-        return out
+        return lanes_2d

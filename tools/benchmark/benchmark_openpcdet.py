@@ -66,20 +66,18 @@ def main() -> None:
     logger.info("frames: %d", len(frame_dirs))
     logger.info("warmup: %d", args.warmup)
     logger.info("point_stride: %d", args.point_stride)
-    logger.info("score_thresh: %.3f", args.score_thresh)
+    logger.info("score_thresh: %.2f", args.score_thresh)
     logger.info("output_dir: %s", output_dir)
 
     metrics = []
     first_frame_meta = None
     for index, frame_dir in enumerate(tqdm(frame_dirs, desc="Benchmarking OpenPCDet", unit="frame")):
-        t0 = time.perf_counter()
-
         frame = load_points_frame(frame_dir)
-
-        t1 = time.perf_counter()
 
         if first_frame_meta is None:
             first_frame_meta = frame.meta
+
+        t0 = now_synchronized()
 
         points = np.asarray(frame.points, dtype=np.float32)
         if args.point_stride > 1:
@@ -87,11 +85,7 @@ def main() -> None:
 
         frame_id = int(frame.meta.get("frame_index", index))
 
-        t2 = now_synchronized()
-
-        pred_dict = run_inference(dataset, model, points, frame_id)
-
-        t3 = now_synchronized()
+        pred_dict, model_forward_s = run_inference(dataset, model, points, frame_id, return_forward_time=True)
 
         prediction = filter_object_predictions(
             pred_dict=pred_dict,
@@ -100,7 +94,7 @@ def main() -> None:
             score_thresh=args.score_thresh,
         )
 
-        t4 = time.perf_counter()
+        t1 = now_synchronized()
 
         if args.save_pred:
             save_objects_prediction(
@@ -113,11 +107,8 @@ def main() -> None:
         item = {
             "frame": frame_id,
             "warmup": bool(index < args.warmup),
-            "io_ms": 1000.0 * (t1 - t0),
-            "preprocess_ms": 0.0,
-            "infer_ms": 1000.0 * (t3 - t2),
-            "postprocess_ms": 1000.0 * (t4 - t3),
-            "total_ms": 1000.0 * (t4 - t2),
+            "model_forward_ms": 1000.0 * model_forward_s,
+            "runtime_ms": 1000.0 * (t1 - t0),
             "num_points": int(points.shape[0]),
             "num_predictions": len(prediction.names),
         }
@@ -142,7 +133,8 @@ def main() -> None:
             created_at=output_dir.name,
         ),
     )
-    logger.info("inference FPS: %.2f", summary.get("inference_fps", 0.0))
+    logger.info("model FPS: %.2f", summary.get("model_fps", 0.0))
+    logger.info("runtime FPS: %.2f", summary.get("runtime_fps", 0.0))
     logger.info("results saved to: %s", output_dir)
 
 

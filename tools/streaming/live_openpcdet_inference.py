@@ -42,7 +42,7 @@ def main() -> None:
     logger.info("=== OpenPCDet live inference ===")
     logger.info("ZMQ lidar IN: %s", config.lidar_in)
     logger.info("ZMQ OUT: %s", config.zmq_out)
-    logger.info("score_thresh: %.3f", config.score_thresh)
+    logger.info("score_thresh: %.2f", config.score_thresh)
     logger.info("point_stride: %d", config.point_stride)
 
     context = zmq.Context()

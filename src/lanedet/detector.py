@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 from typing import List, Tuple
 
 import numpy as np
@@ -15,6 +16,11 @@ def _to_device(data: dict, device: torch.device) -> dict:
     for key, value in data.items():
         out[key] = value.to(device) if isinstance(value, torch.Tensor) else value
     return out
+
+
+def _synchronize_cuda() -> None:
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
 
 class LaneDetector:
@@ -46,10 +52,21 @@ class LaneDetector:
         data.update({"img_path": "<live>", "ori_img": ori_img})
         return _to_device(data, self.device)
 
-    def infer_lanes_2d(self, image_bgr: np.ndarray) -> List[Tuple[np.ndarray, float]]:
+    def infer_lanes_2d(self, image_bgr: np.ndarray, *, return_forward_time: bool = False):
         data = self.preprocess(image_bgr)
+
+        if return_forward_time:
+            _synchronize_cuda()
+            t0 = time.perf_counter()
+
         with torch.no_grad():
             output = self.net(data)
+
+        if return_forward_time:
+            _synchronize_cuda()
+            forward_time_s = time.perf_counter() - t0
+
+        with torch.no_grad():
             lane_head = self.net.module if hasattr(self.net, "module") else self.net
             lanes = lane_head.get_lanes(output)[0]
 
@@ -60,4 +77,8 @@ class LaneDetector:
                 continue
             score = float(lane.metadata.get("conf", 1.0)) if hasattr(lane, "metadata") else 1.0
             out.append((points, score))
+
+        if return_forward_time:
+            return out, forward_time_s
+
         return out

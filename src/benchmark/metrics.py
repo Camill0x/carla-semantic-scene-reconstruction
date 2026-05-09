@@ -17,13 +17,14 @@ def summarize_frame_metrics(frame_metrics: List[Mapping[str, float]], *, model: 
     if not measured:
         return summary
 
-    keys = [key for key in measured[0] if key.endswith("_ms")]
-    for key in keys:
-        values = np.asarray([float(item[key]) for item in measured], dtype=np.float64)
-        summary[f"mean_{key}"] = float(mean(values))
-
-    infer_values = np.asarray([float(item["infer_ms"]) for item in measured], dtype=np.float64)
-    summary["inference_fps"] = float(1000.0 / max(float(mean(infer_values)), 1e-9))
+    if "model_forward_ms" in measured[0]:
+        model_values = np.asarray([float(item["model_forward_ms"]) for item in measured], dtype=np.float64)
+        summary["mean_model_forward_ms"] = float(mean(model_values))
+        summary["model_fps"] = float(1000.0 / max(float(mean(model_values)), 1e-9))
+    if "runtime_ms" in measured[0]:
+        runtime_values = np.asarray([float(item["runtime_ms"]) for item in measured], dtype=np.float64)
+        summary["mean_runtime_ms"] = float(mean(runtime_values))
+        summary["runtime_fps"] = float(1000.0 / max(float(mean(runtime_values)), 1e-9))
     if "num_points" in measured[0]:
         summary["mean_num_points_per_frame"] = int(round(mean(float(item["num_points"]) for item in measured)))
     return summary

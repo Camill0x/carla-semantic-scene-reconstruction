@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+import time
 from typing import Iterable, List, Sequence
 
 import numpy as np
 import torch
 from pcdet.models import load_data_to_gpu
+
+from src.openpcdet.runtime_dataset import RealtimeDataset
 
 
 @dataclass(frozen=True)
@@ -17,6 +20,11 @@ class Objects3DPrediction:
 def append_zero_timestamps(points4: np.ndarray) -> np.ndarray:
     timestamps = np.zeros((points4.shape[0], 1), dtype=np.float32)
     return np.hstack([points4.astype(np.float32), timestamps])
+
+
+def synchronize_cuda() -> None:
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
 
 def filter_object_predictions(
@@ -61,7 +69,14 @@ def filter_object_predictions(
     )
 
 
-def run_inference(dataset, model, points4: np.ndarray, frame_id: int):
+def run_inference(
+    dataset: RealtimeDataset,
+    model,
+    points4: np.ndarray,
+    frame_id: int,
+    *,
+    return_forward_time: bool = False,
+):
     points5 = append_zero_timestamps(points4)
     input_dict = {
         "points": points5,
@@ -71,7 +86,16 @@ def run_inference(dataset, model, points4: np.ndarray, frame_id: int):
     batch_dict = dataset.collate_batch([data_dict])
     load_data_to_gpu(batch_dict)
 
+    if return_forward_time:
+        synchronize_cuda()
+        t0 = time.perf_counter()
+
     with torch.no_grad():
         pred_dicts, _ = model.forward(batch_dict)
+
+    if return_forward_time:
+        synchronize_cuda()
+        forward_time_s = time.perf_counter() - t0
+        return pred_dicts[0], forward_time_s
 
     return pred_dicts[0]

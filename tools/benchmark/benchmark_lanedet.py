@@ -62,28 +62,22 @@ def main() -> None:
     print(f"[info] run_dir: {args.run_dir}")
     print(f"[info] frames: {len(frame_dirs)}")
     print(f"[info] warmup: {args.warmup}")
-    print(f"[info] score_thresh: {args.score_thresh:.3f}")
+    print(f"[info] score_thresh: {args.score_thresh:.2f}")
     print(f"[info] output_dir: {output_dir}")
 
     metrics = []
     first_frame_meta = None
     for index, frame_dir in enumerate(tqdm(frame_dirs, desc="Benchmarking LaneDet", unit="frame")):
-        t0 = time.perf_counter()
-
         frame = load_camera_frame(frame_dir)
-
-        t1 = time.perf_counter()
 
         if first_frame_meta is None:
             first_frame_meta = frame.meta
 
+        t0 = now_synchronized()
+
         image_bgr = np.ascontiguousarray(frame.image_rgb[:, :, ::-1])
 
-        t2 = now_synchronized()
-
-        lanes_2d = detector.infer_lanes_2d(image_bgr)
-
-        t3 = now_synchronized()
+        lanes_2d, model_forward_s = detector.infer_lanes_2d(image_bgr, return_forward_time=True)
 
         lanes_3d = lanes_2d_to_lanes_3d_payload(
             lanes_2d,
@@ -92,7 +86,7 @@ def main() -> None:
             score_thresh=args.score_thresh,
         )
 
-        t4 = time.perf_counter()
+        t1 = now_synchronized()
 
         if args.save_pred:
             save_lanes_prediction(predictions_dir / f"{frame_dir.name}.json", lanes_3d)
@@ -102,11 +96,8 @@ def main() -> None:
         item = {
             "frame": frame_id,
             "warmup": bool(index < args.warmup),
-            "io_ms": 1000.0 * (t1 - t0),
-            "preprocess_ms": 0.0,
-            "infer_ms": 1000.0 * (t3 - t2),
-            "postprocess_ms": 1000.0 * (t4 - t3),
-            "total_ms": 1000.0 * (t4 - t2),
+            "model_forward_ms": 1000.0 * model_forward_s,
+            "runtime_ms": 1000.0 * (t1 - t0),
             "image_height": int(frame.image_rgb.shape[0]),
             "image_width": int(frame.image_rgb.shape[1]),
             "num_predictions": num_lanes,
@@ -130,7 +121,8 @@ def main() -> None:
             created_at=output_dir.name,
         ),
     )
-    print(f"[info] inference FPS: {summary.get('inference_fps', 0.0):.2f}")
+    print(f"[info] model FPS: {summary.get('model_fps', 0.0):.2f}")
+    print(f"[info] runtime FPS: {summary.get('runtime_fps', 0.0):.2f}")
     print(f"[info] results saved to: {output_dir}")
 
 

@@ -55,7 +55,7 @@ def main() -> None:
     print(f"[info] ZMQ OUT: {config.zmq_out}")
     print(f"[info] config: {config.cfg_file}")
     print(f"[info] ckpt: {config.ckpt}")
-    print(f"[info] score_thresh: {config.score_thresh:.3f}")
+    print(f"[info] score_thresh: {config.score_thresh:.2f}")
 
     context = zmq.Context()
     camera_socket = create_latest_subscriber(context, config.camera_front_in)

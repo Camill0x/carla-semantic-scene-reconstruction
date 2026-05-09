@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from src.benchmark.artifacts import build_lanedet_meta, create_benchmark_output_dir, write_meta_json
 from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
-from src.benchmark.offline_frames import camera_frame_from_image_rgb_and_meta, state_frame_from_meta
+from src.benchmark.offline_frames import camera_frame_shape, state_frame_from_meta
 from src.benchmark.predictions import save_lanes_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_camera_frame
 from src.lanedet.detector import LaneDetector
@@ -81,7 +81,7 @@ def main() -> None:
 
         lanes_3d = lanes_2d_to_lanes_3d_payload(
             lanes_2d,
-            camera_frame=camera_frame_from_image_rgb_and_meta(frame.image_rgb, frame.meta),
+            camera_frame=camera_frame_shape(frame.image_rgb),
             state_frame=state_frame_from_meta(frame.meta),
             score_thresh=args.score_thresh,
         )

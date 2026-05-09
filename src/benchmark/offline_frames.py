@@ -2,8 +2,6 @@ from typing import Any, Dict, Mapping
 
 import numpy as np
 
-from src.streaming.messages import build_camera_frame_message
-
 
 def transform_from_meta(sensor_payload: Mapping[str, Any]) -> Dict[str, Any]:
     return {
@@ -38,10 +36,10 @@ def state_frame_from_meta(meta: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
-def camera_frame_from_image_rgb_and_meta(image_rgb: np.ndarray, meta: Mapping[str, Any]) -> Dict[str, Any]:
-    image_bgr = np.ascontiguousarray(image_rgb[:, :, ::-1])
-    return build_camera_frame_message(
-        frame=int(meta.get("frame_index", -1)),
-        timestamp=float(meta.get("timestamp", -1.0)),
-        camera_front_image=image_bgr,
-    )
+def camera_frame_shape(image_rgb: np.ndarray) -> Dict[str, Any]:
+    return {
+        "camera_front": {
+            "height": int(image_rgb.shape[0]),
+            "width": int(image_rgb.shape[1]),
+        },
+    }

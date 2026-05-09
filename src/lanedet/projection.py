@@ -1,4 +1,4 @@
-from typing import Dict, List, Mapping, Sequence, Tuple
+from typing import Dict, List, Mapping, Tuple
 
 import numpy as np
 
@@ -59,50 +59,57 @@ def transform_points(points_xyz: np.ndarray, transform_matrix: np.ndarray) -> np
     return out[:, :3]
 
 
-def world_points_to_lidar(points_world: np.ndarray, lidar_transform: Mapping[str, object]) -> np.ndarray:
-    lidar_to_world = transform_dict_to_matrix(lidar_transform)
-    world_to_lidar = np.linalg.inv(lidar_to_world)
-    points_lidar = transform_points(points_world, world_to_lidar)
-    points_lidar[:, 1] *= -1.0
-    return points_lidar.astype(np.float32)
+def world_to_lidar_matrix(lidar_transform: Mapping[str, object]) -> np.ndarray:
+    world_to_lidar = np.linalg.inv(transform_dict_to_matrix(lidar_transform))
+    flip_y = np.eye(4, dtype=np.float64)
+    flip_y[1, 1] = -1.0
+    return flip_y @ world_to_lidar
 
 
-def image_point_to_lidar_ground(
-    point_2d: Sequence[float],
+def image_points_to_lidar_ground(
+    points_2d: np.ndarray,
     *,
     intrinsics: np.ndarray,
-    camera_transform: Mapping[str, object],
-    lidar_transform: Mapping[str, object],
+    camera_to_world: np.ndarray,
+    world_to_lidar: np.ndarray,
     ground_z_lidar: float,
 ) -> np.ndarray:
-    u, v = float(point_2d[0]), float(point_2d[1])
-    x = (u - intrinsics[0, 2]) / intrinsics[0, 0]
-    y = (v - intrinsics[1, 2]) / intrinsics[1, 1]
+    if points_2d.size == 0:
+        return np.zeros((0, 3), dtype=np.float32)
 
-    # Conventional camera coordinates are right/down/forward. CARLA sensor
-    # coordinates are forward/right/up.
-    direction_camera = np.asarray([1.0, x, -y], dtype=np.float64)
-    direction_camera /= max(float(np.linalg.norm(direction_camera)), 1e-9)
+    points = np.asarray(points_2d, dtype=np.float64)
+    x = (points[:, 0] - intrinsics[0, 2]) / intrinsics[0, 0]
+    y = (points[:, 1] - intrinsics[1, 2]) / intrinsics[1, 1]
 
-    camera_to_world = transform_dict_to_matrix(camera_transform)
+    # Conventional camera coordinates are right/down/forward.
+    # CARLA sensor coordinates are forward/right/up.
+    directions_camera = np.stack(
+        [np.ones_like(x), x, -y],
+        axis=1,
+    )
+    norms = np.linalg.norm(directions_camera, axis=1, keepdims=True)
+    directions_camera /= np.maximum(norms, 1e-9)
+
     origin_world = camera_to_world[:3, 3]
-    direction_world = camera_to_world[:3, :3] @ direction_camera
-    direction_world /= max(float(np.linalg.norm(direction_world)), 1e-9)
+    directions_world = directions_camera @ camera_to_world[:3, :3].T
+    directions_world /= np.maximum(np.linalg.norm(directions_world, axis=1, keepdims=True), 1e-9)
 
-    origin_lidar = world_points_to_lidar(origin_world.reshape(1, 3), lidar_transform)[0].astype(np.float64)
-    point_on_ray_world = origin_world + direction_world
-    point_on_ray_lidar = world_points_to_lidar(point_on_ray_world.reshape(1, 3), lidar_transform)[0].astype(np.float64)
-    direction_lidar = point_on_ray_lidar - origin_lidar
+    origin_world_h = np.asarray([origin_world[0], origin_world[1], origin_world[2], 1.0], dtype=np.float64)
+    origin_lidar = (world_to_lidar @ origin_world_h)[:3]
 
-    if abs(float(direction_lidar[2])) < 1e-6:
-        return np.asarray([np.nan, np.nan, np.nan], dtype=np.float32)
+    points_on_ray_world = origin_world + directions_world
+    points_on_ray_lidar = transform_points(points_on_ray_world, world_to_lidar)
+    directions_lidar = points_on_ray_lidar - origin_lidar
 
-    t = (float(ground_z_lidar) - float(origin_lidar[2])) / float(direction_lidar[2])
-    if t <= 0.0:
-        return np.asarray([np.nan, np.nan, np.nan], dtype=np.float32)
+    dz = directions_lidar[:, 2]
+    valid = np.abs(dz) >= 1e-6
+    t = np.full(points.shape[0], np.nan, dtype=np.float64)
+    t[valid] = (float(ground_z_lidar) - float(origin_lidar[2])) / dz[valid]
+    valid &= t > 0.0
 
-    point_lidar = origin_lidar + t * direction_lidar
-    return point_lidar.astype(np.float32)
+    points_lidar = origin_lidar + t[:, None] * directions_lidar
+    points_lidar[~valid] = np.nan
+    return points_lidar.astype(np.float32)
 
 
 def lanes_2d_to_lanes_3d_payload(
@@ -134,22 +141,21 @@ def lanes_2d_to_lanes_3d_payload(
     scores = []
     names = []
     intrinsics = build_intrinsics(image_width, image_height, camera_fov)
+    camera_to_world = transform_dict_to_matrix(camera_transform)
+    world_to_lidar = world_to_lidar_matrix(lidar_transform)
 
     for index, (lane_points_2d, score) in enumerate(lanes_2d):
         if score < score_thresh:
             continue
 
-        lane_points_3d = []
-        for point_2d in lane_points_2d:
-            point_lidar = image_point_to_lidar_ground(
-                point_2d,
-                intrinsics=intrinsics,
-                camera_transform=camera_transform,
-                lidar_transform=lidar_transform,
-                ground_z_lidar=ground_z,
-            )
-            if np.isfinite(point_lidar).all():
-                lane_points_3d.append(point_lidar)
+        lane_points_3d = image_points_to_lidar_ground(
+            lane_points_2d,
+            intrinsics=intrinsics,
+            camera_to_world=camera_to_world,
+            world_to_lidar=world_to_lidar,
+            ground_z_lidar=ground_z,
+        )
+        lane_points_3d = lane_points_3d[np.isfinite(lane_points_3d).all(axis=1)]
 
         if len(lane_points_3d) < 2:
             continue

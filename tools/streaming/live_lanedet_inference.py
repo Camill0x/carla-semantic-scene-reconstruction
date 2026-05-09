@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import time
 from pathlib import Path
 
 import numpy as np
@@ -15,7 +14,7 @@ from src.streaming.messages import (
     parse_camera_frame_message,
     parse_state_frame_message,
 )
-from src.streaming.zmq_utils import create_latest_publisher, create_latest_subscriber
+from src.streaming.zmq_utils import create_latest_publisher, create_latest_subscriber, drain_latest
 
 
 def parse_args():
@@ -30,15 +29,6 @@ def parse_args():
         score_thresh=args.score_thresh,
     )
     return config
-
-
-def drain_latest(socket: zmq.Socket):
-    message = socket.recv_pyobj()
-    while True:
-        try:
-            message = socket.recv_pyobj(flags=zmq.NOBLOCK)
-        except zmq.Again:
-            return message
 
 
 def main() -> None:
@@ -69,10 +59,6 @@ def main() -> None:
     latest_camera = None
     latest_state = None
     last_frame = None
-    last_log_t = time.time()
-    infer_times = []
-    total_times = []
-    processed = 0
 
     try:
         while True:
@@ -103,7 +89,6 @@ def main() -> None:
 
             camera = latest_camera["camera_front"]
             image_bgr = np.asarray(camera["image"], dtype=np.uint8)
-            t0 = time.time()
             try:
                 lanes_2d = detector.infer_lanes_2d(image_bgr)
                 lanes_3d = lanes_2d_to_lanes_3d(
@@ -112,12 +97,10 @@ def main() -> None:
                     state_frame=latest_state,
                     score_thresh=config.score_thresh,
                 )
-                t1 = time.time()
             except Exception as exc:
                 print(f"[warn] LaneDet inference failed frame={frame_id}: {exc}")
                 continue
 
-            t2 = time.time()
             out_message = build_lanes_3d_frame_message(
                 camera_message=latest_camera,
                 lanes_3d=lanes_3d,
@@ -125,23 +108,6 @@ def main() -> None:
             pub_socket.send_pyobj(out_message)
 
             last_frame = frame_id
-            processed += 1
-            infer_times.append(t1 - t0)
-            total_times.append(t2 - t0)
-
-            now = time.time()
-            if now - last_log_t >= 1.0 and infer_times and total_times:
-                infer_ms = 1000.0 * float(np.mean(infer_times))
-                total_ms = 1000.0 * float(np.mean(total_times))
-                fps = processed / (now - last_log_t)
-                print(
-                    f"[lanedet] frame={frame_id} | lanes={len(lanes_3d)} | "
-                    f"infer={infer_ms:.1f} ms | total={total_ms:.1f} ms | fps={fps:.2f}"
-                )
-                infer_times = []
-                total_times = []
-                processed = 0
-                last_log_t = now
     finally:
         camera_socket.close(0)
         state_socket.close(0)

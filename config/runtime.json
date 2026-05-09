@@ -41,8 +41,7 @@
     "producer": {
       "lidar_bind": "tcp://*:5555",
       "camera_front_bind": "tcp://*:5557",
-      "state_bind": "tcp://*:5558",
-      "gt_bind": "tcp://*:5559"
+      "state_bind": "tcp://*:5558"
     },
     "openpcdet_inference": {
       "lidar_in": "tcp://127.0.0.1:5555",
@@ -56,12 +55,9 @@
     "visualizer": {
       "objects_3d_connect": "tcp://127.0.0.1:5556",
       "lanes_3d_connect": "tcp://127.0.0.1:5560",
-      "lidar_connect": "tcp://127.0.0.1:5555",
       "state_connect": "tcp://127.0.0.1:5558",
-      "gt_connect": "tcp://127.0.0.1:5559",
-      "point_radius": 0.03,
-      "pred_line_radius": 0.04,
-      "gt_line_radius": 0.03
+      "ego_line_radius": 0.04,
+      "pred_line_radius": 0.04
     }
   }
 }

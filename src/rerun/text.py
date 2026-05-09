@@ -21,8 +21,6 @@ def log_dataset_status(frame: DatasetFrame) -> None:
 def log_live_status(
     *,
     frame: int,
-    num_points: int,
-    num_gt: int,
     num_pred: int,
     num_lanes: int = 0,
     objects_frame: Optional[int] = None,
@@ -34,8 +32,6 @@ def log_live_status(
         "## Status",
         "",
         f"- Frame: {frame}",
-        f"- Points: {num_points}",
-        f"- GT boxes: {num_gt}",
         f"- Pred boxes: {num_pred}",
         f"- Pred lanes 3D: {num_lanes}",
     ]
@@ -54,7 +50,6 @@ def log_legend() -> None:
     lines = [
         "## Colors",
         "",
-        "- GT boxes: blue",
         "- Ego box: cyan",
         "- Car: red",
         "- Truck: dark red",
@@ -62,6 +57,5 @@ def log_legend() -> None:
         "- Motorcycle: amber",
         "- Bicycle: yellow",
         "- Pedestrian: green",
-        "- Points: intensity shaded",
     ]
     rr.log("legend", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN), static=True)

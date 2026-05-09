@@ -4,11 +4,7 @@ import numpy as np
 
 import carla
 from src.carla.actors.classify import classify_vehicle_actor
-from src.carla.geometry.boxes import (
-    actor_matches_level_bbox,
-    actor_to_gt_box,
-    level_bbox_to_gt_box,
-)
+from src.carla.geometry.boxes import actor_matches_level_bbox, actor_to_gt_box, level_bbox_to_gt_box
 from src.carla.geometry.transforms import distance_between_locations
 
 

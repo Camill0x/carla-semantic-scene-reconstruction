@@ -121,20 +121,17 @@ def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfi
     )
 
 
-def build_live_producer_config(*, with_gt: bool, every_nth: int) -> LiveProducerConfig:
+def build_live_producer_config(*, every_nth: int) -> LiveProducerConfig:
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "producer")
     return LiveProducerConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
         camera_front=load_front_camera_config(),
-        gt_annotations=load_gt_annotations_config(),
         lidar_bind=str(_require_value(section, "lidar_bind")),
         camera_front_bind=str(_require_value(section, "camera_front_bind")),
         state_bind=str(_require_value(section, "state_bind")),
-        gt_bind=str(_require_value(section, "gt_bind")),
         every_nth=every_nth,
-        with_gt=with_gt,
     )
 
 
@@ -188,13 +185,10 @@ def build_live_visualizer_config(
     return LiveVisualizerConfig(
         objects_3d_connect=str(objects_3d_connect),
         lanes_3d_connect=str(_require_value(section, "lanes_3d_connect")),
-        lidar_connect=str(_require_value(section, "lidar_connect")),
         state_connect=str(_require_value(section, "state_connect")),
-        gt_connect=str(_require_value(section, "gt_connect")),
         show_grid=show_grid,
-        point_radius=float(_require_value(section, "point_radius")),
         pred_line_radius=float(_require_value(section, "pred_line_radius")),
-        gt_line_radius=float(_require_value(section, "gt_line_radius")),
+        ego_line_radius=float(_require_value(section, "ego_line_radius")),
     )
 
 

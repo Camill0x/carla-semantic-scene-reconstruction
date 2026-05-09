@@ -10,32 +10,21 @@ import zmq
 import carla
 from src.carla.actors.classify import find_hero_vehicle
 from src.carla.camera.frame_buffer import CameraFrameBuffer
-from src.carla.camera.sensor import (
-    configure_front_camera_blueprint,
-    front_camera_transform,
-)
+from src.carla.camera.sensor import configure_front_camera_blueprint, front_camera_transform
 from src.carla.geometry.boxes import actor_to_gt_box
-from src.carla.gt.collector import collect_gt
-from src.carla.gt.filtering import filter_gt
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.carla.lidar.sensor import configure_lidar_blueprint
 from src.common.runtime_config import build_live_producer_config
-from src.streaming.messages import (
-    build_camera_frame_message,
-    build_gt_frame_message,
-    build_lidar_frame_message,
-    build_state_frame_message,
-)
+from src.streaming.messages import build_camera_frame_message, build_lidar_frame_message, build_state_frame_message
 from src.streaming.zmq_utils import create_latest_publisher
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CARLA live sensor producer")
-    parser.add_argument("--with-gt", action="store_true", help="Include GT boxes in published messages")
     parser.add_argument("--every-nth", type=int, default=1, help="Publish every N-th CARLA frame")
     args = parser.parse_args()
-    return build_live_producer_config(with_gt=args.with_gt, every_nth=args.every_nth)
+    return build_live_producer_config(every_nth=args.every_nth)
 
 
 def transform_to_dict(transform: carla.Transform) -> dict:
@@ -64,7 +53,6 @@ def main() -> None:
     lidar_socket = create_latest_publisher(ctx, config.lidar_bind)
     camera_socket = create_latest_publisher(ctx, config.camera_front_bind)
     state_socket = create_latest_publisher(ctx, config.state_bind)
-    gt_socket = create_latest_publisher(ctx, config.gt_bind)
 
     client = carla.Client(config.carla.host, config.carla.port)
     client.set_timeout(5.0)
@@ -82,7 +70,6 @@ def main() -> None:
     print(f"[info] ZMQ lidar: {config.lidar_bind}")
     print(f"[info] ZMQ camera_front: {config.camera_front_bind}")
     print(f"[info] ZMQ state: {config.state_bind}")
-    print(f"[info] ZMQ gt: {config.gt_bind}")
     print(f"[info] every_nth: {config.every_nth}")
     print(
         f"[info] lidar: max_range={config.lidar.max_range}, channels={config.lidar.channels}, "
@@ -92,8 +79,6 @@ def main() -> None:
         f"[info] front camera: resolution={config.camera_front.width}x{config.camera_front.height}, "
         f"fov={config.camera_front.fov}, xyz=({config.camera_front.x}, {config.camera_front.y}, {config.camera_front.z})"
     )
-    print(f"[info] with_gt: {config.with_gt}")
-
     lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
 
     lidar_transform_relative = carla.Transform(carla.Location(x=-0.5, z=1.8))
@@ -180,29 +165,6 @@ def main() -> None:
             )
             ego_box = actor_to_gt_box(hero, lidar_transform_snapshot).astype(np.float32)
 
-            gt_payload = None
-
-            if config.with_gt:
-                objects, gt_boxes, gt_names = collect_gt(
-                    world=world,
-                    hero=hero,
-                    lidar_transform=lidar_transform_snapshot,
-                    max_range=config.lidar.max_range,
-                )
-
-                objects, gt_boxes, gt_names = filter_gt(
-                    points=points_snapshot,
-                    objects=objects,
-                    gt_boxes=gt_boxes,
-                    gt_names=gt_names,
-                    min_points_in_box=config.gt_annotations.min_lidar_points_in_box,
-                )
-
-                gt_payload = {
-                    "gt_names": gt_names.tolist(),
-                    "gt_boxes": gt_boxes.astype(np.float32),
-                }
-
             lidar_metadata = {
                 "transform": transform_to_dict(lidar_transform_snapshot),
                 "ground_z": -float(lidar_transform_relative.location.z),
@@ -233,14 +195,6 @@ def main() -> None:
             lidar_socket.send_pyobj(lidar_message)
             camera_socket.send_pyobj(camera_message)
             state_socket.send_pyobj(state_message)
-            if config.with_gt:
-                gt_socket.send_pyobj(
-                    build_gt_frame_message(
-                        frame=int(frame_snapshot),
-                        timestamp=float(timestamp_snapshot),
-                        gt_payload=gt_payload,
-                    )
-                )
 
             last_published_frame = frame_snapshot
             published_count += 1
@@ -262,7 +216,6 @@ def main() -> None:
         lidar_socket.close(0)
         camera_socket.close(0)
         state_socket.close(0)
-        gt_socket.close(0)
         ctx.term()
 
 

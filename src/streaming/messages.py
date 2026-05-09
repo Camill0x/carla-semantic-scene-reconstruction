@@ -1,16 +1,9 @@
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Mapping
 
 import numpy as np
 
 from src.lanedet.prediction import Lanes3DPrediction
 from src.openpcdet.prediction import Objects3DPrediction
-
-
-def empty_gt_payload() -> Dict[str, Any]:
-    return {
-        "gt_names": [],
-        "gt_boxes": np.zeros((0, 7), dtype=np.float32),
-    }
 
 
 def build_lidar_frame_message(
@@ -103,7 +96,6 @@ def build_state_frame_message(
     camera_front_metadata: Mapping[str, Any],
 ) -> Dict[str, Any]:
     return {
-        "schema": "state_frame",
         "frame": int(frame),
         "timestamp": float(timestamp),
         "ego": {
@@ -132,47 +124,12 @@ def parse_state_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
         raise ValueError("Missing camera_front state payload")
     ego_box = np.asarray(ego.get("box", np.zeros((0,), dtype=np.float32)), dtype=np.float32)
     return {
-        "schema": str(message.get("schema", "state_frame")),
         "frame": int(message.get("frame", -1)),
         "timestamp": float(message.get("timestamp", -1.0)),
         "ego": {"box": ego_box},
         "lidar": dict(lidar),
         "camera_front": dict(camera_front),
     }
-
-
-def build_gt_frame_message(
-    *,
-    frame: int,
-    timestamp: float,
-    gt_payload: Optional[Mapping[str, Any]] = None,
-) -> Dict[str, Any]:
-    message = {
-        "schema": "gt_frame",
-        "frame": int(frame),
-        "timestamp": float(timestamp),
-        "with_gt": bool(gt_payload is not None),
-    }
-    message.update(empty_gt_payload())
-    if gt_payload is not None:
-        message.update(dict(gt_payload))
-    return message
-
-
-def parse_gt_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
-    gt_boxes = np.asarray(message.get("gt_boxes", np.zeros((0, 7))), dtype=np.float32)
-    if gt_boxes.ndim != 2 or gt_boxes.shape[1] != 7:
-        raise ValueError(f"Invalid gt_boxes shape: {gt_boxes.shape}")
-    return {
-        "schema": str(message.get("schema", "gt_frame")),
-        "frame": int(message.get("frame", -1)),
-        "timestamp": float(message.get("timestamp", -1.0)),
-        "gt_boxes": gt_boxes,
-        "gt_names": [str(name) for name in message.get("gt_names", [])],
-        "with_gt": bool(message.get("with_gt", False)),
-    }
-
-
 def build_objects_3d_frame_message(
     *,
     lidar_message: Mapping[str, Any],

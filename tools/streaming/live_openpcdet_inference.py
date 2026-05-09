@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
-import time
 from pathlib import Path
 
-import numpy as np
 import zmq
 
 from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.common.runtime_config import build_live_openpcdet_inference_config
 from src.openpcdet.model import load_inference_model, run_inference
 from src.openpcdet.postprocess import filter_object_predictions
-from src.streaming.messages import (
-    build_objects_3d_frame_message,
-    parse_lidar_frame_message,
-)
+from src.streaming.messages import build_objects_3d_frame_message, parse_lidar_frame_message
 from src.streaming.zmq_utils import create_latest_publisher, create_latest_subscriber
 
 
@@ -53,10 +48,6 @@ def main() -> None:
     poller.register(sub_socket, zmq.POLLIN)
 
     last_frame = None
-    last_log_t = time.time()
-    infer_times = []
-    total_times = []
-    processed = 0
 
     try:
         while True:
@@ -85,7 +76,6 @@ def main() -> None:
             if frame_id == last_frame:
                 continue
 
-            t0 = time.time()
             try:
                 points4 = parsed["points"]
                 if config.point_stride > 1:
@@ -98,12 +88,10 @@ def main() -> None:
                     allowed_classes=NUSCENES_LIKE_CLASSES,
                     score_thresh=config.score_thresh,
                 )
-                t1 = time.time()
             except Exception as exc:
                 logger.exception("Inference failed frame=%s: %s", frame_id, exc)
                 continue
 
-            t2 = time.time()
             out_message = build_objects_3d_frame_message(
                 lidar_message=message,
                 objects_3d=objects_3d,
@@ -111,27 +99,6 @@ def main() -> None:
             pub_socket.send_pyobj(out_message)
 
             last_frame = frame_id
-            processed += 1
-            infer_times.append(t1 - t0)
-            total_times.append(time.time() - t0)
-
-            now = time.time()
-            if now - last_log_t >= 1.0 and infer_times and total_times:
-                infer_ms = 1000.0 * float(np.mean(infer_times))
-                total_ms = 1000.0 * float(np.mean(total_times))
-                fps = processed / (now - last_log_t)
-                logger.info(
-                    "frame=%s | preds=%s | infer=%.1f ms | total=%.1f ms | fps=%.2f",
-                    frame_id,
-                    len(objects_3d),
-                    infer_ms,
-                    total_ms,
-                    fps,
-                )
-                infer_times = []
-                total_times = []
-                processed = 0
-                last_log_t = now
     finally:
         sub_socket.close(0)
         pub_socket.close(0)

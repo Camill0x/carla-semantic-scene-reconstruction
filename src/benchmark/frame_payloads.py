@@ -21,7 +21,6 @@ def state_frame_from_meta(meta: Mapping[str, Any]) -> Dict[str, Any]:
     ground_z = float(hero_location.get("z", 0.0)) - float(lidar_location["z"])
 
     return {
-        "schema": "state_frame",
         "frame": int(meta.get("frame_index", -1)),
         "timestamp": float(meta.get("timestamp", -1.0)),
         "ego": {},

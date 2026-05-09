@@ -107,13 +107,10 @@ class LiveProducerConfig:
     carla: CarlaConnectionConfig
     lidar: LidarConfig
     camera_front: CameraConfig
-    gt_annotations: GtAnnotationsConfig
     lidar_bind: str
     camera_front_bind: str
     state_bind: str
-    gt_bind: str
     every_nth: int
-    with_gt: bool
 
     def __post_init__(self) -> None:
         if not self.lidar_bind:
@@ -122,8 +119,6 @@ class LiveProducerConfig:
             raise ValueError("Producer camera_front_bind must not be empty")
         if not self.state_bind:
             raise ValueError("Producer state_bind must not be empty")
-        if not self.gt_bind:
-            raise ValueError("Producer gt_bind must not be empty")
         if self.every_nth <= 0:
             raise ValueError("Producer every_nth must be >= 1")
 
@@ -176,31 +171,22 @@ class LiveLaneDetInferenceConfig:
 class LiveVisualizerConfig:
     objects_3d_connect: str
     lanes_3d_connect: str
-    lidar_connect: str
     state_connect: str
-    gt_connect: str
     show_grid: bool
-    point_radius: float
     pred_line_radius: float
-    gt_line_radius: float
+    ego_line_radius: float
 
     def __post_init__(self) -> None:
         if not self.objects_3d_connect:
             raise ValueError("Visualizer objects_3d_connect must not be empty")
         if not self.lanes_3d_connect:
             raise ValueError("Visualizer lanes_3d_connect must not be empty")
-        if not self.lidar_connect:
-            raise ValueError("Visualizer lidar_connect must not be empty")
         if not self.state_connect:
             raise ValueError("Visualizer state_connect must not be empty")
-        if not self.gt_connect:
-            raise ValueError("Visualizer gt_connect must not be empty")
-        if self.point_radius <= 0.0:
-            raise ValueError("Visualizer point_radius must be > 0")
         if self.pred_line_radius <= 0.0:
             raise ValueError("Visualizer pred_line_radius must be > 0")
-        if self.gt_line_radius <= 0.0:
-            raise ValueError("Visualizer gt_line_radius must be > 0")
+        if self.ego_line_radius <= 0.0:
+            raise ValueError("Visualizer ego_line_radius must be > 0")
 
 
 @dataclass(frozen=True)

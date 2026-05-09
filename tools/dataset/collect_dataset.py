@@ -7,10 +7,7 @@ from typing import Optional
 import carla
 from src.carla.actors.classify import find_hero_vehicle
 from src.carla.camera.frame_buffer import CameraFrameBuffer
-from src.carla.camera.sensor import (
-    configure_front_camera_blueprint,
-    front_camera_transform,
-)
+from src.carla.camera.sensor import configure_front_camera_blueprint, front_camera_transform
 from src.carla.dataset.paths import ensure_dataset_run_dir
 from src.carla.dataset.writer import save_multimodal_frame
 from src.carla.gt.collector import collect_gt, count_by_class

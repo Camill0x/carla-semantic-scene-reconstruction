@@ -14,3 +14,12 @@ def create_latest_publisher(context: zmq.Context, address: str) -> zmq.Socket:
     socket.setsockopt(zmq.SNDHWM, 1)
     socket.bind(address)
     return socket
+
+
+def drain_latest(socket: zmq.Socket):
+    message = socket.recv_pyobj()
+    while True:
+        try:
+            message = socket.recv_pyobj(flags=zmq.NOBLOCK)
+        except zmq.Again:
+            return message

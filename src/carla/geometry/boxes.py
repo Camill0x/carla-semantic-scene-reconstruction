@@ -4,10 +4,7 @@ from typing import Dict
 import numpy as np
 
 import carla
-from src.carla.geometry.transforms import (
-    carla_transform_to_matrix,
-    world_to_sensor_point,
-)
+from src.carla.geometry.transforms import carla_transform_to_matrix, world_to_sensor_point
 
 
 def points_inside_oriented_box(

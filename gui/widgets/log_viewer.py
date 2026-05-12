@@ -1,0 +1,89 @@
+from pathlib import Path
+from typing import Dict
+
+from PySide6.QtGui import QTextCursor
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import (
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+
+class LogViewer(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.log_paths: Dict[str, Path] = {}
+        self._known_log_names = []
+        self._last_text = None
+        self._force_scroll_to_bottom = True
+
+        layout = QVBoxLayout(self)
+        toolbar = QHBoxLayout()
+        toolbar.addWidget(QLabel("Log:"))
+        self.selector = QComboBox()
+        self.selector.currentIndexChanged.connect(self._handle_selection_changed)
+        self.refresh_button = QPushButton("Refresh")
+        self.refresh_button.clicked.connect(self.refresh)
+        toolbar.addWidget(self.selector, 1)
+        toolbar.addWidget(self.refresh_button)
+        layout.addLayout(toolbar)
+
+        self.editor = QPlainTextEdit()
+        self.editor.setReadOnly(True)
+        layout.addWidget(self.editor, 1)
+
+    def set_logs(self, logs: Dict[str, Path]) -> None:
+        current = self.selector.currentText()
+        self.log_paths = dict(logs)
+        names = sorted(self.log_paths)
+        if names != self._known_log_names:
+            self._known_log_names = names
+            self.selector.blockSignals(True)
+            self.selector.clear()
+            self.selector.addItems(names)
+            if current and current in self.log_paths:
+                self.selector.setCurrentText(current)
+            elif names:
+                self.selector.setCurrentIndex(0)
+            self.selector.blockSignals(False)
+            self._force_scroll_to_bottom = True
+            self._last_text = None
+        self.refresh()
+
+    def _handle_selection_changed(self) -> None:
+        self._force_scroll_to_bottom = True
+        self.refresh()
+
+    def refresh(self) -> None:
+        name = self.selector.currentText()
+        path = self.log_paths.get(name)
+        if path is None or not path.exists():
+            self._last_text = ""
+            self.editor.setPlainText("")
+            return
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:
+            self._last_text = None
+            self.editor.setPlainText(f"Failed to read log: {exc}")
+            return
+        lines = text.splitlines()
+        tail = "\n".join(lines[-400:])
+        if tail == self._last_text:
+            return
+        self.editor.setPlainText(tail)
+        self._last_text = tail
+        QTimer.singleShot(0, self._scroll_to_bottom)
+        self._force_scroll_to_bottom = False
+
+    def _scroll_to_bottom(self) -> None:
+        cursor = self.editor.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self.editor.setTextCursor(cursor)
+        scrollbar = self.editor.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())

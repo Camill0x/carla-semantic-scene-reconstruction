@@ -246,7 +246,6 @@ BENCHMARK_OPENPCDET_FLAGS = [
     FlagSpec("score_thresh", "Score Threshold", "--score-thresh", kind="float", default=0.05),
     FlagSpec("point_stride", "Point Stride", "--point-stride", kind="int", default=1),
     FlagSpec("warmup", "Warmup Frames", "--warmup", kind="int", default=5),
-    FlagSpec("limit", "Frame Limit", "--limit", kind="int", default=""),
     FlagSpec("save_pred", "Save Predictions", "--save-pred", kind="bool", default=False),
 ]
 
@@ -256,7 +255,6 @@ BENCHMARK_LANEDET_FLAGS = [
     FlagSpec("ckpt", "Checkpoint", "--ckpt", kind="file", default="", required=True),
     FlagSpec("score_thresh", "Score Threshold", "--score-thresh", kind="float", default=0.2),
     FlagSpec("warmup", "Warmup Frames", "--warmup", kind="int", default=5),
-    FlagSpec("limit", "Frame Limit", "--limit", kind="int", default=""),
     FlagSpec("save_pred", "Save Predictions", "--save-pred", kind="bool", default=False),
 ]
 

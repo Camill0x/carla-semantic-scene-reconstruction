@@ -23,7 +23,6 @@ def parse_args():
     parser.add_argument("--ckpt", type=Path, required=True)
     parser.add_argument("--score-thresh", type=float, default=0.2)
     parser.add_argument("--warmup", type=int, default=5)
-    parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--save-pred", action="store_true", help="Save per-frame predictions")
     return parser.parse_args()
 
@@ -49,8 +48,6 @@ def main() -> None:
         raise ValueError("--warmup must be >= 0")
 
     frame_dirs = iter_frame_dirs(args.run_dir)
-    if args.limit is not None:
-        frame_dirs = frame_dirs[: args.limit]
     if not frame_dirs:
         raise FileNotFoundError(f"No frame_* directories found in {args.run_dir}")
 
@@ -118,7 +115,6 @@ def main() -> None:
             ckpt=args.ckpt,
             frames_total=len(frame_dirs),
             warmup=args.warmup,
-            limit=args.limit,
             score_thresh=args.score_thresh,
             save_predictions=args.save_pred,
             dataset_meta=first_frame_meta or {},

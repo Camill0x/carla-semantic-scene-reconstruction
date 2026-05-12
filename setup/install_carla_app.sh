@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ENV_FILE="${ROOT_DIR}/envs/rerun.yml"
-ENV_NAME="rerun"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${ROOT_DIR}/envs/carla_app.yml"
+ENV_NAME="carla_app"
 
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
@@ -18,5 +18,5 @@ else
     conda env create -f "${ENV_FILE}"
 fi
 
-echo "[done] Rerun environment is ready"
+echo "[done] CARLA app environment is ready"
 echo "[info] Environment: ${ENV_NAME}"

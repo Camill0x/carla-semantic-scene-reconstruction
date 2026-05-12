@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OPENPCDET_DIR="${ROOT_DIR}/third_party/OpenPCDet"
 ENV_FILE="${ROOT_DIR}/envs/openpcdet.yml"
 ENV_NAME="openpcdet"

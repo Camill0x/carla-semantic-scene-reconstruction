@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
 import argparse
+import time
 from pathlib import Path
 
-import zmq
-
+from src.common.cli_logging import print_verbose
 from src.common.constants import NUSCENES_LIKE_CLASSES
-from src.common.runtime_config import build_live_openpcdet_inference_config
+from src.common.runtime_config import build_streaming_openpcdet_inference_config
 from src.openpcdet.model import load_inference_model, run_inference
 from src.openpcdet.postprocess import filter_object_predictions
-from src.streaming.messages import build_objects_3d_frame_message, parse_lidar_frame_message
-from src.streaming.zmq_utils import create_latest_publisher, create_latest_subscriber
+from src.shared_memory.buffers import SharedArrayReader, SharedMessageBuffer
+from src.shared_memory.names import SharedMemoryNames
+from src.streaming.messages import build_objects_3d_frame_message, parse_frame_snapshot_message
 
 
 def parse_args():
@@ -19,65 +20,60 @@ def parse_args():
     parser.add_argument("--ckpt", type=Path, required=True)
     parser.add_argument("--score-thresh", type=float, default=0.05, help="Score threshold for predictions")
     parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
-    args = parser.parse_args()
-    config = build_live_openpcdet_inference_config(
+    parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    config = build_streaming_openpcdet_inference_config(
         cfg_file=args.cfg_file,
         ckpt=args.ckpt,
         score_thresh=args.score_thresh,
         point_stride=args.point_stride,
     )
-    return config
-
-
-def main() -> None:
-    config = parse_args()
+    names = SharedMemoryNames(prefix=config.common.prefix)
 
     dataset, model, cfg, logger = load_inference_model(config.cfg_file, config.ckpt)
-
-    logger.info("=== OpenPCDet live inference ===")
-    logger.info("ZMQ lidar IN: %s", config.lidar_in)
-    logger.info("ZMQ OUT: %s", config.zmq_out)
-    logger.info("score_thresh: %.2f", config.score_thresh)
-    logger.info("point_stride: %d", config.point_stride)
-
-    context = zmq.Context()
-    sub_socket = create_latest_subscriber(context, config.lidar_in)
-    pub_socket = create_latest_publisher(context, config.zmq_out)
-
-    poller = zmq.Poller()
-    poller.register(sub_socket, zmq.POLLIN)
-
+    frame_buffer = SharedMessageBuffer(
+        name=names.frame_buffer,
+        size_bytes=config.common.frame_buffer_size_bytes,
+        create=False,
+    )
+    objects_buffer = SharedMessageBuffer(
+        name=names.objects_buffer,
+        size_bytes=config.common.objects_buffer_size_bytes,
+        create=False,
+    )
+    reader = SharedArrayReader()
+    last_version = None
     last_frame = None
+    sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
+
+    logger.info("=== OpenPCDet streaming inference ===")
+    logger.info("frame buffer: %s", names.frame_buffer)
+    logger.info("objects buffer: %s", names.objects_buffer)
 
     try:
         while True:
-            events = dict(poller.poll(timeout=50))
-            if sub_socket not in events:
+            version, payload = frame_buffer.read(last_version=last_version)
+            if payload is None:
+                time.sleep(sleep_s)
                 continue
 
+            last_version = version
             try:
-                message = sub_socket.recv_pyobj()
-                while True:
-                    try:
-                        message = sub_socket.recv_pyobj(flags=zmq.NOBLOCK)
-                    except zmq.Again:
-                        break
+                frame_message = parse_frame_snapshot_message(payload)
             except Exception as exc:
-                logger.exception("ZMQ receive failed: %s", exc)
+                logger.warning("Skipping invalid frame snapshot: %s", exc)
                 continue
 
-            try:
-                parsed = parse_lidar_frame_message(message)
-            except Exception as exc:
-                logger.warning("Skipping invalid input message: %s", exc)
-                continue
-
-            frame_id = parsed["frame"]
+            frame_id = frame_message["frame"]
             if frame_id == last_frame:
                 continue
 
             try:
-                points4 = parsed["points"]
+                points4 = reader.read(frame_message["lidar"]["shared_array"])
                 if config.point_stride > 1:
                     points4 = points4[:: config.point_stride]
 
@@ -92,17 +88,18 @@ def main() -> None:
                 logger.exception("Inference failed frame=%s: %s", frame_id, exc)
                 continue
 
-            out_message = build_objects_3d_frame_message(
-                lidar_message=message,
-                objects_3d=objects_3d,
+            objects_buffer.write(
+                build_objects_3d_frame_message(
+                    lidar_message=frame_message,
+                    objects_3d=objects_3d,
+                )
             )
-            pub_socket.send_pyobj(out_message)
-
+            print_verbose(args.verbose, "OpenPCDet", f"Detected {len(objects_3d)} objects for frame {frame_id}")
             last_frame = frame_id
     finally:
-        sub_socket.close(0)
-        pub_socket.close(0)
-        context.term()
+        reader.close()
+        frame_buffer.close()
+        objects_buffer.close()
 
 
 if __name__ == "__main__":

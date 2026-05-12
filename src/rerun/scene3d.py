@@ -11,6 +11,13 @@ EMPTY_POINTS = np.zeros((0, 3), dtype=np.float32)
 EMPTY_COLORS = np.zeros((0, 4), dtype=np.uint8)
 
 
+def clear_entity(path: str) -> None:
+    clear = getattr(rr, "Clear", None)
+    if clear is not None:
+        rr.log(path, clear(recursive=False))
+        return
+
+
 def boxes_to_rerun(boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
     if boxes.size == 0:
         return (
@@ -31,8 +38,20 @@ def gt_labels(gt_boxes: np.ndarray, gt_names: Sequence[str]) -> list:
     return [f"GT #{idx}" for idx in range(len(gt_boxes))]
 
 
-def prediction_labels(pred_names: Sequence[str], pred_scores: np.ndarray) -> list:
-    return [f"{name}  {float(score):.2f}" for name, score in zip(pred_names, pred_scores)]
+def prediction_labels(pred_names: Sequence[str]) -> list:
+    return [str(name) for name in pred_names]
+
+
+def prediction_names(objects_3d: Objects3DPrediction) -> list:
+    if len(objects_3d.names) == len(objects_3d.boxes):
+        return [str(name) for name in objects_3d.names]
+    if len(objects_3d.labels) == len(objects_3d.boxes):
+        return [f"label_{int(label)}" for label in objects_3d.labels]
+    return [f"object_{index}" for index in range(len(objects_3d.boxes))]
+
+
+def prediction_scores(scores: np.ndarray) -> np.ndarray:
+    return np.round(scores.astype(np.float32), 2).astype(float).tolist()
 
 
 def point_positions(points: np.ndarray) -> np.ndarray:
@@ -134,16 +153,25 @@ def log_prediction_objects_3d(
     line_radius: float,
 ) -> None:
     centers, half_sizes, rotations = boxes_to_rerun(objects_3d.boxes)
+    if len(centers) == 0:
+        clear_entity("world/predictions")
+        return
+
+    names = prediction_names(objects_3d)
+    labels = prediction_labels(names)
+    colors = prediction_colors(names)
+    scores = prediction_scores(objects_3d.scores)
     rr.log(
         "world/predictions",
         rr.Boxes3D(
             centers=centers,
             half_sizes=half_sizes,
             rotation_axis_angles=rotations,
-            colors=prediction_colors(objects_3d.names),
-            labels=prediction_labels(objects_3d.names, objects_3d.scores),
+            colors=colors,
+            labels=labels,
             show_labels=True,
             radii=line_radius,
             fill_mode="solid",
         ),
+        rr.AnyValues(score=scores),
     )

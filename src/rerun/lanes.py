@@ -5,6 +5,7 @@ import numpy as np
 import rerun as rr
 from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 from src.rerun.colors import lane_color
+from src.rerun.scene3d import clear_entity
 
 
 def clamp_lane_annotations_to_image(lanes: List[dict], image_width: int, image_height: int) -> List[dict]:
@@ -111,6 +112,7 @@ def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thicknes
     strips = []
     colors = []
     labels = []
+    scores_log = []
 
     for index, strip in enumerate(strips_payload):
         points = np.asarray(strip, dtype=np.float32)
@@ -119,11 +121,12 @@ def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thicknes
 
         name = str(names[index]) if index < len(names) else f"lane {index}"
         score = scores[index] if index < len(scores) else None
-        label = f"{name}  {float(score):.2f}" if score is not None else name
+        label = name
 
         strips.append(points)
         colors.append((255, 255, 255, 235))
         labels.append(label)
+        scores_log.append(round(float(score), 2) if score is not None else None)
 
     if not strips:
         rr.log("camera/front/predicted_lanes", rr.LineStrips2D(strips=[]))
@@ -138,6 +141,7 @@ def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thicknes
             labels=labels,
             show_labels=False,
         ),
+        rr.AnyValues(score=scores_log),
     )
 
 
@@ -154,6 +158,7 @@ def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | dict, *, line_radius: 
     strips = []
     colors = []
     labels = []
+    scores_log = []
 
     for index, strip in enumerate(strips_payload):
         points = np.asarray(strip, dtype=np.float32)
@@ -162,14 +167,15 @@ def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | dict, *, line_radius: 
 
         name = str(names[index]) if index < len(names) else f"lane {index}"
         score = scores[index] if index < len(scores) else None
-        label = f"{name}  {float(score):.2f}" if score is not None else name
+        label = name
 
         strips.append(points)
         colors.append((255, 255, 255, 235))
         labels.append(label)
+        scores_log.append(round(float(score), 2) if score is not None else None)
 
     if not strips:
-        rr.log("world/predicted_lanes", rr.LineStrips3D(strips=[]))
+        clear_entity("world/predicted_lanes")
         return
 
     rr.log(
@@ -181,4 +187,5 @@ def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | dict, *, line_radius: 
             labels=labels,
             show_labels=False,
         ),
+        rr.AnyValues(score=scores_log),
     )

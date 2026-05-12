@@ -1,9 +1,10 @@
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, Optional
 
 import numpy as np
 
 from src.lanedet.prediction import Lanes3DPrediction
 from src.openpcdet.prediction import Objects3DPrediction
+from src.shared_memory.buffers import SharedArrayDescriptor
 
 
 def build_lidar_frame_message(
@@ -130,6 +131,8 @@ def parse_state_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
         "lidar": dict(lidar),
         "camera_front": dict(camera_front),
     }
+
+
 def build_objects_3d_frame_message(
     *,
     lidar_message: Mapping[str, Any],
@@ -183,4 +186,131 @@ def parse_lanes_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
         "frame": int(message.get("frame", -1)),
         "timestamp": float(message.get("timestamp", -1.0)),
         "lanes_3d": lanes_3d,
+    }
+
+
+def build_frame_snapshot_message(
+    *,
+    frame: int,
+    timestamp: float,
+    published_at: int,
+    camera_descriptor: SharedArrayDescriptor,
+    lidar_descriptor: SharedArrayDescriptor,
+    state_message: Mapping[str, Any],
+) -> Dict[str, Any]:
+    return {
+        "frame": int(frame),
+        "timestamp": float(timestamp),
+        "published_at_monotonic_ns": int(published_at),
+        "camera_front": {
+            "height": int(camera_descriptor.shape[0]),
+            "width": int(camera_descriptor.shape[1]),
+            "shared_array": camera_descriptor.to_payload(),
+        },
+        "lidar": {
+            "shared_array": lidar_descriptor.to_payload(),
+        },
+        "state": dict(state_message),
+    }
+
+
+def parse_frame_snapshot_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+    camera_payload = message.get("camera_front")
+    lidar_payload = message.get("lidar")
+    state_payload = message.get("state")
+    if not isinstance(camera_payload, Mapping):
+        raise ValueError("Missing camera_front payload")
+    if not isinstance(lidar_payload, Mapping):
+        raise ValueError("Missing lidar payload")
+    if not isinstance(state_payload, Mapping):
+        raise ValueError("Missing state payload")
+
+    camera_descriptor = SharedArrayDescriptor.from_payload(dict(camera_payload["shared_array"]))
+    lidar_descriptor = SharedArrayDescriptor.from_payload(dict(lidar_payload["shared_array"]))
+    return {
+        "frame": int(message.get("frame", -1)),
+        "timestamp": float(message.get("timestamp", -1.0)),
+        "published_at_monotonic_ns": int(message.get("published_at_monotonic_ns", 0)),
+        "camera_front": {
+            "height": int(camera_payload.get("height", camera_descriptor.shape[0])),
+            "width": int(camera_payload.get("width", camera_descriptor.shape[1])),
+            "shared_array": camera_descriptor.to_payload(),
+        },
+        "lidar": {
+            "shared_array": lidar_descriptor.to_payload(),
+        },
+        "state": parse_state_frame_message(state_payload),
+    }
+
+
+def build_scene_frame_message(
+    *,
+    frame_message: Mapping[str, Any],
+    objects_message: Optional[Mapping[str, Any]],
+    lanes_message: Optional[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    parsed_frame = parse_frame_snapshot_message(frame_message)
+    parsed_state = parsed_frame["state"]
+    parsed_objects = None
+    parsed_lanes = None
+
+    if objects_message is not None:
+        objects_payload = objects_message.get("objects_3d") if isinstance(objects_message, Mapping) else None
+        if isinstance(objects_payload, Objects3DPrediction):
+            parsed_objects = dict(objects_message)
+        else:
+            parsed_objects = parse_objects_3d_frame_message(objects_message)
+
+    if lanes_message is not None:
+        lanes_payload = lanes_message.get("lanes_3d") if isinstance(lanes_message, Mapping) else None
+        if isinstance(lanes_payload, Lanes3DPrediction):
+            parsed_lanes = dict(lanes_message)
+        else:
+            parsed_lanes = parse_lanes_3d_frame_message(lanes_message)
+
+    return {
+        "schema": "scene_frame",
+        "frame": int(parsed_state["frame"]),
+        "timestamp": float(parsed_state["timestamp"]),
+        "published_at_monotonic_ns": int(parsed_frame.get("published_at_monotonic_ns", 0)),
+        "ego": parsed_state["ego"],
+        "objects_3d": (
+            parsed_objects["objects_3d"].to_payload()
+            if parsed_objects is not None
+            else Objects3DPrediction.empty().to_payload()
+        ),
+        "lanes_3d": (
+            parsed_lanes["lanes_3d"].to_payload()
+            if parsed_lanes is not None
+            else Lanes3DPrediction.empty().to_payload()
+        ),
+        "source_frames": {
+            "state": int(parsed_state["frame"]),
+            "objects_3d": int(parsed_objects["frame"]) if parsed_objects is not None else None,
+            "lanes_3d": int(parsed_lanes["frame"]) if parsed_lanes is not None else None,
+        },
+    }
+
+
+def parse_scene_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+    ego = message.get("ego")
+    if not isinstance(ego, Mapping):
+        ego = {}
+    source_frames = message.get("source_frames")
+    if not isinstance(source_frames, Mapping):
+        source_frames = {}
+    ego_box = np.asarray(ego.get("box", np.zeros((0,), dtype=np.float32)), dtype=np.float32)
+    return {
+        "schema": str(message.get("schema", "scene_frame")),
+        "frame": int(message.get("frame", -1)),
+        "timestamp": float(message.get("timestamp", -1.0)),
+        "published_at_monotonic_ns": int(message.get("published_at_monotonic_ns", 0)),
+        "ego": {"box": ego_box},
+        "objects_3d": Objects3DPrediction.from_payload(message.get("objects_3d", {})),
+        "lanes_3d": Lanes3DPrediction.from_payload(message.get("lanes_3d", {})),
+        "source_frames": {
+            "state": int(source_frames.get("state", message.get("frame", -1))),
+            "objects_3d": int(source_frames["objects_3d"]) if source_frames.get("objects_3d") is not None else None,
+            "lanes_3d": int(source_frames["lanes_3d"]) if source_frames.get("lanes_3d") is not None else None,
+        },
     }

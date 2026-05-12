@@ -21,28 +21,22 @@ def log_dataset_status(frame: DatasetFrame) -> None:
 def log_live_status(
     *,
     frame: int,
-    num_pred: int,
-    num_lanes: int = 0,
-    objects_frame: Optional[int] = None,
-    lanes_frame: Optional[int] = None,
-    frame_skew: Optional[int] = None,
-    score_thresh: Optional[float] = None,
+    latency_ms: float,
+    transfer_bytes: int,
+    num_obj: Optional[int] = None,
+    num_lanes: Optional[int] = None,
 ) -> None:
     lines = [
         "## Status",
         "",
-        f"- Frame: {frame}",
-        f"- Pred boxes: {num_pred}",
-        f"- Pred lanes 3D: {num_lanes}",
+        f"- Frame id: {frame}",
+        f"- Latency: {latency_ms:.2f} ms",
+        f"- Scene transfer size: {transfer_bytes / 1024.0:.2f} KiB",
     ]
-    if objects_frame is not None:
-        lines.append(f"- Objects frame: {objects_frame}")
-    if lanes_frame is not None:
-        lines.append(f"- Lanes frame: {lanes_frame}")
-    if frame_skew is not None:
-        lines.append(f"- Frame skew: {frame_skew}")
-    if score_thresh is not None:
-        lines.append(f"- Score threshold: {score_thresh:.2f}")
+    if num_obj is not None:
+        lines.append(f"- Predicted objects: {num_obj}")
+    if num_lanes is not None:
+        lines.append(f"- Predicted lanes: {num_lanes}")
     rr.log("status", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN))
 
 

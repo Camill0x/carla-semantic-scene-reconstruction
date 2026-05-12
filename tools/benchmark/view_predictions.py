@@ -8,7 +8,7 @@ import rerun as rr
 
 from src.benchmark.predictions import load_lanes_prediction, load_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
-from src.common.runtime_config import build_dataset_viewer_config, build_live_visualizer_config
+from src.common.runtime_config import build_dataset_viewer_config, build_streaming_visualizer_config
 from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
 from src.rerun.lanes import log_prediction_lanes_2d, log_prediction_lanes_3d
@@ -40,7 +40,7 @@ def main() -> None:
         raise FileNotFoundError(f"No frame_* directories found in {args.run_dir}")
 
     dataset_config = build_dataset_viewer_config(show_grid=args.show_grid)
-    live_config = build_live_visualizer_config(show_grid=args.show_grid)
+    live_config = build_streaming_visualizer_config(show_grid=args.show_grid)
     initialize_dataset_viewer(dataset_config)
     log_legend()
 
@@ -77,6 +77,13 @@ def main() -> None:
             log_prediction_lanes_3d({"strips": []}, line_radius=live_config.pred_line_radius)
 
         time.sleep(frame_delay_s)
+
+    print("[info] predictions loaded into Rerun")
+    try:
+        while True:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

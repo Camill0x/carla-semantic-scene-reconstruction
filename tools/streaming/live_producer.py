@@ -2,10 +2,10 @@
 
 import argparse
 import queue
+import time
 from typing import Optional
 
 import numpy as np
-import zmq
 
 import carla
 from src.carla.actors.classify import find_hero_vehicle
@@ -15,16 +15,18 @@ from src.carla.geometry.boxes import actor_to_gt_box
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.carla.lidar.sensor import configure_lidar_blueprint
-from src.common.runtime_config import build_live_producer_config
-from src.streaming.messages import build_camera_frame_message, build_lidar_frame_message, build_state_frame_message
-from src.streaming.zmq_utils import create_latest_publisher
+from src.common.cli_logging import print_verbose
+from src.common.runtime_config import build_streaming_producer_config
+from src.shared_memory.buffers import SharedArrayPool, SharedMessageBuffer
+from src.shared_memory.names import SharedMemoryNames
+from src.streaming.messages import build_frame_snapshot_message, build_state_frame_message
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="CARLA live sensor producer")
+    parser = argparse.ArgumentParser(description="CARLA live producer")
     parser.add_argument("--every-nth", type=int, default=1, help="Publish every N-th CARLA frame")
-    args = parser.parse_args()
-    return build_live_producer_config(every_nth=args.every_nth)
+    parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
+    return parser.parse_args()
 
 
 def transform_to_dict(transform: carla.Transform) -> dict:
@@ -47,12 +49,38 @@ def should_process_frame(frame: int, last_processed_frame: Optional[int], every_
 
 
 def main() -> None:
-    config = parse_args()
+    args = parse_args()
+    config = build_streaming_producer_config(every_nth=args.every_nth)
+    names = SharedMemoryNames(prefix=config.common.prefix)
 
-    ctx = zmq.Context()
-    lidar_socket = create_latest_publisher(ctx, config.lidar_bind)
-    camera_socket = create_latest_publisher(ctx, config.camera_front_bind)
-    state_socket = create_latest_publisher(ctx, config.state_bind)
+    camera_slot_capacity = (
+        int(config.camera_front.width) * int(config.camera_front.height) * 3 * np.dtype(np.uint8).itemsize
+    )
+    camera_pool = SharedArrayPool(
+        prefix=names.camera_prefix,
+        slot_capacity_bytes=camera_slot_capacity,
+        num_slots=config.sensor_slots,
+    )
+    lidar_pool = SharedArrayPool(
+        prefix=names.lidar_prefix,
+        slot_capacity_bytes=config.lidar_slot_capacity_bytes,
+        num_slots=config.sensor_slots,
+    )
+    frame_buffer = SharedMessageBuffer(
+        name=names.frame_buffer,
+        size_bytes=config.common.frame_buffer_size_bytes,
+        create=True,
+    )
+    objects_buffer = SharedMessageBuffer(
+        name=names.objects_buffer,
+        size_bytes=config.common.objects_buffer_size_bytes,
+        create=True,
+    )
+    lanes_buffer = SharedMessageBuffer(
+        name=names.lanes_buffer,
+        size_bytes=config.common.lanes_buffer_size_bytes,
+        create=True,
+    )
 
     client = carla.Client(config.carla.host, config.carla.port)
     client.set_timeout(5.0)
@@ -67,26 +95,19 @@ def main() -> None:
         raise RuntimeError("Hero vehicle not found")
 
     print(f"[info] hero id={hero.id}, type={hero.type_id}")
-    print(f"[info] ZMQ lidar: {config.lidar_bind}")
-    print(f"[info] ZMQ camera_front: {config.camera_front_bind}")
-    print(f"[info] ZMQ state: {config.state_bind}")
-    print(f"[info] every_nth: {config.every_nth}")
-    print(
-        f"[info] lidar: max_range={config.lidar.max_range}, channels={config.lidar.channels}, "
-        f"points_per_second={config.lidar.points_per_second}, fov=({config.lidar.lower_fov}, {config.lidar.upper_fov})"
-    )
-    print(
-        f"[info] front camera: resolution={config.camera_front.width}x{config.camera_front.height}, "
-        f"fov={config.camera_front.fov}, xyz=({config.camera_front.x}, {config.camera_front.y}, {config.camera_front.z})"
-    )
-    lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
+    print(f"[info] frame buffer: {names.frame_buffer}")
+    print(f"[info] camera prefix: {names.camera_prefix}")
+    print(f"[info] lidar prefix: {names.lidar_prefix}")
+    print(f"[info] sensor_slots: {config.sensor_slots}")
 
+    lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
     lidar_transform_relative = carla.Transform(carla.Location(x=-0.5, z=1.8))
     camera_bp = configure_front_camera_blueprint(
         world,
         config=config.camera_front,
         fixed_delta_seconds=settings.fixed_delta_seconds,
     )
+
     lidar = None
     camera = None
 
@@ -158,47 +179,42 @@ def main() -> None:
             if not should_process_frame(frame_snapshot, last_published_frame, config.every_nth):
                 continue
 
-            points_snapshot = preprocess_lidar_points(
-                points=raw_points,
-                hero=hero,
-                lidar=lidar,
-            )
+            points_snapshot = preprocess_lidar_points(points=raw_points, hero=hero, lidar=lidar).astype(np.float32)
+            camera_image_bgr_snapshot = np.asarray(camera_image_bgr_snapshot, dtype=np.uint8)
             ego_box = actor_to_gt_box(hero, lidar_transform_snapshot).astype(np.float32)
 
-            lidar_metadata = {
-                "transform": transform_to_dict(lidar_transform_snapshot),
-                "ground_z": -float(lidar_transform_relative.location.z),
-            }
-            camera_front_metadata = {
-                "fov": float(config.camera_front.fov),
-                "transform": transform_to_dict(camera_transform_snapshot),
-            }
+            slot_index = int(frame_snapshot) % config.sensor_slots
+            camera_descriptor = camera_pool.write(camera_image_bgr_snapshot, slot_index=slot_index)
+            lidar_descriptor = lidar_pool.write(points_snapshot, slot_index=slot_index)
 
-            lidar_message = build_lidar_frame_message(
-                frame=int(frame_snapshot),
-                timestamp=float(timestamp_snapshot),
-                points=points_snapshot.astype(np.float32),
-            )
-            camera_message = build_camera_frame_message(
-                frame=int(frame_snapshot),
-                timestamp=float(timestamp_snapshot),
-                camera_front_image=camera_image_bgr_snapshot,
-            )
             state_message = build_state_frame_message(
                 frame=int(frame_snapshot),
                 timestamp=float(timestamp_snapshot),
                 ego_box=ego_box,
-                lidar_metadata=lidar_metadata,
-                camera_front_metadata=camera_front_metadata,
+                lidar_metadata={
+                    "transform": transform_to_dict(lidar_transform_snapshot),
+                    "ground_z": -float(lidar_transform_relative.location.z),
+                },
+                camera_front_metadata={
+                    "fov": float(config.camera_front.fov),
+                    "transform": transform_to_dict(camera_transform_snapshot),
+                },
             )
 
-            lidar_socket.send_pyobj(lidar_message)
-            camera_socket.send_pyobj(camera_message)
-            state_socket.send_pyobj(state_message)
+            frame_buffer.write(
+                build_frame_snapshot_message(
+                    frame=int(frame_snapshot),
+                    timestamp=float(timestamp_snapshot),
+                    published_at=time.monotonic_ns(),
+                    camera_descriptor=camera_descriptor,
+                    lidar_descriptor=lidar_descriptor,
+                    state_message=state_message,
+                )
+            )
 
             last_published_frame = frame_snapshot
             published_count += 1
-            print(f"[producer] frame={frame_snapshot} | published={published_count}")
+            print_verbose(args.verbose, "Producer", f"Published frame {frame_snapshot}")
 
     finally:
         if lidar is not None:
@@ -213,10 +229,11 @@ def main() -> None:
             except RuntimeError:
                 pass
             camera.destroy()
-        lidar_socket.close(0)
-        camera_socket.close(0)
-        state_socket.close(0)
-        ctx.term()
+        frame_buffer.close()
+        objects_buffer.close()
+        lanes_buffer.close()
+        camera_pool.close()
+        lidar_pool.close()
 
 
 if __name__ == "__main__":

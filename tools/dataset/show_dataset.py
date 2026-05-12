@@ -52,6 +52,13 @@ def main() -> None:
         log_dataset_frame(frame, config)
         time.sleep(frame_delay_s)
 
+    print("[info] dataset loaded into Rerun")
+    try:
+        while True:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        pass
+
 
 if __name__ == "__main__":
     main()

@@ -38,24 +38,20 @@
     "lane_line_thickness": 3.0
   },
   "streaming": {
+    "prefix": "carla_streaming",
+    "poll_interval_ms": 5,
+    "frame_buffer_size_bytes": 1048576,
+    "objects_buffer_size_bytes": 4194304,
+    "lanes_buffer_size_bytes": 4194304,
     "producer": {
-      "lidar_bind": "tcp://*:5555",
-      "camera_front_bind": "tcp://*:5557",
-      "state_bind": "tcp://*:5558"
+      "sensor_slots": 8,
+      "fixed_delta_seconds_hint": 0.05
     },
-    "openpcdet_inference": {
-      "lidar_in": "tcp://127.0.0.1:5555",
-      "zmq_out": "tcp://*:5556"
-    },
-    "lanedet_inference": {
-      "camera_front_in": "tcp://127.0.0.1:5557",
-      "state_in": "tcp://127.0.0.1:5558",
-      "zmq_out": "tcp://*:5560"
+    "aggregator": {
+      "scene_bind": "tcp://*:5555"
     },
     "visualizer": {
-      "objects_3d_connect": "tcp://127.0.0.1:5556",
-      "lanes_3d_connect": "tcp://127.0.0.1:5560",
-      "state_connect": "tcp://127.0.0.1:5558",
+      "scene_connect": "tcp://127.0.0.1:5555",
       "ego_line_radius": 0.04,
       "pred_line_radius": 0.04
     }

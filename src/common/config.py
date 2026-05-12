@@ -103,93 +103,6 @@ class CollectorConfig:
 
 
 @dataclass(frozen=True)
-class LiveProducerConfig:
-    carla: CarlaConnectionConfig
-    lidar: LidarConfig
-    camera_front: CameraConfig
-    lidar_bind: str
-    camera_front_bind: str
-    state_bind: str
-    every_nth: int
-
-    def __post_init__(self) -> None:
-        if not self.lidar_bind:
-            raise ValueError("Producer lidar_bind must not be empty")
-        if not self.camera_front_bind:
-            raise ValueError("Producer camera_front_bind must not be empty")
-        if not self.state_bind:
-            raise ValueError("Producer state_bind must not be empty")
-        if self.every_nth <= 0:
-            raise ValueError("Producer every_nth must be >= 1")
-
-
-@dataclass(frozen=True)
-class LiveOpenPCDetInferenceConfig:
-    cfg_file: Path
-    ckpt: Path
-    lidar_in: str
-    zmq_out: str
-    score_thresh: float
-    point_stride: int
-
-    def __post_init__(self) -> None:
-        if not self.cfg_file:
-            raise ValueError("OpenPCDet inference cfg_file must not be empty")
-        if not self.ckpt:
-            raise ValueError("OpenPCDet inference ckpt must not be empty")
-        if not self.lidar_in:
-            raise ValueError("OpenPCDet inference lidar_in must not be empty")
-        if not self.zmq_out:
-            raise ValueError("OpenPCDet inference zmq_out must not be empty")
-        if self.point_stride < 1:
-            raise ValueError("OpenPCDet inference point_stride must be >= 1")
-
-
-@dataclass(frozen=True)
-class LiveLaneDetInferenceConfig:
-    cfg_file: Path
-    ckpt: Path
-    camera_front_in: str
-    state_in: str
-    zmq_out: str
-    score_thresh: float
-
-    def __post_init__(self) -> None:
-        if not self.cfg_file:
-            raise ValueError("LaneDet inference cfg_file must not be empty")
-        if not self.ckpt:
-            raise ValueError("LaneDet inference ckpt must not be empty")
-        if not self.camera_front_in:
-            raise ValueError("LaneDet inference camera_front_in must not be empty")
-        if not self.state_in:
-            raise ValueError("LaneDet inference state_in must not be empty")
-        if not self.zmq_out:
-            raise ValueError("LaneDet inference zmq_out must not be empty")
-
-
-@dataclass(frozen=True)
-class LiveVisualizerConfig:
-    objects_3d_connect: str
-    lanes_3d_connect: str
-    state_connect: str
-    show_grid: bool
-    pred_line_radius: float
-    ego_line_radius: float
-
-    def __post_init__(self) -> None:
-        if not self.objects_3d_connect:
-            raise ValueError("Visualizer objects_3d_connect must not be empty")
-        if not self.lanes_3d_connect:
-            raise ValueError("Visualizer lanes_3d_connect must not be empty")
-        if not self.state_connect:
-            raise ValueError("Visualizer state_connect must not be empty")
-        if self.pred_line_radius <= 0.0:
-            raise ValueError("Visualizer pred_line_radius must be > 0")
-        if self.ego_line_radius <= 0.0:
-            raise ValueError("Visualizer ego_line_radius must be > 0")
-
-
-@dataclass(frozen=True)
 class DatasetViewerConfig:
     show_grid: bool
     point_radius: float
@@ -203,3 +116,104 @@ class DatasetViewerConfig:
             raise ValueError("Dataset viewer gt_line_radius must be > 0")
         if self.lane_line_thickness <= 0.0:
             raise ValueError("Dataset viewer lane_line_thickness must be > 0")
+
+
+@dataclass(frozen=True)
+class StreamingCommonConfig:
+    prefix: str
+    poll_interval_ms: int
+    frame_buffer_size_bytes: int
+    objects_buffer_size_bytes: int
+    lanes_buffer_size_bytes: int
+
+    def __post_init__(self) -> None:
+        if not self.prefix:
+            raise ValueError("Streaming prefix must not be empty")
+        if self.poll_interval_ms < 0:
+            raise ValueError("Streaming poll_interval_ms must be >= 0")
+        if self.frame_buffer_size_bytes <= 0:
+            raise ValueError("Streaming frame_buffer_size_bytes must be > 0")
+        if self.objects_buffer_size_bytes <= 0:
+            raise ValueError("Streaming objects_buffer_size_bytes must be > 0")
+        if self.lanes_buffer_size_bytes <= 0:
+            raise ValueError("Streaming lanes_buffer_size_bytes must be > 0")
+
+
+@dataclass(frozen=True)
+class StreamingProducerConfig:
+    common: StreamingCommonConfig
+    carla: CarlaConnectionConfig
+    lidar: LidarConfig
+    camera_front: CameraConfig
+    every_nth: int
+    sensor_slots: int
+    lidar_slot_capacity_bytes: int
+
+    def __post_init__(self) -> None:
+        if self.every_nth <= 0:
+            raise ValueError("Streaming producer every_nth must be >= 1")
+        if self.sensor_slots <= 0:
+            raise ValueError("Streaming producer sensor_slots must be > 0")
+        if self.lidar_slot_capacity_bytes <= 0:
+            raise ValueError("Streaming producer lidar_slot_capacity_bytes must be > 0")
+
+
+@dataclass(frozen=True)
+class StreamingOpenPCDetInferenceConfig:
+    common: StreamingCommonConfig
+    cfg_file: Path
+    ckpt: Path
+    score_thresh: float
+    point_stride: int
+
+    def __post_init__(self) -> None:
+        if not self.cfg_file:
+            raise ValueError("Streaming OpenPCDet cfg_file must not be empty")
+        if not self.ckpt:
+            raise ValueError("Streaming OpenPCDet ckpt must not be empty")
+        if not self.score_thresh < 0:
+            raise ValueError("Streaming OpenPCDet score_thresh must be >= 0")
+        if self.point_stride < 1:
+            raise ValueError("Streaming OpenPCDet point_stride must be > 1")
+
+
+@dataclass(frozen=True)
+class StreamingLaneDetInferenceConfig:
+    common: StreamingCommonConfig
+    cfg_file: Path
+    ckpt: Path
+    score_thresh: float
+
+    def __post_init__(self) -> None:
+        if not self.cfg_file:
+            raise ValueError("Streaming LaneDet cfg_file must not be empty")
+        if not self.ckpt:
+            raise ValueError("Streaming LaneDet ckpt must not be empty")
+        if self.score_thresh < 0:
+            raise ValueError("Streaming LaneDet score_thresh must be >= 0")
+
+
+@dataclass(frozen=True)
+class StreamingAggregatorConfig:
+    common: StreamingCommonConfig
+    scene_bind: str
+
+    def __post_init__(self) -> None:
+        if not self.scene_bind:
+            raise ValueError("Streaming aggregator scene_bind must not be empty")
+
+
+@dataclass(frozen=True)
+class StreamingVisualizerConfig:
+    scene_connect: str
+    show_grid: bool
+    pred_line_radius: float
+    ego_line_radius: float
+
+    def __post_init__(self) -> None:
+        if not self.scene_connect:
+            raise ValueError("Streaming visualizer scene_connect must not be empty")
+        if self.pred_line_radius <= 0.0:
+            raise ValueError("Streaming visualizer pred_line_radius must be > 0")
+        if self.ego_line_radius <= 0.0:
+            raise ValueError("Streaming visualizer ego_line_radius must be > 0")

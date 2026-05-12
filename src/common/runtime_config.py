@@ -10,10 +10,12 @@ from src.common.config import (
     GtAnnotationsConfig,
     LaneAnnotationsConfig,
     LidarConfig,
-    LiveLaneDetInferenceConfig,
-    LiveOpenPCDetInferenceConfig,
-    LiveProducerConfig,
-    LiveVisualizerConfig,
+    StreamingAggregatorConfig,
+    StreamingCommonConfig,
+    StreamingLaneDetInferenceConfig,
+    StreamingOpenPCDetInferenceConfig,
+    StreamingProducerConfig,
+    StreamingVisualizerConfig,
 )
 
 DEFAULT_RUNTIME_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "runtime.json"
@@ -121,77 +123,6 @@ def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfi
     )
 
 
-def build_live_producer_config(*, every_nth: int) -> LiveProducerConfig:
-    data = _read_runtime_config()
-    section = _get_section(data, "streaming", "producer")
-    return LiveProducerConfig(
-        carla=load_carla_connection_config(),
-        lidar=load_lidar_config(),
-        camera_front=load_front_camera_config(),
-        lidar_bind=str(_require_value(section, "lidar_bind")),
-        camera_front_bind=str(_require_value(section, "camera_front_bind")),
-        state_bind=str(_require_value(section, "state_bind")),
-        every_nth=every_nth,
-    )
-
-
-def build_live_openpcdet_inference_config(
-    *,
-    cfg_file: Path,
-    ckpt: Path,
-    score_thresh: float,
-    point_stride: int,
-) -> LiveOpenPCDetInferenceConfig:
-    data = _read_runtime_config()
-    try:
-        section = _get_section(data, "streaming", "openpcdet_inference")
-    except KeyError:
-        section = _get_section(data, "streaming", "inference")
-    return LiveOpenPCDetInferenceConfig(
-        cfg_file=cfg_file,
-        ckpt=ckpt,
-        lidar_in=str(_require_value(section, "lidar_in")),
-        zmq_out=str(_require_value(section, "zmq_out")),
-        score_thresh=score_thresh,
-        point_stride=point_stride,
-    )
-
-
-def build_live_lanedet_inference_config(
-    *,
-    cfg_file: Path,
-    ckpt: Path,
-    score_thresh: float,
-) -> LiveLaneDetInferenceConfig:
-    data = _read_runtime_config()
-    section = _get_section(data, "streaming", "lanedet_inference")
-    return LiveLaneDetInferenceConfig(
-        cfg_file=cfg_file,
-        ckpt=ckpt,
-        camera_front_in=str(_require_value(section, "camera_front_in")),
-        state_in=str(_require_value(section, "state_in")),
-        zmq_out=str(_require_value(section, "zmq_out")),
-        score_thresh=score_thresh,
-    )
-
-
-def build_live_visualizer_config(
-    *,
-    show_grid: bool,
-) -> LiveVisualizerConfig:
-    data = _read_runtime_config()
-    section = _get_section(data, "streaming", "visualizer")
-    objects_3d_connect = section.get("objects_3d_connect", section.get("zmq_connect"))
-    return LiveVisualizerConfig(
-        objects_3d_connect=str(objects_3d_connect),
-        lanes_3d_connect=str(_require_value(section, "lanes_3d_connect")),
-        state_connect=str(_require_value(section, "state_connect")),
-        show_grid=show_grid,
-        pred_line_radius=float(_require_value(section, "pred_line_radius")),
-        ego_line_radius=float(_require_value(section, "ego_line_radius")),
-    )
-
-
 def build_dataset_viewer_config(*, show_grid: bool) -> DatasetViewerConfig:
     data = _read_runtime_config()
     section = _get_section(data, "dataset_viewer")
@@ -200,4 +131,91 @@ def build_dataset_viewer_config(*, show_grid: bool) -> DatasetViewerConfig:
         point_radius=float(_require_value(section, "point_radius")),
         gt_line_radius=float(_require_value(section, "gt_line_radius")),
         lane_line_thickness=float(_require_value(section, "lane_line_thickness")),
+    )
+
+
+def build_streaming_common_config() -> StreamingCommonConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming")
+    return StreamingCommonConfig(
+        prefix=str(_require_value(section, "prefix")),
+        poll_interval_ms=int(_require_value(section, "poll_interval_ms")),
+        frame_buffer_size_bytes=int(_require_value(section, "frame_buffer_size_bytes")),
+        objects_buffer_size_bytes=int(_require_value(section, "objects_buffer_size_bytes")),
+        lanes_buffer_size_bytes=int(_require_value(section, "lanes_buffer_size_bytes")),
+    )
+
+
+def _default_streaming_lidar_slot_capacity_bytes(lidar: LidarConfig) -> int:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming", "producer")
+    if "lidar_slot_capacity_bytes" in section:
+        return int(_require_value(section, "lidar_slot_capacity_bytes"))
+    fixed_delta_seconds = float(_require_value(section, "fixed_delta_seconds_hint"))
+    estimated_points = max(1, int(lidar.points_per_second * fixed_delta_seconds * 1.25))
+    return estimated_points * 4 * 4
+
+
+def build_streaming_producer_config(*, every_nth: int) -> StreamingProducerConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming", "producer")
+    lidar = load_lidar_config()
+    return StreamingProducerConfig(
+        common=build_streaming_common_config(),
+        carla=load_carla_connection_config(),
+        lidar=lidar,
+        camera_front=load_front_camera_config(),
+        every_nth=every_nth,
+        sensor_slots=int(_require_value(section, "sensor_slots")),
+        lidar_slot_capacity_bytes=_default_streaming_lidar_slot_capacity_bytes(lidar),
+    )
+
+
+def build_streaming_openpcdet_inference_config(
+    *,
+    cfg_file: Path,
+    ckpt: Path,
+    score_thresh: float,
+    point_stride: int,
+) -> StreamingOpenPCDetInferenceConfig:
+    return StreamingOpenPCDetInferenceConfig(
+        common=build_streaming_common_config(),
+        cfg_file=cfg_file,
+        ckpt=ckpt,
+        score_thresh=score_thresh,
+        point_stride=point_stride,
+    )
+
+
+def build_streaming_lanedet_inference_config(
+    *,
+    cfg_file: Path,
+    ckpt: Path,
+    score_thresh: float,
+) -> StreamingLaneDetInferenceConfig:
+    return StreamingLaneDetInferenceConfig(
+        common=build_streaming_common_config(),
+        cfg_file=cfg_file,
+        ckpt=ckpt,
+        score_thresh=score_thresh,
+    )
+
+
+def build_streaming_aggregator_config() -> StreamingAggregatorConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming", "aggregator")
+    return StreamingAggregatorConfig(
+        common=build_streaming_common_config(),
+        scene_bind=str(_require_value(section, "scene_bind")),
+    )
+
+
+def build_streaming_visualizer_config(*, show_grid: bool) -> StreamingVisualizerConfig:
+    data = _read_runtime_config()
+    section = _get_section(data, "streaming", "visualizer")
+    return StreamingVisualizerConfig(
+        scene_connect=str(_require_value(section, "scene_connect")),
+        show_grid=show_grid,
+        pred_line_radius=float(_require_value(section, "pred_line_radius")),
+        ego_line_radius=float(_require_value(section, "ego_line_radius")),
     )

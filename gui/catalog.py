@@ -129,6 +129,7 @@ MANUAL_CONTROL_FLAGS = [
         default="vehicle.dodge.charger_2020",
         help_text="Vehicle blueprint filter. Recommended for ego vehicle.",
     ),
+    FlagSpec("autopilot", "Autopilot", "--autopilot", kind="bool", default=True),
     FlagSpec("client_fps", "Client FPS", "--client-fps", kind="int", default=20),
     FlagSpec("sim_fps", "Simulation FPS", "--sim-fps", kind="float", default=20.0),
 ]

@@ -183,21 +183,20 @@ class WorkflowWindow(QMainWindow):
 
         message = QMessageBox(self)
         message.setWindowTitle("Active Processes")
-        message.setText("This workflow still has running processes.")
-        message.setInformativeText(", ".join(running))
+        message.setIcon(QMessageBox.Warning)
+        message.setText("This workflow still has running processes related to it.")
+        message.setInformativeText(
+            "\n".join(f"- {name}" for name in running) + "\n\nYou can manage these processes via Process Inspector."
+        )
         cancel_button = message.addButton("Cancel", QMessageBox.RejectRole)
-        keep_button = message.addButton("Exit And Leave Running", QMessageBox.DestructiveRole)
-        stop_button = message.addButton("Stop And Exit", QMessageBox.AcceptRole)
-        cancel_button.setStyleSheet("background: #1f2937; color: #e6edf3;")
-        keep_button.setStyleSheet("background: #d97706; color: #ffffff;")
-        stop_button.setStyleSheet("background: #dc2626; color: #ffffff;")
+        close_button = message.addButton("Close", QMessageBox.AcceptRole)
+        cancel_button.setStyleSheet("background: #d97706; color: #ffffff;")
+        close_button.setStyleSheet("background: #dc2626; color: #ffffff;")
         message.exec()
         clicked = message.clickedButton()
         if clicked == cancel_button:
             event.ignore()
             return
-        if clicked == stop_button:
-            self.append_activity(self.manager.stop_many(running))
         if self.on_closed is not None:
             self.on_closed()
         event.accept()

@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Callable
 
 from PySide6.QtWidgets import (
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -9,9 +11,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
 )
-from pathlib import Path
 
 
 class DetectorCard(QGroupBox):

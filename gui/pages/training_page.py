@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget, QVBoxLayout as InnerLayout
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from gui.catalog import (
     LANEDET_MAIN_FLAGS,
@@ -72,7 +72,7 @@ class TrainingPage(WorkflowPage):
 
     def _openpcdet_tab(self) -> QWidget:
         tab = QWidget()
-        layout = InnerLayout(tab)
+        layout = QVBoxLayout(tab)
         self.openpcdet_prepare_panel = self._panel(
             "openpcdet_prepare_dataset",
             "Prepare OpenPCDet Dataset",
@@ -102,7 +102,7 @@ class TrainingPage(WorkflowPage):
 
     def _lanedet_tab(self) -> QWidget:
         tab = QWidget()
-        layout = InnerLayout(tab)
+        layout = QVBoxLayout(tab)
         self.lanedet_prepare_panel = self._panel(
             "lanedet_prepare_dataset",
             "Prepare LaneDet Dataset",

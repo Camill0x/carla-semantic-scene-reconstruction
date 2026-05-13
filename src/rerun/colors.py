@@ -1,6 +1,5 @@
 from typing import Iterable, Tuple
 
-
 CLASS_COLORS = {
     "car": (242, 51, 51, 235),
     "truck": (191, 26, 26, 235),

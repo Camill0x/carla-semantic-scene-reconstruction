@@ -1,5 +1,5 @@
-from pathlib import Path
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -8,7 +8,6 @@ from lanedet.datasets.process import Process
 from lanedet.models.registry import build_net
 from lanedet.utils.config import Config
 from lanedet.utils.net_utils import load_network
-
 from src.lanedet.prediction import Lanes2DPrediction
 
 

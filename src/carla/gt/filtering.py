@@ -19,11 +19,7 @@ def count_points_in_box7(points_xyz: np.ndarray, box7: np.ndarray) -> int:
     )
     local = rel @ rot.T
 
-    inside = (
-        (np.abs(local[:, 0]) <= dx / 2.0)
-        & (np.abs(local[:, 1]) <= dy / 2.0)
-        & (np.abs(local[:, 2]) <= dz / 2.0)
-    )
+    inside = (np.abs(local[:, 0]) <= dx / 2.0) & (np.abs(local[:, 1]) <= dy / 2.0) & (np.abs(local[:, 2]) <= dz / 2.0)
     return int(np.count_nonzero(inside))
 
 
@@ -44,9 +40,7 @@ def filter_gt(
 
     points_xyz = points[:, :3]
     keep_indices = [
-        index
-        for index, box in enumerate(gt_boxes)
-        if count_points_in_box7(points_xyz, box) >= min_points_in_box
+        index for index, box in enumerate(gt_boxes) if count_points_in_box7(points_xyz, box) >= min_points_in_box
     ]
 
     if len(keep_indices) == gt_boxes.shape[0]:

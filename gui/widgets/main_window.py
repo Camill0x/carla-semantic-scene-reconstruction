@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
         message.setWindowTitle("Clear Logs")
         message.setMinimumWidth(560)
         message.setText("Clear all GUI-managed log files?")
-        message.setInformativeText("This will truncate the current log files in tmp/streaming_gui_logs.")
+        message.setInformativeText("This will truncate the current log files in tmp/gui_logs/*")
         clear_button = message.addButton("Clear Logs", QMessageBox.AcceptRole)
         cancel_button = message.addButton("Cancel", QMessageBox.RejectRole)
         clear_button.setStyleSheet("background: #16a34a; color: #ffffff;")

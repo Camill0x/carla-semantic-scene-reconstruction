@@ -67,17 +67,17 @@ The GUI keeps local runtime state under `tmp/`:
 
 ```text
 tmp/
-├── streaming_gui_logs/
+├── gui_logs/
 │   ├── server.log
 │   ├── manual_control.log
 │   └── ...
-└── streaming_gui_state.json
+└── gui_state.json
 ```
 
 These files are used as follows:
 
-* `streaming_gui_logs/` — Stores one log file per managed process
-* `streaming_gui_state.json` — Stores the last used arguments, last exit codes, log paths, and the PID of any process that is still alive
+* `gui_logs/` — Stores one log file per managed process
+* `gui_state.json` — Stores the last used arguments, last exit codes, log paths, and the PID of any process that is still alive
 
 When the GUI starts again, it reloads that state and reattaches to processes whose PIDs are still running. This makes it possible to reopen the control center without losing visibility into GUI-managed jobs that were already launched earlier.
 

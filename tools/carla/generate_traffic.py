@@ -14,7 +14,6 @@
 
 """Example script to generate traffic in the simulation"""
 
-
 import argparse
 import logging
 import time
@@ -138,11 +137,9 @@ def main():
             else:
                 synchronous_master = False
         else:
-            print(
-                "You are currently in asynchronous mode. If this is a traffic simulation, \
+            print("You are currently in asynchronous mode. If this is a traffic simulation, \
             you could experience some issues. If it's not working correctly, switch to synchronous \
-            mode by using traffic_manager.set_synchronous_mode(True)"
-            )
+            mode by using traffic_manager.set_synchronous_mode(True)")
 
         if args.no_rendering:
             settings.no_rendering_mode = True

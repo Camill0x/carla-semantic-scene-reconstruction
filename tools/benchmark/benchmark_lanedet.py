@@ -8,8 +8,8 @@ import numpy as np
 from tqdm import tqdm
 
 from src.benchmark.artifacts import build_lanedet_meta, create_benchmark_output_dir, write_meta_json
-from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.frame_payloads import camera_frame_shape, state_frame_from_meta
+from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.predictions import save_lanes_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_camera_frame
 from src.lanedet.model import LaneDetector

@@ -24,7 +24,9 @@ class WorkflowPage(QWidget):
         return [("running", "Active Processes")]
 
     def summary_values(self):
-        return {"running": str(len([name for name in self.process_names() if name in self.manager.running_process_names()]))}
+        return {
+            "running": str(len([name for name in self.process_names() if name in self.manager.running_process_names()]))
+        }
 
     def preferred_window_size(self):
         return (1060, 720)

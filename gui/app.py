@@ -10,8 +10,7 @@ def create_app() -> QApplication:
         app = QApplication([])
     app.setApplicationName(APP_NAME)
     app.setStyle("Fusion")
-    app.setStyleSheet(
-        """
+    app.setStyleSheet("""
         QWidget {
             font-size: 13px;
             color: #e6edf3;
@@ -126,8 +125,7 @@ def create_app() -> QApplication:
             font-size: 22px;
             font-weight: 700;
         }
-        """
-    )
+        """)
     return app
 
 

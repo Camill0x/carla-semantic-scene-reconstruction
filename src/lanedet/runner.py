@@ -7,9 +7,9 @@ from src.common.paths import repo_root
 from src.lanedet.paths import (
     LANEDET_ROOT,
     model_from_config_path,
+    prepared_dataset_root,
     preset_dataset,
     preset_model,
-    prepared_dataset_root,
     resolve_lanedet_cfg,
 )
 

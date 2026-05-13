@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 
 import rerun as rr
-
 from src.benchmark.predictions import load_lanes_prediction, load_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
 from src.common.runtime_config import build_dataset_viewer_config, build_streaming_visualizer_config

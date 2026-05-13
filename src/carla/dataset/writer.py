@@ -104,6 +104,8 @@ def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict:
         "projection_margin_px": float(config.projection_margin_px),
         "dedupe_distance_px": float(config.dedupe_distance_px),
     }
+
+
 def _write_json(path: Path, payload: Dict) -> None:
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)

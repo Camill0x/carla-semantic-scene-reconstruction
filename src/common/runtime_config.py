@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Any, Dict, Mapping
 
 from src.common.config import (
-    CarlaConnectionConfig,
     CameraConfig,
+    CarlaConnectionConfig,
     CollectorConfig,
     DatasetViewerConfig,
     GtAnnotationsConfig,

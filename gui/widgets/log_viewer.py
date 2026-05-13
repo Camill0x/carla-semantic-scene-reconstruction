@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Dict
 
-from PySide6.QtGui import QTextCursor
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,

@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generic, List, Optional, Sequence, TypeVar
 
-
 T = TypeVar("T")
 
 

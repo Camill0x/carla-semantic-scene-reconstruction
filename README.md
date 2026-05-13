@@ -50,10 +50,10 @@ The benchmark workflow measures per-frame model-forward time and end-to-end runt
 
 The live pipeline is split into cooperating processes:
 
-* A producer that reads synchronized CARLA sensor data
+* Producer that reads synchronized CARLA sensor data
 * Detector nodes that attach to the shared frame stream
-* An aggregator that merges predictions into one scene stream
-* A Rerun visualizer for live inspection
+* Aggregator that merges predictions into one scene stream
+* Rerun visualizer for live inspection
 
 This keeps the CARLA-facing runtime lightweight while allowing OpenPCDet and LaneDet to stay in their own Conda environments.
 

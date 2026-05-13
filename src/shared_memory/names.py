@@ -24,4 +24,3 @@ class SharedMemoryNames:
     @property
     def lanes_buffer(self) -> str:
         return f"{self.prefix}_lanes"
-

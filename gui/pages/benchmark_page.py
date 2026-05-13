@@ -19,7 +19,9 @@ class BenchmarkPage(WorkflowPage):
             flags=BENCHMARK_OPENPCDET_FLAGS,
             on_start=lambda args: self._start("benchmark_openpcdet", args),
             on_stop=lambda: self.append_activity(self.manager.stop_process("benchmark_openpcdet")),
-            on_restart=lambda args: self.append_activity(self.manager.restart_process("benchmark_openpcdet", args=args)),
+            on_restart=lambda args: self.append_activity(
+                self.manager.restart_process("benchmark_openpcdet", args=args)
+            ),
             allow_extra_args=False,
             initial_args=self.manager.args_for("benchmark_openpcdet"),
         )
@@ -39,7 +41,9 @@ class BenchmarkPage(WorkflowPage):
             flags=BENCHMARK_VIEW_FLAGS,
             on_start=lambda args: self._start("benchmark_view_predictions", args),
             on_stop=lambda: self.append_activity(self.manager.stop_process("benchmark_view_predictions")),
-            on_restart=lambda args: self.append_activity(self.manager.restart_process("benchmark_view_predictions", args=args)),
+            on_restart=lambda args: self.append_activity(
+                self.manager.restart_process("benchmark_view_predictions", args=args)
+            ),
             allow_extra_args=False,
             initial_args=self.manager.args_for("benchmark_view_predictions"),
         )

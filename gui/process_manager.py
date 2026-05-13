@@ -66,8 +66,7 @@ class ProjectProcessManager:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
         self.processes: Dict[str, ManagedProcess] = {
-            name: ManagedProcess(name=name, command=list(spec.command))
-            for name, spec in PROCESS_SPECS.items()
+            name: ManagedProcess(name=name, command=list(spec.command)) for name, spec in PROCESS_SPECS.items()
         }
         self.ensure_log_files()
         self.load_state()

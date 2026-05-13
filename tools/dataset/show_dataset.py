@@ -7,6 +7,7 @@ from pathlib import Path
 
 import rerun as rr
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_dataset_viewer_config
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
 
@@ -33,6 +34,7 @@ def parse_args() -> ShowDatasetArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.dataset.show_dataset")
     config = build_dataset_viewer_config(show_grid=args.show_grid)
 
     if args.fps <= 0.0:
@@ -46,12 +48,14 @@ def main() -> None:
     if not frame_dirs:
         raise FileNotFoundError(f"No frame_* directories found in {args.run_dir}")
 
-    print(f"[info] run dir: {args.run_dir}")
-    print(f"[info] frames: {len(frame_dirs)}")
-    print(f"[info] fps: {args.fps}")
-    print(
-        f"[info] viewer: point_radius={config.point_radius}, gt_line_radius={config.gt_line_radius}, "
-        f"lane_line_thickness={config.lane_line_thickness}"
+    logger.info("run dir: %s", args.run_dir)
+    logger.info("frames: %d", len(frame_dirs))
+    logger.info("fps: %.2f", args.fps)
+    logger.info(
+        "viewer: point_radius=%s, gt_line_radius=%s, lane_line_thickness=%s",
+        config.point_radius,
+        config.gt_line_radius,
+        config.lane_line_thickness,
     )
 
     initialize_dataset_viewer(config)
@@ -65,7 +69,7 @@ def main() -> None:
         log_dataset_frame(frame, config)
         time.sleep(frame_delay_s)
 
-    print("[info] dataset loaded into Rerun")
+    logger.info("dataset loaded into Rerun")
 
 
 if __name__ == "__main__":

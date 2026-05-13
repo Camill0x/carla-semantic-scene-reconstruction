@@ -171,7 +171,7 @@ class StreamingOpenPCDetInferenceConfig:
             raise ValueError("Streaming OpenPCDet cfg_file must not be empty")
         if not self.ckpt:
             raise ValueError("Streaming OpenPCDet ckpt must not be empty")
-        if not self.score_thresh < 0:
+        if self.score_thresh < 0:
             raise ValueError("Streaming OpenPCDet score_thresh must be >= 0")
         if self.point_stride < 1:
             raise ValueError("Streaming OpenPCDet point_stride must be > 1")

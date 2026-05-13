@@ -76,7 +76,7 @@ tmp/
 
 These files are used as follows:
 
-* `gui_logs/` — Stores one log file per managed process
+* `gui_logs/` — Stores one log file per managed process while the GUI also streams fresh stdout lines directly into the live log panel
 * `gui_state.json` — Stores the last used arguments, last exit codes, log paths, and the PID of any process that is still alive
 
 When the GUI starts again, it reloads that state and reattaches to processes whose PIDs are still running. This makes it possible to reopen the control center without losing visibility into GUI-managed jobs that were already launched earlier.

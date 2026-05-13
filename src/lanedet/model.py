@@ -1,4 +1,5 @@
 import time
+from logging import Logger
 from pathlib import Path
 from typing import Any
 
@@ -26,13 +27,12 @@ def _synchronize_cuda() -> None:
 
 
 class LaneDetector:
-    def __init__(self, cfg_file: Path, ckpt: Path, score_thresh: float | None = None) -> None:
+    def __init__(self, cfg_file: Path, ckpt: Path, score_thresh: float, logger: Logger) -> None:
         self.cfg = Config.fromfile(str(cfg_file))
         self.cfg.show = False
         self.cfg.savedir = None
         self.cfg.load_from = str(ckpt)
-        if score_thresh is not None:
-            self.cfg.test_parameters.conf_threshold = float(score_thresh)
+        self.cfg.test_parameters.conf_threshold = float(score_thresh)
         self.processes = Process(self.cfg.val_process, self.cfg)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,7 +42,7 @@ class LaneDetector:
         else:
             net = net.to(self.device)
         net.eval()
-        load_network(net, str(ckpt))
+        load_network(net, str(ckpt), logger=logger)
         self.net = net
 
     def preprocess(self, image_bgr: ImageArray) -> JsonDict:

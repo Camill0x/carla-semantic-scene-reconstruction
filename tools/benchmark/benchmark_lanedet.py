@@ -14,6 +14,7 @@ from src.benchmark.frame_payloads import camera_frame_shape, state_frame_from_me
 from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.predictions import save_lanes_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_camera_frame
+from src.common.cli_logging import configure_logging
 from src.lanedet.model import LaneDetector
 from src.lanedet.projection import lanes_2d_to_lanes_3d
 
@@ -64,6 +65,7 @@ def now_synchronized() -> float:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.benchmark.lanedet")
     if args.warmup < 0:
         raise ValueError("--warmup must be >= 0")
 
@@ -73,14 +75,14 @@ def main() -> None:
 
     output_dir = create_benchmark_output_dir(run_dir=args.run_dir, model_name="lanedet")
     predictions_dir = output_dir / "predictions"
-    detector = LaneDetector(args.config, args.ckpt, score_thresh=args.score_thresh)
+    detector = LaneDetector(args.config, args.ckpt, score_thresh=args.score_thresh, logger=logger)
 
-    print("=== LaneDet offline benchmark ===")
-    print(f"[info] run_dir: {args.run_dir}")
-    print(f"[info] frames: {len(frame_dirs)}")
-    print(f"[info] warmup: {args.warmup}")
-    print(f"[info] score_thresh: {args.score_thresh:.2f}")
-    print(f"[info] output_dir: {output_dir}")
+    logger.info("=== LaneDet offline benchmark ===")
+    logger.info("run_dir: %s", args.run_dir)
+    logger.info("frames: %d", len(frame_dirs))
+    logger.info("warmup: %d", args.warmup)
+    logger.info("score_thresh: %.2f", args.score_thresh)
+    logger.info("output_dir: %s", output_dir)
 
     metrics: List[Dict[str, float]] = []
     first_frame_meta = None
@@ -141,9 +143,9 @@ def main() -> None:
             created_at=output_dir.name,
         ),
     )
-    print(f"[info] model FPS: {summary.get('model_fps', 0.0):.2f}")
-    print(f"[info] runtime FPS: {summary.get('runtime_fps', 0.0):.2f}")
-    print(f"[info] results saved to: {output_dir}")
+    logger.info("model FPS: %.2f", summary.get("model_fps", 0.0))
+    logger.info("runtime FPS: %.2f", summary.get("runtime_fps", 0.0))
+    logger.info("results saved to: %s", output_dir)
 
 
 if __name__ == "__main__":

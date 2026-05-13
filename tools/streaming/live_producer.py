@@ -16,7 +16,7 @@ from src.carla.geometry.boxes import actor_to_gt_box
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.carla.lidar.sensor import configure_lidar_blueprint
-from src.common.cli_logging import print_verbose
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_streaming_producer_config
 from src.shared_memory.buffers import SharedArrayPool, SharedMessageBuffer
 from src.shared_memory.names import SharedMemoryNames
@@ -61,6 +61,7 @@ def should_process_frame(frame: int, last_processed_frame: Optional[int], every_
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.streaming.live_producer", verbose=args.verbose)
     config = build_streaming_producer_config(every_nth=args.every_nth)
     names = SharedMemoryNames(prefix=config.common.prefix)
 
@@ -105,11 +106,11 @@ def main() -> None:
     if hero is None:
         raise RuntimeError("Hero vehicle not found")
 
-    print(f"[info] hero id={hero.id}, type={hero.type_id}")
-    print(f"[info] frame buffer: {names.frame_buffer}")
-    print(f"[info] camera prefix: {names.camera_prefix}")
-    print(f"[info] lidar prefix: {names.lidar_prefix}")
-    print(f"[info] sensor_slots: {config.sensor_slots}")
+    logger.info("hero id=%s, type=%s", hero.id, hero.type_id)
+    logger.info("frame buffer: %s", names.frame_buffer)
+    logger.info("camera prefix: %s", names.camera_prefix)
+    logger.info("lidar prefix: %s", names.lidar_prefix)
+    logger.info("sensor_slots: %s", config.sensor_slots)
 
     lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
     lidar_transform_relative = carla.Transform(carla.Location(x=-0.5, z=1.8))
@@ -231,7 +232,7 @@ def main() -> None:
 
             last_published_frame = frame_snapshot
             published_count += 1
-            print_verbose(args.verbose, "Producer", f"Published frame {frame_snapshot}")
+            logger.debug("published_frame=%s", frame_snapshot)
 
     finally:
         if lidar is not None:

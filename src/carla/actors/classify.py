@@ -4,7 +4,6 @@ import carla
 
 
 def find_hero_vehicle(world: carla.World) -> Optional[carla.Actor]:
-    print("map:", world.get_map().name)
     for vehicle in world.get_actors().filter("vehicle.*"):
         if vehicle.attributes.get("role_name") == "hero":
             return vehicle

@@ -19,6 +19,7 @@ from src.carla.lanes.collector import collect_lane_annotations
 from src.carla.lidar.frame_buffer import LidarFrameBuffer
 from src.carla.lidar.processing import preprocess_lidar_points
 from src.carla.lidar.sensor import configure_lidar_blueprint
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_collector_config
 
 
@@ -45,6 +46,7 @@ def should_process_frame(frame: int, last_processed_frame: Optional[int], every_
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.dataset.collect_dataset")
     config = build_collector_config(
         num_frames=args.num_frames,
         every_nth=args.every_nth,
@@ -64,24 +66,38 @@ def main() -> None:
 
     run_dir = ensure_dataset_run_dir(config.dataset_root_dir)
 
-    print(f"[info] hero id={hero.id}, type={hero.type_id}")
-    print(f"[info] run dir: {run_dir}")
-    print(f"[info] num_frames: {config.num_frames}")
-    print(f"[info] every_nth: {config.every_nth}")
-    print("[info] sensors: lidar + front camera")
-    print(
-        f"[info] lidar: max_range={config.lidar.max_range}m, channels={config.lidar.channels}, "
-        f"points_per_second={config.lidar.points_per_second}, fov=({config.lidar.lower_fov}, {config.lidar.upper_fov})"
+    logger.info("hero id=%s, type=%s", hero.id, hero.type_id)
+    logger.info("run dir: %s", run_dir)
+    logger.info("num_frames: %d", config.num_frames)
+    logger.info("every_nth: %d", config.every_nth)
+    logger.info("sensors: lidar + front camera")
+    logger.info(
+        "lidar: max_range=%sm, channels=%s, points_per_second=%s, fov=(%s, %s)",
+        config.lidar.max_range,
+        config.lidar.channels,
+        config.lidar.points_per_second,
+        config.lidar.lower_fov,
+        config.lidar.upper_fov,
     )
-    print(
-        f"[info] front camera: resolution={config.camera_front.width}x{config.camera_front.height}, "
-        f"fov={config.camera_front.fov}, xyz=({config.camera_front.x}, {config.camera_front.y}, {config.camera_front.z})"
+    logger.info(
+        "front camera: resolution=%sx%s, fov=%s, xyz=(%s, %s, %s)",
+        config.camera_front.width,
+        config.camera_front.height,
+        config.camera_front.fov,
+        config.camera_front.x,
+        config.camera_front.y,
+        config.camera_front.z,
     )
-    print(
-        f"[info] lane annotations: distance={config.lane_annotations.distance_m}m, "
-        f"step={config.lane_annotations.step_m}m, max_side_lanes={config.lane_annotations.max_side_lanes}"
+    logger.info(
+        "lane annotations: distance=%sm, step=%sm, max_side_lanes=%s",
+        config.lane_annotations.distance_m,
+        config.lane_annotations.step_m,
+        config.lane_annotations.max_side_lanes,
     )
-    print(f"[info] gt annotations: min_lidar_points_in_box={config.gt_annotations.min_lidar_points_in_box}")
+    logger.info(
+        "gt annotations: min_lidar_points_in_box=%s",
+        config.gt_annotations.min_lidar_points_in_box,
+    )
 
     lidar_bp = configure_lidar_blueprint(
         world,
@@ -219,16 +235,20 @@ def main() -> None:
                 config=config,
             )
 
-            print(
-                f"[saved {saved_count + 1}/{config.num_frames}] "
-                f"sim_frame={sim_frame} | points={points_snapshot.shape[0]} | "
-                f"lanes={len(lane_annotations)} | objects={len(objects)}"
+            logger.info(
+                "saved %d/%d | sim_frame=%s | points=%d | lanes=%d | objects=%d",
+                saved_count + 1,
+                config.num_frames,
+                sim_frame,
+                points_snapshot.shape[0],
+                len(lane_annotations),
+                len(objects),
             )
 
             last_saved_frame = sim_frame
             saved_count += 1
 
-        print(f"[done] raw dataset collection finished: {run_dir}")
+        logger.info("raw dataset collection finished: %s", run_dir)
 
     finally:
         if lidar is not None:

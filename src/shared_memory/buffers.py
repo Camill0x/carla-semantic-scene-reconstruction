@@ -1,8 +1,9 @@
 import json
+import inspect
 import struct
 from dataclasses import dataclass
 from multiprocessing import resource_tracker, shared_memory
-from typing import Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
@@ -18,11 +19,35 @@ def _normalize_shape(shape: Sequence[int]) -> Tuple[int, ...]:
     return tuple(int(dim) for dim in shape)
 
 
-def _unregister_shared_memory(segment: shared_memory.SharedMemory) -> None:
-    try:
-        resource_tracker.unregister(segment.name, "shared_memory")
-    except Exception:
-        pass
+def _disable_shared_memory_tracking() -> None:
+    if "track" in inspect.signature(shared_memory.SharedMemory).parameters:
+        return
+
+    tracker = cast(Any, resource_tracker)
+
+    if getattr(tracker, "_carla_shm_tracking_disabled", False):
+        return
+
+    original_register = tracker.register
+    original_unregister = tracker.unregister
+
+    def register(name: object, rtype: str) -> None:
+        if rtype == "shared_memory":
+            return
+        original_register(name, rtype)
+
+    def unregister(name: object, rtype: str) -> None:
+        if rtype == "shared_memory":
+            return
+        original_unregister(name, rtype)
+
+    tracker.register = register
+    tracker.unregister = unregister
+    tracker._CLEANUP_FUNCS.pop("shared_memory", None)
+    tracker._carla_shm_tracking_disabled = True
+
+
+_disable_shared_memory_tracking()
 
 
 def _to_jsonable(value: object) -> JsonValue:
@@ -141,7 +166,6 @@ class SharedArrayReader:
         segment = self._segments.get(name)
         if segment is None:
             segment = shared_memory.SharedMemory(name=name, create=False)
-            _unregister_shared_memory(segment)
             self._segments[name] = segment
         return segment
 
@@ -169,8 +193,6 @@ class SharedMessageBuffer:
         self._size_bytes = int(size_bytes)
         self._owner = bool(create)
         self._segment = shared_memory.SharedMemory(name=name, create=create, size=self._size_bytes)
-        if not self._owner:
-            _unregister_shared_memory(self._segment)
         self._write_version = 0
         if create:
             _segment_buffer(self._segment)[:HEADER_SIZE] = b"\x00" * HEADER_SIZE

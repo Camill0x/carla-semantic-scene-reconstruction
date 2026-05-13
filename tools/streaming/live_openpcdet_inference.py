@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
-from src.common.cli_logging import print_verbose
+from src.common.cli_logging import configure_logging
 from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.common.runtime_config import build_streaming_openpcdet_inference_config
 from src.openpcdet.model import load_inference_model, run_inference
@@ -44,6 +44,7 @@ def parse_args() -> LiveOpenPCDetArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.streaming.live_openpcdet_inference", verbose=args.verbose)
     config = build_streaming_openpcdet_inference_config(
         cfg_file=args.cfg_file,
         ckpt=args.ckpt,
@@ -52,7 +53,7 @@ def main() -> None:
     )
     names = SharedMemoryNames(prefix=config.common.prefix)
 
-    dataset, model, cfg, logger = load_inference_model(config.cfg_file, config.ckpt)
+    dataset, model, cfg = load_inference_model(config.cfg_file, config.ckpt, logger=logger)
     frame_buffer = SharedMessageBuffer(
         name=names.frame_buffer,
         size_bytes=config.common.frame_buffer_size_bytes,
@@ -114,7 +115,7 @@ def main() -> None:
                     objects_3d=objects_3d,
                 )
             )
-            print_verbose(args.verbose, "OpenPCDet", f"Detected {len(objects_3d)} objects for frame {frame_id}")
+            logger.debug("frame=%s | predicted_objects=%d", frame_id, len(objects_3d))
             last_frame = frame_id
     finally:
         reader.close()

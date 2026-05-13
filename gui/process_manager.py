@@ -2,10 +2,12 @@ import json
 import os
 import signal
 import subprocess
+import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Protocol, TextIO
+from typing import Deque, Dict, IO, List, Optional, Protocol, TextIO
 
 from gui.catalog import PROCESS_GROUPS, PROCESS_SPECS
 from gui.config import LOG_DIR, ROOT_DIR, STATE_PATH
@@ -27,6 +29,9 @@ class ManagedProcess:
     process: Optional[ProcessHandle] = None
     log_path: Optional[Path] = None
     log_handle: Optional[TextIO] = None
+    stdout_handle: Optional[IO[str]] = None
+    log_lines: Deque[str] = field(default_factory=lambda: deque(maxlen=2000))
+    log_thread: Optional[threading.Thread] = None
     last_exit_code: Optional[int] = None
 
     def is_running(self) -> bool:
@@ -40,9 +45,6 @@ class ManagedProcess:
             return
         self.last_exit_code = int(exit_code)
         self.process = None
-        if self.log_handle is not None:
-            self.log_handle.close()
-            self.log_handle = None
 
 
 class ReattachedProcess:
@@ -74,6 +76,7 @@ class ProjectProcessManager:
     def __init__(self) -> None:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        self._log_lock = threading.Lock()
         self.processes: Dict[str, ManagedProcess] = {
             name: ManagedProcess(name=name, command=list(spec.command)) for name, spec in PROCESS_SPECS.items()
         }
@@ -110,20 +113,39 @@ class ProjectProcessManager:
             return f"{name} is already running"
 
         log_path = LOG_DIR / f"{name}.log"
-        log_handle = log_path.open("a", encoding="utf-8")
+        with self._log_lock:
+            process.log_lines.clear()
+        log_handle = log_path.open("a", encoding="utf-8", buffering=1)
         command = process.command + process.args
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        env.setdefault("PYTHONIOENCODING", "utf-8")
         popen = subprocess.Popen(
             command,
             cwd=str(ROOT_DIR),
-            stdout=log_handle,
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             preexec_fn=os.setsid,
             text=True,
+            bufsize=1,
+            env=env,
         )
+        stdout_handle = popen.stdout
+        if stdout_handle is None:
+            log_handle.close()
+            raise RuntimeError(f"Failed to capture stdout for {name}")
         process.process = popen
         process.log_path = log_path
         process.log_handle = log_handle
+        process.stdout_handle = stdout_handle
         process.last_exit_code = None
+        process.log_thread = threading.Thread(
+            target=self._consume_process_output,
+            args=(process,),
+            name=f"log-reader-{name}",
+            daemon=True,
+        )
+        process.log_thread.start()
         self.save_state()
         return f"Started {name} (pid={popen.pid})"
 
@@ -198,12 +220,26 @@ class ProjectProcessManager:
     def available_log_files(self) -> Dict[str, Path]:
         return {name: process.log_path for name, process in self.processes.items() if process.log_path is not None}
 
+    def log_snapshots(self, names: List[str], *, limit_lines: int = 400) -> Dict[str, str]:
+        snapshots: Dict[str, str] = {}
+        for name in names:
+            process = self.processes[name]
+            with self._log_lock:
+                if process.log_lines:
+                    snapshots[name] = "".join(list(process.log_lines)[-limit_lines:])
+                    continue
+            snapshots[name] = self._read_log_tail(process.log_path, limit_lines=limit_lines)
+        return snapshots
+
     def clear_logs(self) -> None:
         for path in LOG_DIR.glob("*.log"):
             try:
                 path.write_text("", encoding="utf-8")
             except Exception:
                 continue
+        with self._log_lock:
+            for process in self.processes.values():
+                process.log_lines.clear()
 
     def summary(self) -> Dict[str, object]:
         self.refresh_all()
@@ -258,3 +294,38 @@ class ProjectProcessManager:
             pid = raw.get("pid")
             if isinstance(pid, int) and self.pid_is_alive(pid):
                 process.process = ReattachedProcess(pid)
+
+    def _consume_process_output(self, process: ManagedProcess) -> None:
+        stdout_handle = process.stdout_handle
+        log_handle = process.log_handle
+        if stdout_handle is None or log_handle is None:
+            return
+        try:
+            for line in stdout_handle:
+                log_handle.write(line)
+                log_handle.flush()
+                with self._log_lock:
+                    process.log_lines.append(line)
+        finally:
+            try:
+                stdout_handle.close()
+            except Exception:
+                pass
+            if process.stdout_handle is stdout_handle:
+                process.stdout_handle = None
+            try:
+                log_handle.close()
+            finally:
+                if process.log_handle is log_handle:
+                    process.log_handle = None
+            if process.log_thread is threading.current_thread():
+                process.log_thread = None
+
+    def _read_log_tail(self, path: Optional[Path], *, limit_lines: int) -> str:
+        if path is None or not path.exists():
+            return ""
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as handle:
+                return "".join(deque(handle, maxlen=limit_lines))
+        except Exception as exc:
+            return f"Failed to read log: {exc}"

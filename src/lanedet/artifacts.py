@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 from src.common.paths import repo_relative_or_absolute
 from src.common.typing_aliases import JsonDict
@@ -38,7 +38,7 @@ def copy_config(source_work_dir: Path, target: Path) -> Path:
     return target
 
 
-def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> dict[str, Path | None]:
+def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> Dict[str, Optional[Path]]:
     source_ckpt_dir = source_work_dir / "ckpt"
     if not source_ckpt_dir.exists():
         raise FileNotFoundError(source_ckpt_dir)

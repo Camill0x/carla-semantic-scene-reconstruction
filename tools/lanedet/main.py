@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+from src.common.cli_logging import configure_logging
 from src.common.paths import repo_relative_or_absolute
 from src.lanedet.artifacts import (
     copy_common_outputs,
@@ -78,6 +79,7 @@ def parse_args() -> LaneDetArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.lanedet.main")
     validate_run_args(args.validate, args.load_from)
 
     cfg_file, model = resolve_run_config(args.preset, args.config)
@@ -159,7 +161,7 @@ def main() -> None:
     finally:
         shutil.rmtree(work_root, ignore_errors=True)
 
-    print(f"Results saved to: {repo_relative_or_absolute(output_dir)}")
+    logger.info("results saved to: %s", repo_relative_or_absolute(output_dir))
 
 
 if __name__ == "__main__":

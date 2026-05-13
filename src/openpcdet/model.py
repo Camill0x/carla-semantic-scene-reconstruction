@@ -1,4 +1,5 @@
 import time
+from logging import Logger
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -7,7 +8,6 @@ import torch
 from pcdet.config import cfg, cfg_from_yaml_file
 from pcdet.datasets import DatasetTemplate
 from pcdet.models import build_network, load_data_to_gpu
-from pcdet.utils import common_utils
 
 from src.openpcdet.paths import OPENPCDET_ROOT
 from src.openpcdet.prediction import Objects3DPrediction
@@ -41,13 +41,17 @@ def synchronize_cuda() -> None:
         torch.cuda.synchronize()
 
 
-def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[InferenceDataset, torch.nn.Module, Any, Any]:
+def load_inference_model(
+    cfg_file: Path,
+    ckpt: Path,
+    *,
+    logger: Logger,
+) -> Tuple[InferenceDataset, torch.nn.Module, Any]:
     cfg_file_path = cfg_file.expanduser().resolve()
     ckpt_path = ckpt.expanduser().resolve()
 
     with working_directory(OPENPCDET_ROOT):
         cfg_from_yaml_file(str(cfg_file_path), cfg)
-    logger = common_utils.create_logger()
 
     dataset = InferenceDataset(
         dataset_cfg=cfg.DATA_CONFIG,
@@ -63,7 +67,7 @@ def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[InferenceDataset, 
     model.cuda()
     model.eval()
 
-    return dataset, model, cfg, logger
+    return dataset, model, cfg
 
 
 def run_inference(

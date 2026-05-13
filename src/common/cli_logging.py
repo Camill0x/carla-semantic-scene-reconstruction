@@ -1,11 +1,29 @@
-from datetime import datetime
+import logging
+import sys
+
+LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def format_verbose_log(component: str, message: str) -> str:
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return f"{timestamp} | {component} | {message}"
+def _logger_name(component: str) -> str:
+    return component.strip().replace(" ", "_").lower()
 
 
-def print_verbose(enabled: bool, component: str, message: str) -> None:
-    if enabled:
-        print(format_verbose_log(component, message))
+def configure_logging(
+    component: str,
+    *,
+    verbose: bool = False,
+) -> logging.Logger:
+    logger = logging.getLogger(_logger_name(component))
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logger.propagate = False
+
+    if not logger.handlers:
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
+            handler.close()
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT))
+        logger.addHandler(handler)
+
+    return logger

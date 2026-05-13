@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+from src.common.cli_logging import configure_logging
 from src.common.paths import repo_relative_or_absolute
 from src.openpcdet.artifacts import checkpoint_epoch, write_json
 from src.openpcdet.commands import build_test_command, run_openpcdet_test
@@ -60,6 +61,7 @@ def parse_args() -> TestArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.openpcdet.test")
 
     if args.preset is not None:
         class_filter, cfg_file = resolve_openpcdet_preset(args.preset)
@@ -119,7 +121,7 @@ def main() -> None:
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 
-    print(f"Results saved to: {repo_relative_or_absolute(output_dir)}")
+    logger.info("results saved to: %s", repo_relative_or_absolute(output_dir))
 
 
 if __name__ == "__main__":

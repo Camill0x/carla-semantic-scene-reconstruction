@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent, QGuiApplication
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
     def _build_workflow_page(
         self,
         route: str,
-    ) -> CarlaPage | DatasetPage | TrainingPage | BenchmarkPage | StreamingPage:
+    ) -> Union[CarlaPage, DatasetPage, TrainingPage, BenchmarkPage, StreamingPage]:
         if route == "carla":
             return CarlaPage(self.manager, self._append_nowhere)
         if route == "dataset":

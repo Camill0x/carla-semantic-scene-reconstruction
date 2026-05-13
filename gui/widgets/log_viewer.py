@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Dict, Optional
 
 from PySide6.QtCore import QTimer
@@ -17,7 +16,7 @@ from PySide6.QtWidgets import (
 class LogViewer(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.log_paths: Dict[str, Path] = {}
+        self.log_texts: Dict[str, str] = {}
         self._known_log_names: list[str] = []
         self._last_text: Optional[str] = None
         self._force_scroll_to_bottom = True
@@ -37,16 +36,16 @@ class LogViewer(QWidget):
         self.editor.setReadOnly(True)
         layout.addWidget(self.editor, 1)
 
-    def set_logs(self, logs: Dict[str, Path]) -> None:
+    def set_logs(self, logs: Dict[str, str]) -> None:
         current = self.selector.currentText()
-        self.log_paths = dict(logs)
-        names = sorted(self.log_paths)
+        self.log_texts = dict(logs)
+        names = sorted(self.log_texts)
         if names != self._known_log_names:
             self._known_log_names = names
             self.selector.blockSignals(True)
             self.selector.clear()
             self.selector.addItems(names)
-            if current and current in self.log_paths:
+            if current and current in self.log_texts:
                 self.selector.setCurrentText(current)
             elif names:
                 self.selector.setCurrentIndex(0)
@@ -61,16 +60,10 @@ class LogViewer(QWidget):
 
     def refresh(self) -> None:
         name = self.selector.currentText()
-        path = self.log_paths.get(name)
-        if path is None or not path.exists():
+        text = self.log_texts.get(name)
+        if text is None:
             self._last_text = ""
             self.editor.setPlainText("")
-            return
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except Exception as exc:
-            self._last_text = None
-            self.editor.setPlainText(f"Failed to read log: {exc}")
             return
         lines = text.splitlines()
         tail = "\n".join(lines[-400:])

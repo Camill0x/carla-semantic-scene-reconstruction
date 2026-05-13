@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import List, Sequence, Union
 
 import numpy as np
 
@@ -104,7 +104,7 @@ def log_lane_annotations_3d(
     )
 
 
-def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | JsonDict, *, line_thickness: float) -> None:
+def log_prediction_lanes_2d(lanes_2d: Union[Lanes2DPrediction, JsonDict], *, line_thickness: float) -> None:
     if isinstance(lanes_2d, Lanes2DPrediction):
         strips_payload = lanes_2d.strips
         scores = lanes_2d.scores
@@ -150,7 +150,7 @@ def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | JsonDict, *, line_thic
     )
 
 
-def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | JsonDict, *, line_radius: float) -> None:
+def log_prediction_lanes_3d(lanes_3d: Union[Lanes3DPrediction, JsonDict], *, line_radius: float) -> None:
     if isinstance(lanes_3d, Lanes3DPrediction):
         strips_payload = lanes_3d.strips
         scores = lanes_3d.scores

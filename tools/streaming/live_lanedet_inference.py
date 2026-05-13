@@ -8,7 +8,7 @@ from typing import Mapping
 
 import numpy as np
 
-from src.common.cli_logging import print_verbose
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_streaming_lanedet_inference_config
 from src.lanedet.model import LaneDetector
 from src.lanedet.projection import lanes_2d_to_lanes_3d
@@ -42,13 +42,14 @@ def parse_args() -> LiveLaneDetArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.streaming.live_lanedet_inference", verbose=args.verbose)
     config = build_streaming_lanedet_inference_config(
         cfg_file=args.config.expanduser().resolve(),
         ckpt=args.ckpt.expanduser().resolve(),
         score_thresh=args.score_thresh,
     )
     names = SharedMemoryNames(prefix=config.common.prefix)
-    detector = LaneDetector(config.cfg_file, config.ckpt, score_thresh=config.score_thresh)
+    detector = LaneDetector(config.cfg_file, config.ckpt, score_thresh=config.score_thresh, logger=logger)
 
     frame_buffer = SharedMessageBuffer(
         name=names.frame_buffer,
@@ -65,9 +66,9 @@ def main() -> None:
     last_frame = None
     sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
 
-    print("=== LaneDet streaming inference ===")
-    print(f"[info] frame buffer: {names.frame_buffer}")
-    print(f"[info] lanes buffer: {names.lanes_buffer}")
+    logger.info("=== LaneDet streaming inference ===")
+    logger.info("frame buffer: %s", names.frame_buffer)
+    logger.info("lanes buffer: %s", names.lanes_buffer)
 
     try:
         while True:
@@ -82,7 +83,7 @@ def main() -> None:
                     raise ValueError("Frame payload is not a mapping")
                 frame_message = parse_frame_snapshot_message(payload)
             except Exception as exc:
-                print(f"[warn] invalid frame snapshot: {exc}")
+                logger.warning("invalid frame snapshot: %s", exc)
                 continue
 
             frame_id = int(frame_message["frame"])
@@ -107,7 +108,7 @@ def main() -> None:
                     score_thresh=config.score_thresh,
                 )
             except Exception as exc:
-                print(f"[warn] LaneDet inference failed frame={frame_id}: {exc}")
+                logger.warning("LaneDet inference failed frame=%s: %s", frame_id, exc)
                 continue
 
             lanes_buffer.write(
@@ -116,7 +117,7 @@ def main() -> None:
                     lanes_3d=lanes_3d,
                 )
             )
-            print_verbose(args.verbose, "LaneDet", f"Detected {len(lanes_3d)} lanes for frame {frame_id}")
+            logger.debug("frame=%s | predicted_lanes=%d", frame_id, len(lanes_3d))
             last_frame = frame_id
     finally:
         reader.close()

@@ -7,7 +7,7 @@ from typing import Dict, Mapping, Optional
 
 import zmq
 
-from src.common.cli_logging import print_verbose
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_streaming_aggregator_config
 from src.common.typing_aliases import JsonDict
 from src.shared_memory.buffers import SharedMessageBuffer
@@ -67,6 +67,7 @@ def next_ready_frame(
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.streaming.live_aggregator", verbose=args.verbose)
     config = build_streaming_aggregator_config()
     names = SharedMemoryNames(prefix=config.common.prefix)
     frame_buffer = None
@@ -91,11 +92,11 @@ def main() -> None:
     last_sent_frame = None
     sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
 
-    print("=== Streaming scene aggregator ===")
-    print(f"[info] frame buffer: {names.frame_buffer}")
-    print(f"[info] objects buffer: {names.objects_buffer}")
-    print(f"[info] lanes buffer: {names.lanes_buffer}")
-    print(f"[info] ZMQ scene OUT: {config.scene_bind}")
+    logger.info("=== Streaming scene aggregator ===")
+    logger.info("frame buffer: %s", names.frame_buffer)
+    logger.info("objects buffer: %s", names.objects_buffer)
+    logger.info("lanes buffer: %s", names.lanes_buffer)
+    logger.info("ZMQ scene OUT: %s", config.scene_bind)
 
     try:
         while True:
@@ -134,7 +135,7 @@ def main() -> None:
                     trim_cache(frame_cache, frame_cache_limit)
                     updated = True
                 except Exception as exc:
-                    print(f"[warn] invalid frame snapshot: {exc}")
+                    logger.warning("invalid frame snapshot: %s", exc)
 
             if objects_buffer is not None:
                 new_objects_version, objects_payload = objects_buffer.read(last_version=objects_version)
@@ -150,7 +151,7 @@ def main() -> None:
                         objects_last_update_t = now
                         updated = True
                     except Exception as exc:
-                        print(f"[warn] invalid objects frame: {exc}")
+                        logger.warning("invalid objects frame: %s", exc)
 
             if lanes_buffer is not None:
                 new_lanes_version, lanes_payload = lanes_buffer.read(last_version=lanes_version)
@@ -166,21 +167,21 @@ def main() -> None:
                         lanes_last_update_t = now
                         updated = True
                     except Exception as exc:
-                        print(f"[warn] invalid lanes frame: {exc}")
+                        logger.warning("invalid lanes frame: %s", exc)
 
             if objects_active and objects_last_update_t is not None and now - objects_last_update_t > stale_timeout_s:
                 objects_active = False
                 objects_last_update_t = None
                 objects_frames.clear()
                 updated = True
-                print("[aggregator] objects branch inactive; continuing without objects")
+                logger.warning("objects branch inactive; continuing without objects")
 
             if lanes_active and lanes_last_update_t is not None and now - lanes_last_update_t > stale_timeout_s:
                 lanes_active = False
                 lanes_last_update_t = None
                 lanes_frames.clear()
                 updated = True
-                print("[aggregator] lanes branch inactive; continuing without lanes")
+                logger.warning("lanes branch inactive; continuing without lanes")
 
             if not frame_cache:
                 time.sleep(sleep_s)
@@ -212,7 +213,7 @@ def main() -> None:
             )
 
             scene_socket.send_pyobj(scene)
-            print_verbose(args.verbose, "Aggregator", f"Published frame {scene['frame']}")
+            logger.debug("published_frame=%s", scene["frame"])
             last_sent_frame = frame
     finally:
         if frame_buffer is not None:

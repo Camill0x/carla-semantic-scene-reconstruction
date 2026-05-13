@@ -123,10 +123,15 @@ class WorkflowWindow(QMainWindow):
         return frame
 
     def _build_timer(self) -> None:
-        self.timer = QTimer(self)
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.refresh_ui)
-        self.timer.start()
+        self.ui_timer = QTimer(self)
+        self.ui_timer.setInterval(1000)
+        self.ui_timer.timeout.connect(self.refresh_ui)
+        self.ui_timer.start()
+
+        self.log_timer = QTimer(self)
+        self.log_timer.setInterval(200)
+        self.log_timer.timeout.connect(self.refresh_logs)
+        self.log_timer.start()
 
     def append_activity(self, messages: ActivityMessages) -> None:
         if isinstance(messages, str):
@@ -135,6 +140,7 @@ class WorkflowWindow(QMainWindow):
         for message in messages:
             if message:
                 self.activity_feed.append(f"[{stamp}] {message}")
+        self.refresh_logs()
         self.refresh_ui()
 
     def open_process_inspector(self) -> None:
@@ -147,15 +153,13 @@ class WorkflowWindow(QMainWindow):
         self.refresh_ui()
 
     def refresh_ui(self) -> None:
-        logs = {
-            name: path
-            for name, path in self.manager.available_log_files().items()
-            if name in set(self.page.process_names())
-        }
-        self.log_viewer.set_logs(logs)
+        self.refresh_logs()
         summary_values: SummaryValues = self.page.summary_values()
         self.session_summary.update_values(summary_values)
         self.page.refresh()
+
+    def refresh_logs(self) -> None:
+        self.log_viewer.set_logs(self.manager.log_snapshots(list(self.page.process_names())))
 
     def _resize_to_contents(self) -> None:
         central = self.centralWidget()

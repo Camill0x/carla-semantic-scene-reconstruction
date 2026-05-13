@@ -13,6 +13,7 @@ from src.benchmark.artifacts import build_openpcdet_meta, create_benchmark_outpu
 from src.benchmark.metrics import summarize_frame_metrics, write_metrics_json
 from src.benchmark.predictions import save_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_points_frame
+from src.common.cli_logging import configure_logging
 from src.common.constants import NUSCENES_LIKE_CLASSES
 from src.openpcdet.model import load_inference_model, run_inference
 from src.openpcdet.postprocess import filter_object_predictions
@@ -67,6 +68,7 @@ def now_synchronized() -> float:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.benchmark.openpcdet")
     if args.point_stride < 1:
         raise ValueError("--point-stride must be >= 1")
     if args.warmup < 0:
@@ -79,7 +81,7 @@ def main() -> None:
     output_dir = create_benchmark_output_dir(run_dir=args.run_dir, model_name="openpcdet")
     predictions_dir = output_dir / "predictions"
 
-    dataset, model, cfg, logger = load_inference_model(args.cfg_file, args.ckpt)
+    dataset, model, cfg = load_inference_model(args.cfg_file, args.ckpt, logger=logger)
     logger.info("=== OpenPCDet offline benchmark ===")
     logger.info("run_dir: %s", args.run_dir)
     logger.info("frames: %d", len(frame_dirs))

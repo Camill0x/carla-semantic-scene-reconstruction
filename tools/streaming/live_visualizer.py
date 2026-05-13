@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import zmq
 
-from src.common.cli_logging import print_verbose
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_streaming_visualizer_config
 from src.rerun.live_viewer import initialize_live_viewer, render_live_scene
 from src.rerun.text import log_legend
@@ -35,6 +35,7 @@ def parse_args() -> LiveVisualizerArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.streaming.live_visualizer", verbose=args.verbose)
     config = build_streaming_visualizer_config(show_grid=args.show_grid)
 
     context = zmq.Context()
@@ -47,8 +48,8 @@ def main() -> None:
     latest_scene = None
     last_render_key: Optional[Tuple[int, object, object, object]] = None
 
-    print("=== Streaming visualizer ===")
-    print(f"[info] ZMQ scene IN: {config.scene_connect}")
+    logger.info("=== Streaming visualizer ===")
+    logger.info("ZMQ scene IN: %s", config.scene_connect)
 
     try:
         while True:
@@ -62,10 +63,10 @@ def main() -> None:
                     published_at_ns = int(scene.get("published_at_monotonic_ns", 0))
                     scene["latency_ms"] = (receive_monotonic_ns - published_at_ns) / 1_000_000.0
                     scene["transfer_bytes"] = transfer_bytes
-                    print_verbose(args.verbose, "Visualizer", f"Received frame {scene['frame']}")
+                    logger.debug("received_frame=%s", scene["frame"])
                     latest_scene = scene
                 except Exception as exc:
-                    print(f"[warn] invalid scene_frame: {exc}")
+                    logger.warning("invalid scene_frame: %s", exc)
 
             if latest_scene is not None:
                 source_frames = latest_scene.get("source_frames", {})

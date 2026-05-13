@@ -5,6 +5,7 @@ import shutil
 from dataclasses import dataclass
 from typing import List, Optional
 
+from src.common.cli_logging import configure_logging
 from src.common.dataset import iter_frame_dirs, selected_run_dirs, train_val_test_split
 from src.common.paths import repo_relative_or_absolute
 from src.openpcdet.constants import CLASS_FILTERS
@@ -52,6 +53,7 @@ def parse_args() -> PrepareDatasetArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.openpcdet.prepare_dataset")
     source_root = RAW_DATASET_ROOT
     output_root = prepared_dataset_root(args.class_filter, args.name)
     class_names = CLASS_FILTERS[args.class_filter]
@@ -66,11 +68,11 @@ def main() -> None:
 
     run_dirs = selected_run_dirs(source_root, None if args.use_all else args.runs)
     frame_dirs = iter_frame_dirs(run_dirs)
-    print(f"Runs: [{', '.join(run_dir.name for run_dir in run_dirs)}]")
-    print(f"Found {len(frame_dirs)} frame directories")
+    logger.info("runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
+    logger.info("found %d frame directories", len(frame_dirs))
 
     infos = load_infos(frame_dirs, output_root, class_names)
-    print(f"Loaded {len(infos)} valid samples")
+    logger.info("loaded %d valid samples", len(infos))
 
     splits = train_val_test_split(
         items=infos,
@@ -80,10 +82,10 @@ def main() -> None:
     )
     write_infos(output_root, splits)
 
-    print(f"Train samples: {len(splits.train)}")
-    print(f"Val samples: {len(splits.val)}")
-    print(f"Test samples: {len(splits.test)}")
-    print(f"Saved dataset: {repo_relative_or_absolute(output_root)}")
+    logger.info("train samples: %d", len(splits.train))
+    logger.info("val samples: %d", len(splits.val))
+    logger.info("test samples: %d", len(splits.test))
+    logger.info("saved dataset: %s", repo_relative_or_absolute(output_root))
 
 
 if __name__ == "__main__":

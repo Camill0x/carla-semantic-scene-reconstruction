@@ -1,8 +1,7 @@
 import shlex
 from pathlib import Path
-from typing import Dict, List, Optional, TypeAlias
+from typing import Dict, List, Optional, TypeAlias, Union
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -18,7 +17,7 @@ from PySide6.QtWidgets import (
 
 from gui.models import FlagSpec
 
-InputWidget: TypeAlias = QCheckBox | QComboBox | QLineEdit
+InputWidget: TypeAlias = Union[QCheckBox, QComboBox, QLineEdit]
 
 
 class FlagForm(QWidget):

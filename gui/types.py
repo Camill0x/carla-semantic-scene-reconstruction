@@ -1,7 +1,7 @@
-from typing import Callable, TypeAlias
+from typing import Callable, TypeAlias, Union
 
 ArgsList: TypeAlias = list[str]
-ActivityMessages: TypeAlias = str | list[str]
+ActivityMessages: TypeAlias = Union[str, list[str]]
 AppendActivity: TypeAlias = Callable[[ActivityMessages], None]
 OpenWorkflow: TypeAlias = Callable[[str], None]
 SummarySpec: TypeAlias = tuple[str, str]

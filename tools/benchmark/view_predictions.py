@@ -9,6 +9,7 @@ from typing import Optional
 import rerun as rr
 from src.benchmark.predictions import load_lanes_prediction, load_objects_prediction
 from src.carla.dataset.reader import iter_frame_dirs, load_dataset_frame
+from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_dataset_viewer_config, build_streaming_visualizer_config
 from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
@@ -45,6 +46,7 @@ def parse_args() -> ViewPredictionsArgs:
 
 def main() -> None:
     args = parse_args()
+    logger = configure_logging("tools.benchmark.view_predictions")
     if args.fps <= 0.0:
         raise ValueError("--fps must be > 0")
     if not args.run_dir.exists():
@@ -61,14 +63,14 @@ def main() -> None:
     initialize_dataset_viewer(dataset_config)
     log_legend()
 
-    print("=== Offline prediction viewer ===")
-    print(f"[info] run_dir: {args.run_dir}")
-    print(f"[info] frames: {len(frame_dirs)}")
-    print(f"[info] fps: {args.fps}")
+    logger.info("=== Offline prediction viewer ===")
+    logger.info("run_dir: %s", args.run_dir)
+    logger.info("frames: %d", len(frame_dirs))
+    logger.info("fps: %.2f", args.fps)
     if args.objects:
-        print(f"[info] objects: {args.objects}")
+        logger.info("objects: %s", args.objects)
     if args.lanes:
-        print(f"[info] lanes: {args.lanes}")
+        logger.info("lanes: %s", args.lanes)
 
     frame_delay_s = 1.0 / args.fps
     for frame_dir in frame_dirs:
@@ -95,7 +97,7 @@ def main() -> None:
 
         time.sleep(frame_delay_s)
 
-    print("[info] predictions loaded into Rerun")
+    logger.info("predictions loaded into Rerun")
 
 
 if __name__ == "__main__":

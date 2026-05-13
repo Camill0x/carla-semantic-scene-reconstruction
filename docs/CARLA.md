@@ -2,9 +2,9 @@
 
 This document covers the operational, non-training part of the project: starting CARLA, driving the ego vehicle, generating traffic, collecting raw datasets, and replaying saved runs.
 
-Before using these commands, complete the setup described in [installation.md](installation.md). In practice, you need a valid `CARLA_ROOT` and an installed `carla_app` environment.
+Before using these commands, complete the setup described in [Installation](INSTALL.md). In practice, you need a valid `CARLA_ROOT` and an installed `carla_app` environment.
 
-All workflows described here are also available through the GUI. If you want to use the graphical workflow layer instead of driving everything from the terminal, continue with [gui.md](gui.md).
+All workflows described here are also available through the GUI. If you want to use the graphical workflow layer instead of driving everything from the terminal, continue with [GUI](GUI.md).
 
 ## Contents
 
@@ -64,10 +64,17 @@ conda activate carla_app
 python -m tools.carla.manual_control --sync
 
 # Load a specific map and pin the ego vehicle blueprint.
-python -m tools.carla.manual_control --sync --map Town10HD --filter vehicle.dodge.charger_2020
+python -m tools.carla.manual_control \
+  --sync \
+  --map Town10HD \
+  --filter vehicle.dodge.charger_2020
 
 # Drive with sync mode, autopilot, and an explicit client/simulation FPS.
-python -m tools.carla.manual_control --sync --autopilot --client-fps 20 --sim-fps 20
+python -m tools.carla.manual_control \
+  --sync \
+  --autopilot \
+  --client-fps 20 \
+  --sim-fps 20
 ```
 
 ### Basic controls
@@ -107,10 +114,10 @@ Each captured frame includes the front RGB camera image, the LiDAR point cloud, 
 
 During collection, the tool:
 
-* waits for synchronized CARLA ticks
-* attaches a LiDAR and front RGB camera to the `hero` vehicle
-* saves points, RGB frames, GT objects, lane annotations, and metadata
-* writes a new `run_XXXX` directory under the configured raw dataset root
+* Waits for synchronized CARLA ticks
+* Attaches a LiDAR and front RGB camera to the `hero` vehicle
+* Saves points, RGB frames, GT objects, lane annotations, and metadata
+* Writes a new `run_XXXX` directory under the configured raw dataset root
 
 ### Flags
 
@@ -120,8 +127,7 @@ During collection, the tool:
 ### Requirements
 
 * CARLA must already be running
-* manual control must already be active in `--sync` mode
-* the ego vehicle must exist and use the `hero` role
+* Manual control must already be active in `--sync` mode
 
 ### Examples
 
@@ -190,5 +196,8 @@ python -m tools.dataset.show_dataset --run-dir datasets/raw/run_0001
 python -m tools.dataset.show_dataset --run-dir datasets/raw/run_0001 --fps 5
 
 # Replay with the 3D ground grid enabled.
-python -m tools.dataset.show_dataset --run-dir datasets/raw/run_0001 --fps 20 --show-grid
+python -m tools.dataset.show_dataset \
+  --run-dir datasets/raw/run_0001 \
+  --fps 20 \
+  --show-grid
 ```

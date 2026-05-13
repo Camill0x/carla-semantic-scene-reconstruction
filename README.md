@@ -1,6 +1,6 @@
 # CARLA Semantic Scene Reconstruction
 
-Multimodal CARLA workflow for synchronized dataset collection, detector training, offline benchmarking, and live scene reconstruction with GUI-assisted orchestration.
+CARLA workflow for synchronized dataset collection, detector training, offline benchmarking, and live scene reconstruction with GUI support.
 
 ## Overview
 
@@ -19,19 +19,19 @@ Multimodal CARLA workflow for synchronized dataset collection, detector training
 This repository combines four closely connected workflows:
 
 * CARLA driving, traffic generation, and synchronized raw dataset collection
-* dataset preparation and model training for OpenPCDet and LaneDet
-* offline benchmarking with replayable prediction outputs
-* live streaming inference with a lightweight control layer and Rerun visualization
+* Dataset preparation and model training for OpenPCDet and LaneDet
+* Offline benchmarking with saved prediction outputs
+* Live streaming inference with a lightweight control layer and Rerun visualization
 
 ### CARLA Runtime and Dataset Collection
 
 Use CARLA 0.9.15 together with the `carla_app` environment to:
 
-* launch the simulator
-* drive the ego vehicle in synchronous mode
-* generate surrounding traffic
-* record synchronized RGB, LiDAR, object, lane, and state data
-* replay saved runs in Rerun
+* Launch the simulator
+* Drive the ego vehicle in synchronous mode
+* Generate surrounding traffic
+* Record synchronized RGB, LiDAR, object, lane, and state data
+* Replay saved runs in Rerun
 
 ### Detector Training and Evaluation
 
@@ -40,7 +40,7 @@ The repository supports two detector stacks:
 * `OpenPCDet` for 3D object detection on the project-specific `carla_nuscenes6` dataset family
 * `LaneDet` for lane detection on the prepared TuSimple-style dataset built from CARLA runs
 
-Both stacks are integrated as vendored submodules under `third_party/` and are wrapped by project-owned entrypoints for dataset preparation, training, and evaluation.
+Both stacks are integrated as bundled submodules under `third_party/` and are wrapped by project commands for dataset preparation, training, and evaluation.
 
 ### Offline Benchmarking
 
@@ -50,22 +50,22 @@ The benchmark workflow measures per-frame model-forward time and end-to-end runt
 
 The live pipeline is split into cooperating processes:
 
-* a producer that reads synchronized CARLA sensor data
-* detector nodes that attach to the shared frame stream
-* an aggregator that merges predictions into one scene stream
-* a Rerun visualizer for live inspection
+* A producer that reads synchronized CARLA sensor data
+* Detector nodes that attach to the shared frame stream
+* An aggregator that merges predictions into one scene stream
+* A Rerun visualizer for live inspection
 
 This keeps the CARLA-facing runtime lightweight while allowing OpenPCDet and LaneDet to stay in their own Conda environments.
 
 ## Documentation Map
 
-Start with [docs/installation.md](docs/installation.md), then follow the workflow-specific guides below:
+Start with [Installation](docs/INSTALL.md), then follow the workflow-specific guides below:
 
-* [docs/running.md](docs/running.md) — simulator control, manual driving, traffic generation, dataset collection, and dataset replay
-* [docs/streaming.md](docs/streaming.md) — live producer, aggregator, visualizer, and detector nodes
-* [docs/training.md](docs/training.md) — OpenPCDet and LaneDet dataset preparation, training, evaluation, and result layouts
-* [docs/benchmarking.md](docs/benchmarking.md) — benchmark execution and saved prediction replay
-* [docs/gui.md](docs/gui.md) — Project Control Center, workflow windows, logs, and process state
+* [CARLA](docs/CARLA.md) — simulator control, manual driving, traffic generation, dataset collection, and dataset replay
+* [Streaming](docs/STREAM.md) — live producer, aggregator, visualizer, and detector nodes
+* [Training](docs/TRAIN.md) — OpenPCDet and LaneDet dataset preparation, training, evaluation, and result layouts
+* [Benchmarking](docs/BENCHMARK.md) — benchmark execution and saved prediction replay
+* [GUI](docs/GUI.md) — Project Control Center, workflow windows, logs, and process state
 
 ## Environments
 
@@ -75,7 +75,7 @@ The project uses three Conda environments:
 * `openpcdet` — OpenPCDet dataset preparation, training, evaluation, benchmarking, and live inference
 * `lanedet` — LaneDet dataset preparation, training, evaluation, benchmarking, and live inference
 
-Environment setup and CARLA installation are documented in [docs/installation.md](docs/installation.md).
+Environment setup and CARLA installation are documented in [Installation](docs/INSTALL.md).
 
 ## Project Structure
 
@@ -83,18 +83,18 @@ Environment setup and CARLA installation are documented in [docs/installation.md
 carla-semantic-scene-reconstruction/
 ├── carla_server.sh   CARLA server launcher
 ├── config/           runtime configuration
-├── docs/             workflow-oriented documentation
+├── docs/             workflow documentation
 ├── envs/             Conda environment definitions
 ├── gui/              Project Control Center
 ├── setup/            environment installer scripts
 ├── src/              shared project code
-├── tools/            user-facing Python entrypoints
-└── third_party/      vendored external frameworks
+├── tools/            user-facing Python commands
+└── third_party/      bundled third-party frameworks
 ```
 
 ## GUI
 
-The repository includes a Project Control Center for interactive workflow orchestration. It launches the same documented CLI entrypoints used throughout the project, but groups them into dedicated workflow windows with process status, logs, and local state handling.
+The repository includes a Project Control Center for interactive workflow control. It launches the same documented CLI commands used throughout the project, but groups them into dedicated workflow windows with process status, logs, and local state handling.
 
 Use the `carla_app` environment to launch it:
 
@@ -103,7 +103,7 @@ conda activate carla_app
 python -m gui.main
 ```
 
-See [docs/gui.md](docs/gui.md) for details.
+See [GUI](docs/GUI.md) for details.
 
 ## Reference Platform
 
@@ -139,12 +139,12 @@ The project has been tested on:
 
 ## Third-Party Components
 
-The project vendors external frameworks under `third_party/`, including:
+The project includes external frameworks under `third_party/`, including:
 
 * `third_party/OpenPCDet`
 * `third_party/lanedet`
 
-Project-specific integrations, dataset adapters, configs, and wrappers are documented in [docs/training.md](docs/training.md).
+Project-specific integrations, dataset adapters, configs, and wrappers are documented in [Training](docs/TRAIN.md).
 
 ## License
 

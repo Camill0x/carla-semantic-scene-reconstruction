@@ -1,8 +1,8 @@
 # GUI
 
-This document describes the Project Control Center used to orchestrate common project workflows from one place. The GUI does not replace the Python entrypoints in `tools/` — instead, it provides a thin process-management layer on top of the documented CLI workflows.
+This document describes the Project Control Center used to manage common project workflows from one place. The GUI does not replace the Python commands in `tools/`. Instead, it provides a thin process-management layer on top of the documented CLI workflows.
 
-Before using the GUI, complete the setup in [installation.md](installation.md). In practice, you need at least the `carla_app` environment. Some workflow windows also require the `openpcdet` or `lanedet` environments because they launch model-specific commands in those Conda environments.
+Before using the GUI, complete the setup in [Installation](INSTALL.md). In practice, you need at least the `carla_app` environment. Some workflow windows also require the `openpcdet` or `lanedet` environments because they launch model-specific commands in those Conda environments.
 
 ## Launching the GUI
 
@@ -38,11 +38,11 @@ The home screen opens dedicated workflow windows for:
 
 Each workflow window includes:
 
-* a workflow-specific session summary
-* process status indicators
-* per-process logs
-* an activity feed
-* process start, stop, and restart controls
+* A workflow-specific session summary
+* Process status indicators
+* Per-process logs
+* An activity feed
+* Process start, stop, and restart controls
 
 The main window also provides a `Process Inspector` dialog for cross-workflow process management and a `Clear Logs` action for truncating the GUI-managed log files under `tmp/`.
 
@@ -52,10 +52,10 @@ The GUI is aware of a few operational dependencies between processes.
 
 For example:
 
-* manual control is always launched with synchronous mode enabled
-* traffic generation requires an active manual control process
-* dataset collection requires an active manual control process
-* the streaming core expects manual control to already be running before the producer is started
+* Manual control is always launched with synchronous mode enabled
+* Traffic generation requires an active manual control process
+* Dataset collection requires an active manual control process
+* The streaming core expects manual control to already be running before the producer is started
 
 The visible `Sync Mode` checkbox in the manual control form is enabled by default and intentionally locked so the user cannot disable it. That keeps the GUI aligned with dataset collection and live streaming requirements.
 
@@ -76,8 +76,8 @@ tmp/
 
 These files are used as follows:
 
-* `streaming_gui_logs/` — stores one log file per managed process
-* `streaming_gui_state.json` — stores the last used arguments, last exit codes, log paths, and the PID of any process that is still alive
+* `streaming_gui_logs/` — Stores one log file per managed process
+* `streaming_gui_state.json` — Stores the last used arguments, last exit codes, log paths, and the PID of any process that is still alive
 
 When the GUI starts again, it reloads that state and reattaches to processes whose PIDs are still running. This makes it possible to reopen the control center without losing visibility into GUI-managed jobs that were already launched earlier.
 
@@ -85,14 +85,14 @@ When the GUI starts again, it reloads that state and reattaches to processes who
 
 Use the GUI when:
 
-* you want one place to launch and observe a multi-step workflow
-* you want logs and activity summaries without juggling multiple terminals
-* you are iterating interactively on CARLA, dataset capture, benchmarking, or live inference
+* You want one place to launch and observe a multi-step workflow
+* You want logs and activity summaries without juggling multiple terminals
+* You are iterating interactively on CARLA, dataset capture, benchmarking, or live inference
 
 Use the CLI directly when:
 
-* you want to copy the documented commands directly and run them step by step
-* you are launching training or evaluation jobs on a remote machine
-* you want to integrate the workflow into your own terminal-based setup
+* You want to copy the documented commands directly and run them step by step
+* You are launching training or evaluation jobs on a remote machine
+* You want to integrate the workflow into your own terminal-based setup
 
 The documented CLI commands remain the canonical workflow reference. The GUI is a convenience layer built on top of those same entrypoints.

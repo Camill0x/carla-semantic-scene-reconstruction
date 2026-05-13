@@ -2,9 +2,9 @@
 
 This document covers dataset preparation, training, evaluation, and result layouts for the two model stacks used in the project: OpenPCDet and LaneDet.
 
-Before using these workflows, complete the setup in [installation.md](installation.md). In particular, make sure the required Conda environment and CUDA toolchain are ready for the model family you want to use.
+Before using these workflows, complete the setup in [Installation](INSTALL.md). In particular, make sure the required Conda environment and CUDA toolchain are ready for the model family you want to use.
 
-All workflows described here are also available through the GUI. If you want to use the graphical workflow layer for preparation, training, and evaluation, continue with [gui.md](gui.md).
+All workflows described here are also available through the GUI. If you want to use the graphical workflow layer for preparation, training, and evaluation, continue with [GUI](GUI.md).
 
 ## Contents
 
@@ -13,7 +13,7 @@ All workflows described here are also available through the GUI. If you want to 
 
 ## OpenPCDet
 
-The OpenPCDet framework is used here as a vendored Git submodule under `third_party/OpenPCDet`.
+The OpenPCDet framework is used here as a bundled Git submodule under `third_party/OpenPCDet`.
 
 The integration is based on the upstream [OpenPCDet](https://github.com/open-mmlab/OpenPCDet) project, with this repository currently pointing to a project-specific fork: [Camill0x/OpenPCDet](https://github.com/Camill0x/OpenPCDet).
 
@@ -60,10 +60,10 @@ Together, these files cover the project dataset integration, evaluation logic, a
 This tool builds a prepared OpenPCDet dataset view from recorded raw CARLA runs.
 
 It does not duplicate raw point clouds. Instead, it:
-* selects one or more `run_XXXX` directories under `datasets/raw`
-* scans all `frame_*` directories
-* builds sample metadata and split files
-* writes an OpenPCDet-ready dataset root under `datasets/openpcdet/<class_filter>/<name>`
+* Selects one or more `run_XXXX` directories under `datasets/raw`
+* Scans all `frame_*` directories
+* Builds sample metadata and split files
+* Writes an OpenPCDet-ready dataset root under `datasets/openpcdet/<class_filter>/<name>`
 
 #### Flags
 
@@ -87,7 +87,12 @@ python -m tools.openpcdet.prepare_dataset --all
 python -m tools.openpcdet.prepare_dataset --runs run_0001 run_0002
 
 # Build dataset with custom split ratio.
-python -m tools.openpcdet.prepare_dataset --all --val-ratio 0.1 --test-ratio 0.1 --seed 7 --name split_01
+python -m tools.openpcdet.prepare_dataset \
+  --name split_01 \
+  --all \
+  --val-ratio 0.1 \
+  --test-ratio 0.1 \
+  --seed 7
 ```
 
 #### Default output layout
@@ -164,10 +169,15 @@ Pretrained checkpoints can be downloaded from:
 conda activate openpcdet
 
 # Train from a project preset using pretrained model.
-python -m tools.openpcdet.train --preset cn6-transfusion-ft --pretrained-model /path/to/pretrained_transfusion_model.pth
+python -m tools.openpcdet.train \
+    --preset cn6-transfusion-ft \
+    --pretrained-model /path/to/pretrained_transfusion_model.pth
 
 # Resume training from a specified dataset name, checkpoint and config.
-python -m tools.openpcdet.train --dataset-name {name} --cfg-file /path/to/config.yaml --ckpt /path/to/checkpoint.ckpt
+python -m tools.openpcdet.train \
+  --dataset-name {name} \
+  --cfg-file /path/to/config.yaml \
+  --ckpt /path/to/checkpoint.ckpt
 ```
 
 ### Evaluation
@@ -194,13 +204,19 @@ The wrapper resolves the preset or explicit config, prepares a clean evaluation 
 conda activate openpcdet
 
 # Evaluate pretrained Transfusion checkpoint.
-python -m tools.openpcdet.test --preset cn6-transfusion-zeroshot --ckpt /path/to/pretrained_transfusion_ckpt.pth
+python -m tools.openpcdet.test \
+    --preset cn6-transfusion-zeroshot \
+    --ckpt /path/to/pretrained_transfusion_ckpt.pth
 
 # Evaluate checkpoint from a Transfusion model training.
-python -m tools.openpcdet.test --preset cn6-transfusion-ft --ckpt results/openpcdet/train/carla_nuscenes6/{timestamp}/ckpt/best.ckpt
+python -m tools.openpcdet.test \
+  --preset cn6-transfusion-ft \
+  --ckpt results/openpcdet/train/carla_nuscenes6/{timestamp}/ckpt/best.ckpt
 
 # Evaluate specified checkpoint and config.
-python -m tools.openpcdet.test --cfg-file /path/to/config.yaml --ckpt /path/to/checkpoint.ckpt
+python -m tools.openpcdet.test \
+    --cfg-file /path/to/config.yaml \
+    --ckpt /path/to/checkpoint.ckpt
 ```
 
 ### Results layout
@@ -234,7 +250,7 @@ results/
 
 ## LaneDet
 
-The LaneDet framework is used here as a vendored Git submodule under `third_party/lanedet`.
+The LaneDet framework is used here as a bundled Git submodule under `third_party/lanedet`.
 
 The integration is based on the upstream [LaneDet](https://github.com/Turoad/lanedet) project, with this repository currently pointing to a project-specific fork: [Camill0x/lanedet](https://github.com/Camill0x/lanedet)
 
@@ -248,7 +264,7 @@ conda activate lanedet
 
 This tool builds a prepared LaneDet dataset from recorded raw CARLA runs. The current implementation supports TuSimple dataset format only.
 
-It selects one or more `run_XXXX` directories under `datasets/raw`, scans the recorded frames, loads lane annotations, filters unusable samples, generates train/val/test splits, and writes RGB clips, segmentation labels, and TuSimple-style JSON annotations into the final dataset root.
+It selects one or more `run_XXXX` directories under `datasets/raw`, scans the recorded frames, loads lane annotations, filters unusable samples, generates train/val/test splits, and writes RGB clips, segmentation labels, and TuSimple-style JSON annotations into the final dataset root under `datasets/lanedet/<format>/<name>`.
 
 #### Flags
 
@@ -274,7 +290,12 @@ python -m tools.lanedet.prepare_dataset --format tusimple --all
 python -m tools.lanedet.prepare_dataset --format tusimple --runs run_0001 run_0002
 
 # Build a dataset with a custom lane cap and line width.
-python -m tools.lanedet.prepare_dataset --format tusimple --all --val-ratio 0.1 --test-ratio 0.1 --name split_01
+python -m tools.lanedet.prepare_dataset \
+  --format tusimple \
+  --all \
+  --val-ratio 0.1 \
+  --test-ratio 0.1 \
+  --name split_01
 ```
 
 #### Output layout
@@ -325,7 +346,7 @@ Each preset resolves to a project config under:
 
 #### Flags
 
-* `--preset` — choose a project-managed config preset
+* `--preset` — choose a project-managed config. preset
 * `--config` — use an explicit LaneDet config instead of a preset
 * `--data-root` — override the dataset path from the config
 * `--batch-size` — override batch size
@@ -354,13 +375,19 @@ Pretrained checkpoints can be downloaded from:
 conda activate lanedet
 
 # Fine-tune from pretrained weights.
-python -m tools.lanedet.main --preset laneatt-r34-tusimple --finetune-from /path/to/laneatt_r34_tusimple.pth
+python -m tools.lanedet.main \
+    --preset laneatt-r34-tusimple \
+    --finetune-from /path/to/laneatt_r34_tusimple.pth
 
 # Train from the project preset and specified data root.
-python -m tools.lanedet.main --preset laneatt-r34-tusimple --data-root datasets/lanedet/tusimple/{name}
+python -m tools.lanedet.main \
+    --preset laneatt-r34-tusimple \
+    --data-root datasets/lanedet/tusimple/{name}
 
 # Train from an explicit LaneDet config.
-python -m tools.lanedet.main --config /path/to/config.py
+python -m tools.lanedet.main \
+    --config /path/to/config.py \
+    --data-root dataset/lanedet/tusimple/{name}
 ```
 
 ### Evaluation
@@ -385,13 +412,26 @@ In validation mode, the wrapper resolves the preset or explicit config, requires
 conda activate lanedet
 
 # Evaluate a pretrained LaneATT ResNet-34 TuSimple checkpoint.
-python -m tools.lanedet.main --preset laneatt-r34-tusimple --validate --load-from /path/to/laneatt_r34_tusimple.pth --view
+python -m tools.lanedet.main \
+  --preset laneatt-r34-tusimple \
+  --validate \
+  --load-from /path/to/laneatt_r34_tusimple.pth \
+  --view
 
 # Evaluate checkpoint from a previous LaneATT TuSimple training run.
-python -m tools.lanedet.main --config results/lanedet/train/laneatt/tusimple/{timestamp}/config.py --validate --load-from results/lanedet/train/laneatt/tusimple/{timestamp}/ckpt/best.pth --view
+python -m tools.lanedet.main \
+  --config results/lanedet/train/laneatt/tusimple/{timestamp}/config.py \
+  --validate \
+  --load-from results/lanedet/train/laneatt/tusimple/{timestamp}/ckpt/best.pth \
+  --view
 
 # Evaluate with an explicit data root and checkpoint.
-python -m tools.lanedet.main --preset laneatt-r34-tusimple --data-root datasets/lanedet/tusimple/{name} --validate --load-from /path/to/checkpoint.pth --view
+python -m tools.lanedet.main \
+  --preset laneatt-r34-tusimple \
+  --data-root datasets/lanedet/tusimple/{name} \
+  --validate \
+  --load-from /path/to/checkpoint.pth \
+  --view
 ```
 
 ### Results layout

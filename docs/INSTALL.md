@@ -6,11 +6,11 @@ The `openpcdet` and `lanedet` environments are only needed when you want to prep
 
 If you are looking for day-to-day commands after setup, continue with:
 
-* [running.md](running.md) — simulator control, driving, and dataset workflows
-* [training.md](training.md) — OpenPCDet and LaneDet preparation, training, and evaluation
-* [benchmarking.md](benchmarking.md) — offline speed tests and prediction replay
-* [streaming.md](streaming.md) — live multimodal inference pipeline
-* [gui.md](gui.md) — workflow control center for entire project
+* [CARLA](CARLA.md) — simulator control, driving, and dataset workflows
+* [Training](TRAIN.md) — OpenPCDet and LaneDet preparation, training, and evaluation
+* [Benchmarking](BENCHMARK.md) — offline speed tests and prediction replay
+* [Streaming](STREAM.md) — live multimodal inference pipeline
+* [GUI](GUI.md) — workflow control center for entire project
 
 ## Tested Platform
 
@@ -77,9 +77,9 @@ Run:
 
 This script:
 
-* creates or updates the `carla_app` Conda environment with Python 3.10 from `envs/carla_app.yml`
-* installs the CARLA Python API from PyPI via `carla==0.9.15`
-* installs the runtime and visualization dependencies used by the GUI, dataset tools, and streaming pipeline
+* Creates or updates the `carla_app` Conda environment with Python 3.10 from `envs/carla_app.yml`
+* Installs the CARLA Python API from PyPI via `carla==0.9.15`
+* Installs the runtime and visualization dependencies used by the GUI, dataset tools, and streaming pipeline
 
 Notes:
 
@@ -93,10 +93,10 @@ The project uses a dedicated Conda environment for OpenPCDet and installs PyTorc
 
 Before installing OpenPCDet, make sure you have:
 
-* a working NVIDIA driver, so `nvidia-smi` succeeds
+* Working NVIDIA driver, so `nvidia-smi` succeeds
 * CUDA Toolkit `12.1` installed, including `nvcc`
-* exported CUDA paths in your shell
-* a GPU with compute capability supported by this pinned PyTorch build
+* Exported CUDA paths in your shell
+* GPU with compute capability supported by this pinned PyTorch build
 
 For `torch==2.2.2` with `cu121`, the practical upper bound for native targets is `sm_90` (compute capability `9.0`). Before installation, check your GPU on the official NVIDIA list:
 
@@ -124,9 +124,9 @@ Run:
 
 The installer:
 
-* creates or updates the `openpcdet` Conda environment with Python 3.8 from `envs/openpcdet.yml`
-* installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index
-* installs the `pcdet` package from `third_party/OpenPCDet`
+* Creates or updates the `openpcdet` Conda environment with Python 3.8 from `envs/openpcdet.yml`
+* Installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index
+* Installs the `pcdet` package from `third_party/OpenPCDet`
 
 ## LaneDet
 
@@ -136,10 +136,10 @@ LaneDet is kept as a third-party submodule under `third_party/lanedet` and uses 
 
 Before installing LaneDet, make sure you have:
 
-* a working NVIDIA driver, so `nvidia-smi` succeeds
+* Working NVIDIA driver, so `nvidia-smi` succeeds
 * CUDA Toolkit installed, including `nvcc`
-* exported CUDA paths in your shell
-* a GPU with compute capability compatible with this LaneDet environment
+* Exported CUDA paths in your shell
+* GPU with compute capability compatible with this LaneDet environment
 
 The current setup targets `sm_75` (compute capability `7.5`). Check your GPU here:
 
@@ -163,6 +163,6 @@ Run:
 
 The installer:
 
-* creates or updates the `lanedet` Conda environment with Python 3.8 from `envs/lanedet.yml`
-* installs `pytorch==1.8.0` and `torchvision==0.9.0` through the environment file
-* installs LaneDet from `third_party/lanedet` in editable mode
+* Creates or updates the `lanedet` Conda environment with Python 3.8 from `envs/lanedet.yml`
+* Installs `pytorch==1.8.0` and `torchvision==0.9.0` through the environment file
+* Installs LaneDet from `third_party/lanedet` in editable mode

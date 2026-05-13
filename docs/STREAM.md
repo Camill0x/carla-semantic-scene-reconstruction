@@ -1,12 +1,12 @@
 # Streaming
 
-This document covers the live multimodal pipeline used for real-time scene reconstruction from CARLA. The streaming workflows publish synchronized sensor frames, run detector nodes in their own environments, merge the predictions into a single scene stream, and render the result in Rerun.
+This document covers the live pipeline used for real-time scene reconstruction from CARLA. These workflows publish synchronized sensor frames, run detector nodes in their own environments, merge the predictions into a single scene stream, and render the result in Rerun.
 
-Before using these commands, complete the setup in [installation.md](installation.md). You will need the `carla_app`, `openpcdet`, and `lanedet` environments depending on which pipeline nodes you want to run.
+Before using these commands, complete the setup in [Installation](INSTALL.md). You will need the `carla_app`, `openpcdet`, and `lanedet` environments depending on which pipeline nodes you want to run.
 
-For simulator driving, see [running.md](running.md).
+For simulator driving, see [CARLA](CARLA.md).
 
-These workflows are also available through the GUI. If you want to operate the pipeline from the project control interface, see [gui.md](gui.md).
+These workflows are also available through the GUI. If you want to operate the pipeline from the project control interface, see [GUI](GUI.md).
 
 
 ## Contents
@@ -22,28 +22,28 @@ These workflows are also available through the GUI. If you want to operate the p
 
 The live pipeline is split into small cooperating processes:
 
-* the producer reads CARLA sensors and publishes synchronized frames into shared memory
-* detector nodes read those frames and write predictions back into shared memory
-* the aggregator combines state, object predictions, and lane predictions into one scene stream
-* the visualizer consumes that stream and renders it in Rerun
+* Producer reads CARLA sensors and publishes synchronized frames into shared memory
+* Detector nodes read those frames and write predictions back into shared memory
+* Aggregator combines state, object predictions, and lane predictions into one scene stream
+* Visualizer consumes that stream and renders it in Rerun
 
 The detector nodes can be attached or detached at any time while the producer, aggregator, and visualizer keep running.
 
 For a full live run, the practical order is:
 
-1. start the simulator with `./carla_server.sh`
+1. Start the simulator with `./carla_server.sh`
 
-2. start manual control in synchronous mode with `conda activate carla_app && python -m tools.carla.manual_control --sync`
+2. Start manual control in synchronous mode with `conda activate carla_app && python -m tools.carla.manual_control --sync`
 
-3. optionally start traffic generation with `conda activate carla_app && python -m tools.carla.generate_traffic`
+3. Optionally start traffic generation with `conda activate carla_app && python -m tools.carla.generate_traffic`
 
-4. start the producer
+4. Start the producer
 
-5. start the aggregator
+5. Start the aggregator
 
-6. start the visualizer
+6. Start the visualizer
 
-7. start one or both detector nodes
+7. Start one or both detector nodes
 
 ## Producer
 
@@ -63,7 +63,9 @@ conda activate carla_app
 python -m tools.streaming.live_producer --every-nth 1
 
 # Publish every 5-th synchronized CARLA frame and print logs.
-python -m tools.streaming.live_producer --every-nth 5 --verbose
+python -m tools.streaming.live_producer \
+  --every-nth 5 \
+  --verbose
 ```
 
 ## Aggregator
@@ -119,7 +121,10 @@ This node reads shared LiDAR frames from the producer, runs OpenPCDet inference 
 conda activate openpcdet
 
 # Attach OpenPCDet to the live pipeline with a selected config and checkpoint.
-python -m tools.streaming.live_openpcdet_inference --cfg-file /path/to/config.yaml --ckpt /path/to/checkpoint.ckpt --verbose
+python -m tools.streaming.live_openpcdet_inference \
+  --cfg-file /path/to/config.yaml \
+  --ckpt /path/to/checkpoint.ckpt \
+  --verbose
 ```
 
 ## LaneDet Inference Node
@@ -139,5 +144,8 @@ This node reads shared front camera frames from the producer, runs LaneDet on ea
 conda activate lanedet
 
 # Attach LaneDet to the live pipeline with a selected config and checkpoint.
-python -m tools.streaming.live_lanedet_inference --config /path/to/config.py --ckpt /path/to/checkpoint.pth --verbose
+python -m tools.streaming.live_lanedet_inference \
+  --config /path/to/config.py \
+  --ckpt /path/to/checkpoint.pth \
+  --verbose
 ```

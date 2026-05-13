@@ -1,10 +1,10 @@
 # Benchmarking
 
-This document covers model benchmarking on recorded CARLA runs. These workflows measure model-forward time, end-to-end runtime, and replayable prediction outputs on saved datasets, without requiring a live CARLA session.
+This document covers model benchmarking on recorded CARLA runs. These workflows measure model-forward time, end-to-end runtime, and saved prediction outputs on recorded datasets, without requiring a live CARLA session.
 
-Before using these commands, complete the setup in [installation.md](installation.md). You will need `openpcdet`, `lanedet`, and `carla_app` depending on which benchmark or viewer you want to run.
+Before using these commands, complete the setup in [Installation](INSTALL.md). You will need `openpcdet`, `lanedet`, and `carla_app` depending on which benchmark or viewer you want to run.
 
-The benchmarking workflows are also available through the GUI. If you want to run them from the project control interface, see [gui.md](gui.md).
+The benchmarking workflows are also available through the GUI. If you want to run them from the project control interface, see [GUI](GUI.md).
 
 ## Contents
 
@@ -33,7 +33,10 @@ This benchmark loads LiDAR point clouds from a recorded raw CARLA run, runs Open
 conda activate openpcdet
 
 # Benchmark a recorded raw run with selected config and checkpoint.
-python -m tools.benchmark.benchmark_openpcdet --run-dir datasets/raw/{run_XXXX} --cfg-file /path/to/config.yaml --ckpt /path/to/checkpoint.ckpt
+python -m tools.benchmark.benchmark_openpcdet \
+  --run-dir datasets/raw/{run_XXXX} \
+  --cfg-file /path/to/config.yaml \
+  --ckpt /path/to/checkpoint.ckpt
 ```
 
 ## LaneDet Benchmark
@@ -55,7 +58,10 @@ This benchmark loads front camera frames from a recorded raw CARLA run, runs Lan
 conda activate lanedet
 
 # Benchmark a recorded raw run with selected config and checkpoint.
-python -m tools.benchmark.benchmark_lanedet --run-dir datasets/raw/{run_XXXX} --config /path/to/config.py --ckpt /path/to/checkpoint.pth
+python -m tools.benchmark.benchmark_lanedet \
+  --run-dir datasets/raw/{run_XXXX} \
+  --config /path/to/config.py \
+  --ckpt /path/to/checkpoint.pth
 ```
 
 ## Results Layout
@@ -102,11 +108,19 @@ This viewer replays a recorded raw CARLA run in Rerun and overlays saved benchma
 conda activate carla_app
 
 # Replay only OpenPCDet predictions.
-python -m tools.benchmark.view_predictions --run-dir datasets/raw/{run_XXXX} --objects results/benchmark/{run_XXXX}/openpcdet/{timestamp}/predictions
+python -m tools.benchmark.view_predictions \
+  --run-dir datasets/raw/{run_XXXX} \
+  --objects results/benchmark/{run_XXXX}/openpcdet/{timestamp}/predictions
 
 # Replay only LaneDet predictions.
-python -m tools.benchmark.view_predictions --run-dir datasets/raw/{run_XXXX} --lanes results/benchmark/{run_XXXX}/lanedet/{timestamp}/predictions
+python -m tools.benchmark.view_predictions \
+  --run-dir datasets/raw/{run_XXXX} \
+  --lanes results/benchmark/{run_XXXX}/lanedet/{timestamp}/predictions
 
 # Replay both object and lane predictions together.
-python -m tools.benchmark.view_predictions --run-dir datasets/raw/{run_XXXX} --objects results/benchmark/{run_XXXX}/openpcdet/{timestamp}/predictions --lanes results/benchmark/{run_XXXX}/lanedet/{timestamp}/predictions --show-grid
+python -m tools.benchmark.view_predictions \
+  --run-dir datasets/raw/{run_XXXX} \
+  --objects results/benchmark/{run_XXXX}/openpcdet/{timestamp}/predictions \
+  --lanes results/benchmark/{run_XXXX}/lanedet/{timestamp}/predictions \
+  --show-grid
 ```

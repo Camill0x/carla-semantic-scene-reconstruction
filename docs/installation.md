@@ -1,39 +1,89 @@
 # Installation
 
+This document describes the installation layout for the project.
+CARLA 0.9.15 and the `carla_app` environment provide the runtime layer used for the CARLA Python API, the GUI, dataset tools, and visualization utilities.
+The `openpcdet` and `lanedet` environments are only needed when you want to prepare datasets for those model stacks, train or evaluate them, or run the corresponding live detector nodes.
+
+If you are looking for day-to-day commands after setup, continue with:
+
+* [running.md](running.md) — simulator control, driving, and dataset workflows
+* [training.md](training.md) — OpenPCDet and LaneDet preparation, training, and evaluation
+* [benchmarking.md](benchmarking.md) — offline speed tests and prediction replay
+* [streaming.md](streaming.md) — live multimodal inference pipeline
+* [gui.md](gui.md) — workflow control center for entire project
+
+## Tested Platform
+
+The project has been tested and run on:
+
+* Ubuntu 22.04
+* NVIDIA GeForce RTX 2080 Ti (`sm_75`)
+
+This is the reference platform used to validate the setup and model workflows in this repository. CUDA, Python, and package requirements are documented separately for each environment below.
+
+## Repository Setup
+
+Clone the repository and initialize submodules before installing any environments:
+
+```bash
+git clone https://github.com/Camill0x/carla-semantic-scene-reconstruction.git
+cd carla-semantic-scene-reconstruction
+
+git submodule update --init --recursive
+```
+
+## Contents
+
+* [CARLA 0.9.15](#carla-0915)
+* [carla_app Environment](#carla_app-environment)
+* [OpenPCDet](#openpcdet)
+* [LaneDet](#lanedet)
+
 ## CARLA 0.9.15
 
-### CARLA package
+If you do not already have CARLA installed, start here.
 
-Download `CARLA_0.9.15.tar.gz` from the official [CARLA releases page](https://github.com/carla-simulator/carla/releases) and place it in `external/` directory.
+Download `CARLA_0.9.15.tar.gz` from the official [CARLA releases page](https://github.com/carla-simulator/carla/releases).
+
+After extracting the archive, choose a permanent location for the simulator directory. The `CARLA_ROOT` variable must point to the extracted folder that contains `CarlaUE4.sh`.
+
+Recommended shell setup:
+
+```bash
+echo 'export CARLA_ROOT=/path/to/CARLA_0.9.15' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Quick verification:
+
+```bash
+echo "$CARLA_ROOT"
+ls "$CARLA_ROOT/CarlaUE4.sh"
+```
+
+If the second command prints the path to `CarlaUE4.sh`, the simulator path is configured correctly.
+
+## carla_app Environment
+
+The `carla_app` environment is the default runtime environment for most operational commands in this repository, including the GUI, dataset tools, Rerun viewers, and CARLA-facing runtime utilities.
 
 ### Installation
 
 Run:
 
 ```bash
-./scripts/setup/install_carla.sh
+./setup/install_carla_app.sh
 ```
 
 This script:
 
-* extracts the CARLA package into `external/CARLA_0.9.15/`,
-* creates the `carla` conda environment,
-* installs required Python dependencies,
-* installs the CARLA Python API wheel from `PythonAPI/carla/dist/`.
+* creates or updates the `carla_app` Conda environment with Python 3.10 from `envs/carla_app.yml`
+* installs the CARLA Python API from PyPI via `carla==0.9.15`
+* installs the runtime and visualization dependencies used by the GUI, dataset tools, and streaming pipeline
 
-If you already have CARLA 0.9.15 extracted on your machine, move it to:
+Notes:
 
-```bash
-mv /path/to/your/CARLA_0.9.15 ./external/CARLA_0.9.15
-```
-
-Then run:
-
-```bash
-./scripts/setup/install_carla.sh --skip-extract
-```
-
-This skips archive validation and extraction, and only sets up the conda environment and installs the Python API.
+* If you want Python type stubs for the CARLA API in your editor, take a look at the community-maintained [CARLA Python Stubs](https://github.com/aasewold/carla-python-stubs) project.
 
 ## OpenPCDet
 
@@ -43,17 +93,18 @@ The project uses a dedicated Conda environment for OpenPCDet and installs PyTorc
 
 Before installing OpenPCDet, make sure you have:
 
-* a working NVIDIA driver (`nvidia-smi` should succeed),
-* CUDA Toolkit `12.1` installed, including `nvcc`,
-* exported CUDA paths in your shell,
-* a GPU with compute capability supported by this pinned PyTorch build. For `torch==2.2.2` + `cu121`, the practical upper bound for native targets is `sm_90` (compute capability `9.0`). Before installation, check your GPU on the official NVIDIA list: [CUDA GPU Compute Capability](https://developer.nvidia.com/cuda/gpus).
+* a working NVIDIA driver, so `nvidia-smi` succeeds
+* CUDA Toolkit `12.1` installed, including `nvcc`
+* exported CUDA paths in your shell
+* a GPU with compute capability supported by this pinned PyTorch build
+
+For `torch==2.2.2` with `cu121`, the practical upper bound for native targets is `sm_90` (compute capability `9.0`). Before installation, check your GPU on the official NVIDIA list:
+
+* [CUDA GPU Compute Capability](https://developer.nvidia.com/cuda/gpus)
 
 Recommended CUDA Toolkit download page:
 
 * [CUDA Toolkit 12.1.0 download archive](https://developer.nvidia.com/cuda-12-1-0-download-archive)
-
-
-If you already have a working NVIDIA driver on the machine, it is usually better to disable driver installation and install only the CUDA Toolkit.
 
 Typical shell exports:
 
@@ -68,14 +119,14 @@ export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
 Run:
 
 ```bash
-./scripts/setup/install_openpcdet.sh
+./setup/install_openpcdet.sh
 ```
 
-The script:
+The installer:
 
-* creates or updates the `openpcdet` conda environment,
-* installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index,
-* installs the `pcdet` package from `third_party/OpenPCDet`.
+* creates or updates the `openpcdet` Conda environment with Python 3.8 from `envs/openpcdet.yml`
+* installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index
+* installs the `pcdet` package from `third_party/OpenPCDet`
 
 ## LaneDet
 
@@ -85,10 +136,14 @@ LaneDet is kept as a third-party submodule under `third_party/lanedet` and uses 
 
 Before installing LaneDet, make sure you have:
 
-* a working NVIDIA driver (`nvidia-smi` should succeed),
-* CUDA Toolkit installed, including `nvcc`,
-* exported CUDA paths in your shell,
-* a GPU with compute capability compatible with this LaneDet environment. The current setup targets `sm_75` (compute capability `7.5`) - check [CUDA GPU Compute Capability](https://developer.nvidia.com/cuda/gpus).
+* a working NVIDIA driver, so `nvidia-smi` succeeds
+* CUDA Toolkit installed, including `nvcc`
+* exported CUDA paths in your shell
+* a GPU with compute capability compatible with this LaneDet environment
+
+The current setup targets `sm_75` (compute capability `7.5`). Check your GPU here:
+
+* [CUDA GPU Compute Capability](https://developer.nvidia.com/cuda/gpus)
 
 Typical shell exports:
 
@@ -103,28 +158,11 @@ export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
 Run:
 
 ```bash
-./scripts/setup/install_lanedet.sh
+./setup/install_lanedet.sh
 ```
 
-The script:
+The installer:
 
-* creates or updates the `lanedet` conda environment from `envs/lanedet.yml`,
-* installs `pytorch==1.8.0` and `torchvision==0.9.0` through the environment file,
-* installs LaneDet from `third_party/lanedet` in editable mode.
-
-## Rerun
-
-The project uses a small dedicated Conda environment for Rerun-based dataset and live-scene visualization.
-
-### Installation
-
-Run:
-
-```bash
-./scripts/setup/install_rerun.sh
-```
-
-The script:
-
-* creates or updates the `rerun` conda environment from `envs/rerun.yml`,
-* installs `rerun-sdk` and the lightweight runtime dependencies used by the dataset viewer and live visualizer.
+* creates or updates the `lanedet` Conda environment with Python 3.8 from `envs/lanedet.yml`
+* installs `pytorch==1.8.0` and `torchvision==0.9.0` through the environment file
+* installs LaneDet from `third_party/lanedet` in editable mode

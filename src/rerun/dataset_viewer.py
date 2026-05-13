@@ -12,12 +12,14 @@ from src.rerun.text import log_dataset_status
 
 
 def initialize_dataset_viewer(config: DatasetViewerConfig) -> None:
+    """Initialize the Rerun dataset viewer and its default blueprint."""
     rr.init("carla_dataset_viewer", spawn=True)
     rr.send_blueprint(make_dataset_blueprint(show_grid=config.show_grid))
     rr.log("world", rr.ViewCoordinates.FLU, static=True)
 
 
 def log_dataset_frame(frame: DatasetFrame, config: DatasetViewerConfig) -> None:
+    """Log one recorded dataset frame into the Rerun dataset viewer."""
     frame_index = int(frame.meta.get("frame_index", 0))
     rr.set_time("frame_idx", sequence=frame_index)
 

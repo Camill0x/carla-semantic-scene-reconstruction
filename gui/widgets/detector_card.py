@@ -25,6 +25,7 @@ class DetectorCard(QGroupBox):
         on_stop: Callable[[str], None],
         on_change: Callable[[str, str, str], None],
     ) -> None:
+        """Build the detector control card and its config and checkpoint inputs."""
         super().__init__(title)
         self.detector_name = detector_name
         self.on_start = on_start
@@ -62,6 +63,7 @@ class DetectorCard(QGroupBox):
         layout.addLayout(buttons)
 
     def _make_browse_row(self, line_edit: QLineEdit, title: str) -> QWidget:
+        """Build a file-browser row for one detector path input."""
         container = QWidget()
         row = QHBoxLayout(container)
         row.setContentsMargins(0, 0, 0, 0)
@@ -72,26 +74,32 @@ class DetectorCard(QGroupBox):
         return container
 
     def _browse_file(self, line_edit: QLineEdit, title: str) -> None:
+        """Open a file dialog and fill the selected detector path input."""
         start_dir = str(Path(line_edit.text()).expanduser().resolve().parent) if line_edit.text() else ""
         file_path, _ = QFileDialog.getOpenFileName(self, title, start_dir)
         if file_path:
             line_edit.setText(file_path)
 
     def _emit_start(self) -> None:
+        """Emit the detector start callback with the current form values."""
         self.on_start(self.detector_name, self.config_input.text().strip(), self.ckpt_input.text().strip())
 
     def _emit_change(self) -> None:
+        """Emit the detector change callback with the current form values."""
         self.on_change(self.detector_name, self.config_input.text().strip(), self.ckpt_input.text().strip())
 
     def _emit_stop(self) -> None:
+        """Emit the detector stop callback for this detector."""
         self.on_stop(self.detector_name)
 
     def set_status(self, status: str) -> None:
+        """Update the detector status label and its color styling."""
         self.status_label.setText(status)
         color = "#1f7a1f" if status == "Running" else "#8a5a00" if status.startswith("Stopped (") else "#6b7280"
         self.status_label.setStyleSheet(f"font-weight: 700; color: {color};")
 
     def set_paths(self, config_path: str, ckpt_path: str) -> None:
+        """Fill the detector config and checkpoint inputs with saved paths."""
         if config_path:
             self.config_input.setText(config_path)
         if ckpt_path:

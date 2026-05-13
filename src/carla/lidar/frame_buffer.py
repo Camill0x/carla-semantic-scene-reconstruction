@@ -9,15 +9,18 @@ from src.common.typing_aliases import Float32Array
 
 class LidarFrameBuffer:
     def __init__(self, hero: carla.Actor, lidar: carla.Sensor) -> None:
+        """Initialize the LiDAR frame buffer and its pending-frame state."""
         self.hero = hero
         self.lidar = lidar
         self.queue: "queue.Queue[carla.LidarMeasurement]" = queue.Queue()
         self.pending_measurement: Optional[carla.LidarMeasurement] = None
 
     def callback(self, point_cloud: carla.LidarMeasurement) -> None:
+        """Queue an incoming LiDAR measurement from the CARLA sensor callback."""
         self.queue.put(point_cloud)
 
     def discard_before(self, min_frame: int) -> None:
+        """Discard buffered LiDAR frames older than the requested frame number."""
         while True:
             if self.pending_measurement is not None:
                 point_cloud = self.pending_measurement
@@ -38,6 +41,7 @@ class LidarFrameBuffer:
         timeout: float = 2.0,
         allow_future: bool = False,
     ) -> Tuple[Float32Array, int, float, carla.Transform]:
+        """Return the next LiDAR frame, optionally waiting for a specific frame id."""
         while True:
             if self.pending_measurement is not None:
                 point_cloud = self.pending_measurement

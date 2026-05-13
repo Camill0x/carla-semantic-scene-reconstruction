@@ -9,6 +9,7 @@ from src.lanedet.metrics import build_tusimple_metrics
 
 
 def latest_lanedet_work_dir(work_root: Path) -> Path:
+    """Return the newest LaneDet work directory produced under the given root."""
     candidates = sorted((work_root / "TuSimple").glob("*"), key=lambda path: path.stat().st_mtime)
     if not candidates:
         raise FileNotFoundError(f"No LaneDet work directory produced under {work_root / 'TuSimple'}")
@@ -16,12 +17,14 @@ def latest_lanedet_work_dir(work_root: Path) -> Path:
 
 
 def recreate_dir(path: Path) -> None:
+    """Remove a directory if it exists and recreate it empty."""
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
 
 
 def copy_log(source: Path, target: Path) -> Optional[Path]:
+    """Copy a log file into the target location when it exists."""
     if not source.exists():
         return None
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -30,6 +33,7 @@ def copy_log(source: Path, target: Path) -> Optional[Path]:
 
 
 def copy_config(source_work_dir: Path, target: Path) -> Path:
+    """Copy the LaneDet runtime config into the target output directory."""
     source = source_work_dir / "config.py"
     if not source.exists():
         raise FileNotFoundError(source)
@@ -39,6 +43,7 @@ def copy_config(source_work_dir: Path, target: Path) -> Path:
 
 
 def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> Dict[str, Optional[Path]]:
+    """Copy LaneDet training checkpoints into the project artifact layout."""
     source_ckpt_dir = source_work_dir / "ckpt"
     if not source_ckpt_dir.exists():
         raise FileNotFoundError(source_ckpt_dir)
@@ -64,6 +69,7 @@ def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> Dict[str,
 
 
 def copy_common_outputs(source_work_dir: Path, output_dir: Path, gt_json: Path) -> None:
+    """Copy the common LaneDet evaluation artifacts into the output directory."""
     copy_config(source_work_dir, output_dir / "config.py")
 
     predictions_source = source_work_dir / "tusimple_predictions.json"
@@ -90,6 +96,7 @@ def write_run_metadata(
     load_from: Optional[Path],
     finetune_from: Optional[Path],
 ) -> Path:
+    """Write LaneDet run metadata to the output directory."""
     payload: JsonDict = {
         "mode": mode,
         "run": run_name,
@@ -105,6 +112,7 @@ def write_run_metadata(
 
 
 def write_json(path: Path, payload: JsonDict) -> Path:
+    """Write a JSON payload to disk with indentation."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)

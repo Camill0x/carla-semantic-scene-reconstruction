@@ -8,6 +8,7 @@ from src.common.typing_aliases import Float32Array, Float64Array
 
 
 def build_projection_matrix(width: int, height: int, fov: float) -> Float32Array:
+    """Build a pinhole camera intrinsics matrix from image size and field of view."""
     focal = width / (2.0 * np.tan(fov * np.pi / 360.0))
     matrix = np.identity(3, dtype=np.float32)
     matrix[0, 0] = focal
@@ -22,6 +23,7 @@ def project_world_point(
     intrinsics: Float32Array,
     world_to_camera: Float32Array,
 ) -> Optional[Tuple[float, float, float]]:
+    """Project one CARLA world point into image coordinates."""
     point = np.array([location.x, location.y, location.z, 1.0], dtype=np.float32)
     point_camera = world_to_camera @ point
 
@@ -44,6 +46,7 @@ def project_polyline_with_world_points(
     image_height: int,
     projection_margin_px: float,
 ) -> List[Tuple[Float64Array, Float64Array]]:
+    """Project a world-space polyline into image samples with paired 3D points."""
     projected_samples: List[Tuple[Float64Array, Float64Array]] = []
 
     for point in world_points:
@@ -73,6 +76,7 @@ def clip_line_segment_to_image_with_params(
     image_width: int,
     image_height: int,
 ) -> Optional[Tuple[Float64Array, Float64Array, float, float]]:
+    """Clip a projected line segment to the image rectangle while preserving interpolation."""
     x0, y0 = float(start[0]), float(start[1])
     x1, y1 = float(end[0]), float(end[1])
     dx = x1 - x0
@@ -107,6 +111,7 @@ def clip_line_segment_to_image_with_params(
 
 
 def world_points_to_lidar(points_world: Float64Array, lidar_transform: carla.Transform) -> List[List[float]]:
+    """Transform world-space lane points into the LiDAR frame."""
     if points_world.size == 0:
         return []
 
@@ -121,6 +126,7 @@ def clip_projected_polyline_to_image_and_lidar(
     image_height: int,
     lidar_transform: carla.Transform,
 ) -> Tuple[List[List[float]], List[List[float]], int]:
+    """Clip projected lane samples and keep matching LiDAR-space points."""
     if len(projected_samples) < 2:
         return [], [], 0
 
@@ -178,6 +184,7 @@ def clip_projected_polyline_to_image_and_lidar(
 
 
 def dedupe_consecutive_points(points: List[List[float]], min_dist: float) -> List[List[float]]:
+    """Remove nearly duplicated consecutive points from a polyline."""
     if not points:
         return points
 

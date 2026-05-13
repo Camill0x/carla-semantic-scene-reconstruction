@@ -6,6 +6,7 @@ from src.common.typing_aliases import Float32Array, Float64Array, ObjectDict, St
 
 
 def count_points_in_box7(points_xyz: Float64Array, box7: Float32Array) -> int:
+    """Count how many LiDAR points fall inside a 7-parameter 3D box."""
     x, y, z, dx, dy, dz, yaw = map(float, box7)
     rel = points_xyz - np.array([x, y, z], dtype=np.float64).reshape(1, 3)
 
@@ -32,6 +33,7 @@ def filter_gt(
     gt_names: StrArray,
     min_points_in_box: int,
 ) -> Tuple[List[ObjectDict], Float32Array, StrArray]:
+    """Filter ground-truth objects and boxes using LiDAR point support and class rules."""
     if min_points_in_box <= 0 or gt_boxes.shape[0] == 0:
         return list(objects), gt_boxes, gt_names
 

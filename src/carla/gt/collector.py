@@ -10,6 +10,7 @@ from src.common.typing_aliases import Float32Array, ObjectDict, StrArray
 
 
 def actor_to_object_dict(actor: carla.Actor, cls_name: str) -> ObjectDict:
+    """Serialize a dynamic CARLA actor into the object-annotation format."""
     transform = actor.get_transform()
     bbox = actor.bounding_box
 
@@ -56,6 +57,7 @@ def level_bbox_to_object_dict(
     static_id: int,
     type_id: str,
 ) -> ObjectDict:
+    """Serialize a static level bounding box into the object-annotation format."""
     return {
         "source": "static_level_bbox",
         "id": int(static_id),
@@ -91,6 +93,7 @@ def collect_city_object_gt(
     lidar_transform: carla.Transform,
     max_range: float,
 ) -> Tuple[List[ObjectDict], List[Float32Array], List[str]]:
+    """Collect static city-object annotations around the ego vehicle."""
     hero_location = hero.get_transform().location
 
     objects: List[ObjectDict] = []
@@ -142,6 +145,7 @@ def collect_actor_gt(
     lidar_transform: carla.Transform,
     max_range: float,
 ) -> Tuple[List[ObjectDict], List[Float32Array], List[str]]:
+    """Collect dynamic actor annotations around the ego vehicle."""
     hero_location = hero.get_transform().location
 
     objects: List[ObjectDict] = []
@@ -182,6 +186,7 @@ def collect_gt(
     lidar_transform: carla.Transform,
     max_range: float,
 ) -> Tuple[List[ObjectDict], Float32Array, StrArray]:
+    """Collect and merge static and dynamic ground-truth object annotations."""
     city_objects, city_boxes, city_names = collect_city_object_gt(
         world=world,
         hero=hero,
@@ -211,6 +216,7 @@ def collect_gt(
 
 
 def count_by_class(objects: Sequence[ObjectDict]) -> Dict[str, int]:
+    """Count annotated objects by class name."""
     counts: Dict[str, int] = {}
     for obj in objects:
         cls_name = str(obj["class_name"])

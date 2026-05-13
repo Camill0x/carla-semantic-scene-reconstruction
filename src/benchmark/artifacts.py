@@ -9,6 +9,7 @@ JsonValue = Union[None, bool, int, float, str, List["JsonValue"], JsonDict]
 
 
 def create_benchmark_output_dir(*, run_dir: Path, model_name: str) -> Path:
+    """Create and return a timestamped benchmark output directory."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_dir = Path("results") / "benchmark" / run_dir.name / model_name
     output_dir = base_dir / timestamp
@@ -21,6 +22,7 @@ def create_benchmark_output_dir(*, run_dir: Path, model_name: str) -> Path:
 
 
 def _jsonify(value: object) -> JsonValue:
+    """Convert nested values into JSON-serializable primitives."""
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Mapping):
@@ -46,6 +48,7 @@ def build_openpcdet_meta(
     dataset_meta: Mapping[str, object],
     created_at: str,
 ) -> JsonDict:
+    """Build OpenPCDet metadata."""
     return {
         "model": "openpcdet",
         "created_at": created_at,
@@ -79,6 +82,7 @@ def build_lanedet_meta(
     dataset_meta: Mapping[str, object],
     created_at: str,
 ) -> JsonDict:
+    """Build LaneDet metadata."""
     return {
         "model": "lanedet",
         "created_at": created_at,
@@ -98,6 +102,7 @@ def build_lanedet_meta(
 
 
 def write_meta_json(path: Path, *, payload: JsonDict) -> None:
+    """Write benchmark metadata to a JSON file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(_jsonify(payload), handle, indent=2)

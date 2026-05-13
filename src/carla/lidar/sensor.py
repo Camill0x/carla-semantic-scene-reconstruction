@@ -8,6 +8,7 @@ def configure_lidar_blueprint(
     config: LidarConfig,
     fixed_delta_seconds: float,
 ) -> carla.ActorBlueprint:
+    """Configure the LiDAR blueprint from the project sensor settings."""
     lidar_bp = world.get_blueprint_library().find("sensor.lidar.ray_cast")
     lidar_bp.set_attribute("upper_fov", str(config.upper_fov))
     lidar_bp.set_attribute("lower_fov", str(config.lower_fov))

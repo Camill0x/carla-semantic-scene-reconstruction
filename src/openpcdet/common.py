@@ -10,12 +10,14 @@ from src.openpcdet.paths import relative_to_openpcdet
 
 
 def recreate_dir(path: Path) -> None:
+    """Remove a directory if it exists and recreate it empty."""
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
 
 
 def copy_latest_log(work_dir: Path, target: Path) -> None:
+    """Copy the newest OpenPCDet log file into the target location."""
     source = latest_file(work_dir.glob("train_*.log"))
     if source is None:
         return
@@ -24,6 +26,7 @@ def copy_latest_log(work_dir: Path, target: Path) -> None:
 
 
 def copy_config_snapshot(cfg_file: Path, work_dir: Path, target: Path) -> None:
+    """Copy the effective OpenPCDet config snapshot into the output directory."""
     source = work_dir / Path(relative_to_openpcdet(cfg_file)).name
     if not source.exists():
         source = cfg_file
@@ -32,6 +35,7 @@ def copy_config_snapshot(cfg_file: Path, work_dir: Path, target: Path) -> None:
 
 
 def copy_tensorboard(work_dir: Path, target: Path) -> None:
+    """Copy TensorBoard event files from the OpenPCDet work directory."""
     source = work_dir / "tensorboard"
     if not source.exists():
         return
@@ -41,6 +45,7 @@ def copy_tensorboard(work_dir: Path, target: Path) -> None:
 
 
 def read_train_eval_metrics(work_dir: Path, epoch: int) -> JsonDict:
+    """Read validation metrics for one OpenPCDet epoch from disk."""
     result_root = work_dir / "eval" / "eval_with_train" / f"epoch_{epoch}"
     candidates = sorted(result_root.glob("*/metrics.json"))
     if not candidates:
@@ -53,6 +58,7 @@ def select_best_validation_checkpoint(
     checkpoints: Sequence[Path],
     best_metric: str,
 ) -> JsonDict:
+    """Choose the best checkpoint according to the selected validation metric."""
     best_item: Optional[JsonDict] = None
     best_value = float("-inf")
 
@@ -85,6 +91,7 @@ def copy_selected_checkpoints(
     target_dir: Path,
     keep_all: bool,
 ) -> Optional[Path]:
+    """Copy the selected best and last checkpoints into the output directory."""
     best_source = next(path for path in checkpoints if checkpoint_epoch(path) == best_item["epoch"])
     last_source = checkpoints[-1]
     shutil.copy2(best_source, target_dir / "best.ckpt")
@@ -119,6 +126,7 @@ def build_train_meta(
     epochs_dir: Optional[Path],
     epoch_checkpoints: Sequence[Path],
 ) -> JsonDict:
+    """Build the metadata payload for an OpenPCDet training run."""
     return {
         "mode": "train",
         "run": run_name,
@@ -168,6 +176,7 @@ def build_test_meta(
     cfg_file: Path,
     checkpoint: Path,
 ) -> JsonDict:
+    """Build the metadata payload for an OpenPCDet evaluation run."""
     epoch = checkpoint_epoch(checkpoint)
     return {
         "mode": "test",
@@ -194,6 +203,7 @@ def build_test_meta(
 
 
 def make_checkpoint_link(checkpoint: Path, epoch: str, tmp_dir: Path) -> Path:
+    """Create a temporary symlink to a checkpoint using the expected upstream naming scheme."""
     name = "checkpoint_no_number.pth" if epoch == "no_number" else f"checkpoint_epoch_{epoch}.pth"
     link_path = tmp_dir / name
     os.symlink(checkpoint, link_path)
@@ -201,6 +211,7 @@ def make_checkpoint_link(checkpoint: Path, epoch: str, tmp_dir: Path) -> Path:
 
 
 def copy_test_artifacts(work_dir: Path, output_dir: Path, checkpoint: Path) -> None:
+    """Copy OpenPCDet evaluation artifacts into the final output directory."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
     metrics_path = latest_file(work_dir.glob("eval/**/test/metrics.json"))

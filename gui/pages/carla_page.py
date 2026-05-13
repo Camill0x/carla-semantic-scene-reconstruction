@@ -9,6 +9,7 @@ from gui.widgets.process_panel import ProcessPanel
 
 class CarlaPage(WorkflowPage):
     def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
+        """Build the CARLA workflow page and its simulator control panels."""
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -54,12 +55,15 @@ class CarlaPage(WorkflowPage):
         layout.addStretch(1)
 
     def window_subtitle(self) -> str:
+        """Return the subtitle shown for the CARLA workflow window."""
         return "Quick simulator workflow for checking that CARLA, ego spawning and traffic generation behave correctly."
 
     def preferred_window_size(self) -> tuple[int, int]:
+        """Return the preferred size for the CARLA workflow window."""
         return (940, 700)
 
     def summary_specs(self) -> list[SummarySpec]:
+        """Return the summary-card definitions for the CARLA workflow."""
         return [
             ("running", "Active Processes"),
             ("server", "Server"),
@@ -68,6 +72,7 @@ class CarlaPage(WorkflowPage):
         ]
 
     def summary_values(self) -> SummaryValues:
+        """Return the current summary values for the CARLA workflow."""
         running = self.manager.running_process_names()
         return {
             "running": f"{len([name for name in self.process_names() if name in running])} / {len(self.process_names())}",
@@ -77,9 +82,11 @@ class CarlaPage(WorkflowPage):
         }
 
     def process_names(self) -> list[str]:
+        """Return the process names managed by the CARLA workflow."""
         return ["server", "manual_control", "traffic"]
 
     def _start_manual(self, args: ArgsList) -> None:
+        """Validate prerequisites and start the manual-control process."""
         if "server" not in self.manager.running_process_names():
             self.notify_error("Server Required", "Start the CARLA server before launching manual control.")
             return
@@ -90,6 +97,7 @@ class CarlaPage(WorkflowPage):
         self.append_activity(self.manager.start_process("manual_control", args=args))
 
     def _start_traffic(self, args: ArgsList) -> None:
+        """Validate prerequisites and start the traffic-generation process."""
         running = self.manager.running_process_names()
         if "manual_control" not in running:
             self.notify_error(
@@ -99,27 +107,34 @@ class CarlaPage(WorkflowPage):
         self.append_activity(self.manager.start_process("traffic", args=args))
 
     def _stop_server(self) -> None:
+        """Stop the server together with dependent CARLA workflow processes."""
         self.append_activity(self.manager.stop_many(["traffic", "manual_control", "server"]))
 
     def _restart_server(self, args: ArgsList) -> None:
+        """Restart the server after stopping dependent CARLA workflow processes."""
         self.append_activity(self.manager.stop_many(["traffic", "manual_control", "server"]))
         self.append_activity(self.manager.start_process("server", args=args))
 
     def _stop_manual(self) -> None:
+        """Stop manual control together with dependent traffic generation."""
         self.append_activity(self.manager.stop_many(["traffic", "manual_control"]))
 
     def _restart_manual(self, args: ArgsList) -> None:
+        """Restart manual control after stopping dependent traffic generation."""
         self.append_activity(self.manager.stop_many(["traffic", "manual_control"]))
         self._start_manual(args)
 
     def _stop_traffic(self) -> None:
+        """Stop the traffic-generation process."""
         self.append_activity(self.manager.stop_process("traffic"))
 
     def _restart_traffic(self, args: ArgsList) -> None:
+        """Restart the traffic-generation process."""
         self.append_activity(self.manager.stop_process("traffic"))
         self._start_traffic(args)
 
     def refresh(self) -> None:
+        """Refresh CARLA panel statuses from the process manager."""
         rows = {row["name"]: row for row in self.manager.status_rows()}
         self.server_panel.set_status(rows["server"]["status"])
         self.manual_panel.set_status(rows["manual_control"]["status"])

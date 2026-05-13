@@ -15,6 +15,7 @@ from src.lanedet.paths import (
 
 
 def run_lanedet_main(args: Sequence[str]) -> int:
+    """Run the bundled LaneDet main entrypoint with the provided arguments."""
     command = [sys.executable, str(LANEDET_ROOT / "main.py"), *args]
     completed = subprocess.run(command, cwd=repo_root(), check=False)
     return int(completed.returncode)
@@ -30,6 +31,7 @@ def build_train_command(
     finetune_from: Optional[Path],
     view: bool,
 ) -> List[str]:
+    """Build the upstream training command for the selected model wrapper."""
     command = [
         str(cfg_file),
         "--work_dirs",
@@ -58,6 +60,7 @@ def build_eval_command(
     seed: int,
     view: bool,
 ) -> List[str]:
+    """Build the LaneDet evaluation command for the selected config."""
     command = [
         str(cfg_file),
         "--validate",
@@ -77,6 +80,7 @@ def build_eval_command(
 
 
 def resolve_run_config(preset: Optional[str], config_path: Optional[Path]) -> Tuple[Path, str]:
+    """Resolve the effective LaneDet config path and model name for a run."""
     if preset is not None:
         return resolve_lanedet_cfg(preset), preset_model(preset)
 
@@ -86,6 +90,7 @@ def resolve_run_config(preset: Optional[str], config_path: Optional[Path]) -> Tu
 
 
 def resolve_data_root(data_root: Optional[Path], preset: Optional[str]) -> Optional[Path]:
+    """Resolve the LaneDet dataset root from explicit input or the selected preset."""
     if data_root is not None:
         return data_root.expanduser().resolve()
     if preset is not None:
@@ -94,6 +99,7 @@ def resolve_data_root(data_root: Optional[Path], preset: Optional[str]) -> Optio
 
 
 def validate_run_args(validate: bool, load_from: Optional[Path]) -> None:
+    """Validate the LaneDet mode-specific CLI argument combination."""
     if validate and load_from is None:
         raise ValueError("--load-from is required with --validate")
     if load_from is not None and not load_from.expanduser().resolve().exists():

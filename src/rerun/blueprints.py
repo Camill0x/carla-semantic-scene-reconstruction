@@ -4,6 +4,7 @@ import rerun.blueprint as rrb
 
 
 def make_dataset_blueprint(show_grid: bool) -> Any:
+    """Build the default Rerun blueprint for offline dataset playback."""
     return rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
@@ -29,6 +30,7 @@ def make_dataset_blueprint(show_grid: bool) -> Any:
 
 
 def make_live_blueprint(show_grid: bool) -> Any:
+    """Build the default Rerun blueprint for live scene playback."""
     return rrb.Blueprint(
         rrb.Horizontal(
             rrb.Spatial3DView(

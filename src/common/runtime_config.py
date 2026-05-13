@@ -23,6 +23,7 @@ DEFAULT_RUNTIME_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "
 
 
 def _read_runtime_config() -> JsonDict:
+    """Load the runtime configuration JSON file from disk."""
     with DEFAULT_RUNTIME_CONFIG_PATH.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
@@ -31,6 +32,7 @@ def _read_runtime_config() -> JsonDict:
 
 
 def _get_section(root: Mapping[str, Any], *path: str) -> Mapping[str, Any]:
+    """Return a nested mapping section from the runtime configuration."""
     current: Any = root
     for key in path:
         if not isinstance(current, Mapping) or key not in current:
@@ -44,12 +46,14 @@ def _get_section(root: Mapping[str, Any], *path: str) -> Mapping[str, Any]:
 
 
 def _require_value(section: Mapping[str, Any], key: str) -> Any:
+    """Return a required value from a configuration section or raise an error."""
     if key not in section:
         raise KeyError(f"Missing runtime config value: {key}")
     return section[key]
 
 
 def load_carla_connection_config() -> CarlaConnectionConfig:
+    """Load CARLA connection config."""
     data = _read_runtime_config()
     section = _get_section(data, "carla")
     return CarlaConnectionConfig(
@@ -59,6 +63,7 @@ def load_carla_connection_config() -> CarlaConnectionConfig:
 
 
 def load_lidar_config() -> LidarConfig:
+    """Load LiDAR config."""
     data = _read_runtime_config()
     section = _get_section(data, "lidar")
     return LidarConfig(
@@ -71,6 +76,7 @@ def load_lidar_config() -> LidarConfig:
 
 
 def load_front_camera_config() -> CameraConfig:
+    """Load front camera config."""
     data = _read_runtime_config()
     section = _get_section(data, "camera_front")
     return CameraConfig(
@@ -87,6 +93,7 @@ def load_front_camera_config() -> CameraConfig:
 
 
 def load_lane_annotations_config() -> LaneAnnotationsConfig:
+    """Load lane annotations config."""
     data = _read_runtime_config()
     section = _get_section(data, "lane_annotations")
     return LaneAnnotationsConfig(
@@ -99,6 +106,7 @@ def load_lane_annotations_config() -> LaneAnnotationsConfig:
 
 
 def load_gt_annotations_config() -> GtAnnotationsConfig:
+    """Load ground-truth annotations config."""
     data = _read_runtime_config()
     section = _get_section(data, "gt_annotations")
     return GtAnnotationsConfig(
@@ -107,11 +115,13 @@ def load_gt_annotations_config() -> GtAnnotationsConfig:
 
 
 def load_dataset_root_dir() -> Path:
+    """Load dataset root directory."""
     data = _read_runtime_config()
     return Path(str(_require_value(data, "dataset_root_dir")))
 
 
 def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfig:
+    """Build collector config."""
     return CollectorConfig(
         carla=load_carla_connection_config(),
         lidar=load_lidar_config(),
@@ -125,6 +135,7 @@ def build_collector_config(*, num_frames: int, every_nth: int) -> CollectorConfi
 
 
 def build_dataset_viewer_config(*, show_grid: bool) -> DatasetViewerConfig:
+    """Build dataset viewer config."""
     data = _read_runtime_config()
     section = _get_section(data, "dataset_viewer")
     return DatasetViewerConfig(
@@ -136,6 +147,7 @@ def build_dataset_viewer_config(*, show_grid: bool) -> DatasetViewerConfig:
 
 
 def build_streaming_common_config() -> StreamingCommonConfig:
+    """Build streaming common config."""
     data = _read_runtime_config()
     section = _get_section(data, "streaming")
     return StreamingCommonConfig(
@@ -148,6 +160,7 @@ def build_streaming_common_config() -> StreamingCommonConfig:
 
 
 def _default_streaming_lidar_slot_capacity_bytes(lidar: LidarConfig) -> int:
+    """Estimate a default shared-memory slot size for LiDAR frames."""
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "producer")
     if "lidar_slot_capacity_bytes" in section:
@@ -158,6 +171,7 @@ def _default_streaming_lidar_slot_capacity_bytes(lidar: LidarConfig) -> int:
 
 
 def build_streaming_producer_config(*, every_nth: int) -> StreamingProducerConfig:
+    """Build streaming producer config."""
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "producer")
     lidar = load_lidar_config()
@@ -179,6 +193,7 @@ def build_streaming_openpcdet_inference_config(
     score_thresh: float,
     point_stride: int,
 ) -> StreamingOpenPCDetInferenceConfig:
+    """Build streaming OpenPCDet inference config."""
     return StreamingOpenPCDetInferenceConfig(
         common=build_streaming_common_config(),
         cfg_file=cfg_file,
@@ -194,6 +209,7 @@ def build_streaming_lanedet_inference_config(
     ckpt: Path,
     score_thresh: float,
 ) -> StreamingLaneDetInferenceConfig:
+    """Build streaming LaneDet inference config."""
     return StreamingLaneDetInferenceConfig(
         common=build_streaming_common_config(),
         cfg_file=cfg_file,
@@ -203,6 +219,7 @@ def build_streaming_lanedet_inference_config(
 
 
 def build_streaming_aggregator_config() -> StreamingAggregatorConfig:
+    """Build streaming aggregator config."""
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "aggregator")
     return StreamingAggregatorConfig(
@@ -212,6 +229,7 @@ def build_streaming_aggregator_config() -> StreamingAggregatorConfig:
 
 
 def build_streaming_visualizer_config(*, show_grid: bool) -> StreamingVisualizerConfig:
+    """Build streaming visualizer config."""
     data = _read_runtime_config()
     section = _get_section(data, "streaming", "visualizer")
     return StreamingVisualizerConfig(

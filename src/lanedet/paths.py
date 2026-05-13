@@ -13,21 +13,25 @@ RESULTS_ROOT = repo_path("results", "lanedet")
 
 
 def resolve_lanedet_cfg(preset: str) -> Path:
+    """Resolve a named LaneDet preset to its config file."""
     _, model, cfg_name = resolve_lanedet_preset(preset)
     return LANEDET_ROOT / "configs" / model / cfg_name
 
 
 def preset_dataset(preset: str) -> str:
+    """Return the dataset family associated with a LaneDet preset."""
     dataset, _, _ = resolve_lanedet_preset(preset)
     return dataset
 
 
 def preset_model(preset: str) -> str:
+    """Return the model family associated with a LaneDet preset."""
     _, model, _ = resolve_lanedet_preset(preset)
     return model
 
 
 def resolve_lanedet_preset(preset: str) -> Tuple[str, str, str]:
+    """Resolve a LaneDet preset into its config, model, and dataset identifiers."""
     try:
         return LANEDET_PRESETS[preset]
     except KeyError as exc:
@@ -35,6 +39,7 @@ def resolve_lanedet_preset(preset: str) -> Tuple[str, str, str]:
 
 
 def model_from_config_path(config_path: Path) -> str:
+    """Infer the LaneDet model name from a config path."""
     resolved = config_path.expanduser().resolve()
     cfg_root = LANEDET_ROOT / "configs"
     try:
@@ -62,20 +67,25 @@ def model_from_config_path(config_path: Path) -> str:
 
 
 def generated_run_name() -> str:
+    """Generate a timestamp-based run name that does not collide in the target directory."""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 def prepared_dataset_root(name: str = "default", dataset: str = "tusimple") -> Path:
+    """Return the root directory of the prepared dataset variant."""
     return DATASET_ROOT / dataset / name
 
 
 def results_root(mode: str, model: str, dataset: str = "tusimple") -> Path:
+    """Return the LaneDet results root for the selected mode and model."""
     return RESULTS_ROOT / mode / model / dataset
 
 
 def run_dir(run_name: str, mode: str, model: str, dataset: str = "tusimple") -> Path:
+    """Return the LaneDet run directory for the selected mode and model."""
     return results_root(mode, model, dataset) / run_name
 
 
 def checkpoints_dir(run_name: str, mode: str, model: str, dataset: str = "tusimple") -> Path:
+    """Return the checkpoint directory for a LaneDet run."""
     return run_dir(run_name, mode, model, dataset) / "ckpt"

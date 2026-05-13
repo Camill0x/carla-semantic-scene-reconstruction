@@ -11,6 +11,7 @@ def filter_object_predictions(
     allowed_classes: Iterable[str],
     score_thresh: float,
 ) -> Objects3DPrediction:
+    """Keep only the predicted objects whose class names are allowed."""
     allowed_class_set = set(allowed_classes)
     keep = []
     names = []

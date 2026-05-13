@@ -14,6 +14,7 @@ from src.common.typing_aliases import Float32Array, Float64Array, ImageArray, St
 
 
 def hero_to_dict(hero: carla.Actor) -> Dict[str, object]:
+    """Serialize the hero vehicle state into the dataset metadata format."""
     transform = hero.get_transform()
     bbox = hero.bounding_box
     return {
@@ -52,6 +53,7 @@ def hero_to_dict(hero: carla.Actor) -> Dict[str, object]:
 
 
 def lidar_to_dict(lidar_transform: carla.Transform, config: LidarConfig) -> Dict[str, object]:
+    """Serialize LiDAR sensor settings and transform metadata."""
     return {
         "max_range": float(config.max_range),
         "channels": int(config.channels),
@@ -72,6 +74,7 @@ def lidar_to_dict(lidar_transform: carla.Transform, config: LidarConfig) -> Dict
 
 
 def camera_to_dict(camera_transform: carla.Transform, config: CameraConfig) -> Dict[str, object]:
+    """Serialize camera settings and transform metadata."""
     return {
         "width": int(config.width),
         "height": int(config.height),
@@ -98,6 +101,7 @@ def camera_to_dict(camera_transform: carla.Transform, config: CameraConfig) -> D
 
 
 def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict[str, object]:
+    """Serialize lane-annotation collection settings into metadata."""
     return {
         "distance_m": float(config.distance_m),
         "step_m": float(config.step_m),
@@ -108,6 +112,7 @@ def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict[str, object]
 
 
 def _write_json(path: Path, payload: Dict[str, object]) -> None:
+    """Write a JSON payload to disk with UTF-8 encoding."""
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
 
@@ -130,6 +135,7 @@ def save_multimodal_frame(
     gt_names: StrArray,
     config: CollectorConfig,
 ) -> Path:
+    """Write one synchronized multimodal CARLA frame to the raw dataset layout."""
     frame_dir = output_root / f"frame_{frame_index:06d}"
     frame_dir.mkdir(parents=True, exist_ok=True)
 

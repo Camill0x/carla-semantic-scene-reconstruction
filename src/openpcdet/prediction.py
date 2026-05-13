@@ -14,10 +14,12 @@ class Objects3DPrediction:
     names: List[str]
 
     def __len__(self) -> int:
+        """Return the number of predicted 3D objects."""
         return int(self.boxes.shape[0])
 
     @classmethod
     def empty(cls) -> "Objects3DPrediction":
+        """Return an empty 3D object prediction container."""
         return cls(
             boxes=np.zeros((0, 7), dtype=np.float32),
             scores=np.zeros((0,), dtype=np.float32),
@@ -28,6 +30,7 @@ class Objects3DPrediction:
     @classmethod
     def from_detector_output(cls, pred_dict: Mapping[str, Any]) -> "Objects3DPrediction":
         # Drop optional fields such as velocity; downstream code uses 7D boxes.
+        """Build a prediction container from an OpenPCDet detector output."""
         return cls(
             boxes=pred_dict["pred_boxes"].detach().cpu().numpy()[:, :7].astype(np.float32),
             scores=pred_dict["pred_scores"].detach().cpu().numpy().astype(np.float32),
@@ -37,6 +40,7 @@ class Objects3DPrediction:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "Objects3DPrediction":
+        """Build a prediction container from a serialized payload."""
         boxes = np.asarray(payload.get("boxes", np.zeros((0, 7))), dtype=np.float32)
         if boxes.ndim != 2 or boxes.shape[1] < 7:
             boxes = np.zeros((0, 7), dtype=np.float32)
@@ -49,6 +53,7 @@ class Objects3DPrediction:
         return cls(boxes=boxes, scores=scores, labels=labels, names=names)
 
     def to_payload(self) -> JsonDict:
+        """Serialize the prediction container into a transport payload."""
         return {
             "boxes": self.boxes,
             "scores": self.scores,

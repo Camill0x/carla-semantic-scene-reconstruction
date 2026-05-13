@@ -6,6 +6,7 @@ LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def _logger_name(component: str) -> str:
+    """Return a normalized logger name for the given component."""
     return component.strip().replace(" ", "_").lower()
 
 
@@ -14,6 +15,7 @@ def configure_logging(
     *,
     verbose: bool = False,
 ) -> logging.Logger:
+    """Configure and return a console logger for a CLI component."""
     logger = logging.getLogger(_logger_name(component))
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
     logger.propagate = False

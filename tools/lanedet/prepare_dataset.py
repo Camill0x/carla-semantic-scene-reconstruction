@@ -27,6 +27,7 @@ class PrepareDatasetArgs:
 
 
 def parse_args() -> PrepareDatasetArgs:
+    """Parse command-line arguments for the LaneDet dataset preparation command."""
     parser = argparse.ArgumentParser(description="Build a TuSimple-like LaneDet dataset from collected CARLA runs")
     parser.add_argument("--format", choices=LANEDET_DATASETS, required=True, help="Prepared LaneDet dataset format")
     parser.add_argument("--name", default="default", help="Prepared dataset variant name")
@@ -53,6 +54,7 @@ def parse_args() -> PrepareDatasetArgs:
 
 
 def main() -> None:
+    """Run the LaneDet dataset preparation command."""
     args = parse_args()
     logger = configure_logging("tools.lanedet.prepare_dataset")
     source_root = RAW_DATASET_ROOT.resolve()
@@ -70,13 +72,13 @@ def main() -> None:
     run_dirs = selected_run_dirs(source_root, None if args.use_all else args.runs)
     frame_dirs = iter_frame_dirs(run_dirs)
 
-    logger.info("preparing LaneDet dataset: %s", args.dataset_format)
-    logger.info("raw runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
-    logger.info("frame directories: %d", len(frame_dirs))
-    logger.info("output: %s", repo_relative_or_absolute(output_root))
+    logger.info("Preparing LaneDet dataset: %s", args.dataset_format)
+    logger.info("Raw runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
+    logger.info("Frame directories: %d", len(frame_dirs))
+    logger.info("Output: %s", repo_relative_or_absolute(output_root))
 
     samples, stats = load_samples(frame_dirs, max_lanes=args.max_lanes, show_progress=True)
-    logger.info("loaded %d valid lane samples", len(samples))
+    logger.info("Loaded %d valid lane samples", len(samples))
 
     splits = train_val_test_split(
         items=samples,
@@ -90,14 +92,14 @@ def main() -> None:
         line_width=args.line_width,
     )
 
-    logger.info("skipped missing image/lanes files: %s", stats["skipped_missing_files"])
-    logger.info("skipped frames with no collected lane annotations: %s", stats["skipped_no_lanes_meta"])
-    logger.info("skipped frames without usable lane geometry: %s", stats["skipped_no_usable_lanes"])
-    logger.info("usable lane samples: %s", stats["usable_samples"])
-    logger.info("train samples: %d", len(splits.train))
-    logger.info("val samples: %d", len(splits.val))
-    logger.info("test samples: %d", len(splits.test))
-    logger.info("saved dataset: %s", repo_relative_or_absolute(output_root))
+    logger.info("Skipped missing image/lanes files: %s", stats["skipped_missing_files"])
+    logger.info("Skipped frames with no collected lane annotations: %s", stats["skipped_no_lanes_meta"])
+    logger.info("Skipped frames without usable lane geometry: %s", stats["skipped_no_usable_lanes"])
+    logger.info("Usable lane samples: %s", stats["usable_samples"])
+    logger.info("Train samples: %d", len(splits.train))
+    logger.info("Val samples: %d", len(splits.val))
+    logger.info("Test samples: %d", len(splits.test))
+    logger.info("Saved dataset: %s", repo_relative_or_absolute(output_root))
 
 
 if __name__ == "__main__":

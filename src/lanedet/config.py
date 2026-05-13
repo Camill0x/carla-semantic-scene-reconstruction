@@ -14,6 +14,7 @@ def write_runtime_config(
     epochs: Optional[int],
     workers: Optional[int],
 ) -> Path:
+    """Write a patched runtime config that points LaneDet to project paths and options."""
     text = source_cfg.read_text(encoding="utf-8")
     target_cfg.parent.mkdir(parents=True, exist_ok=True)
 
@@ -53,6 +54,7 @@ def write_runtime_config(
 
 
 def load_config_module(config_path: Path) -> ModuleType:
+    """Import a LaneDet config file as a Python module."""
     spec = importlib.util.spec_from_file_location("_lanedet_runtime_config", config_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load config: {config_path}")
@@ -62,6 +64,7 @@ def load_config_module(config_path: Path) -> ModuleType:
 
 
 def dataset_family_from_config(config_path: Path) -> str:
+    """Infer the LaneDet dataset family from a config file."""
     module = load_config_module(config_path)
     try:
         dataset_type = module.dataset["train"]["type"]

@@ -37,6 +37,7 @@ class CameraFrame:
 
 
 def _require_path(frame_dir: Path, filename: str) -> Path:
+    """Return a required frame file path or raise if it is missing."""
     path = frame_dir / filename
     if not path.exists():
         raise FileNotFoundError(path)
@@ -44,6 +45,7 @@ def _require_path(frame_dir: Path, filename: str) -> Path:
 
 
 def _load_json(path: Path) -> JsonDict:
+    """Load and validate a JSON object from disk."""
     with path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
     if not isinstance(payload, dict):
@@ -52,10 +54,12 @@ def _load_json(path: Path) -> JsonDict:
 
 
 def _load_npy(path: Path) -> ArrayAny:
+    """Load a NumPy array from disk."""
     return np.asarray(np.load(path))
 
 
 def _load_image_rgb(path: Path) -> ImageArray:
+    """Load an image from disk and convert it from BGR to RGB."""
     image_bgr = cv2.imread(str(path), cv2.IMREAD_COLOR)
     if image_bgr is None:
         raise RuntimeError(f"Failed to read image: {path}")
@@ -63,6 +67,7 @@ def _load_image_rgb(path: Path) -> ImageArray:
 
 
 def load_points_frame(frame_dir: Path) -> PointsFrame:
+    """Load the LiDAR-only view of a recorded dataset frame."""
     meta = _load_json(_require_path(frame_dir, "meta.json"))
     points = _load_npy(_require_path(frame_dir, "points.npy"))
 
@@ -74,6 +79,7 @@ def load_points_frame(frame_dir: Path) -> PointsFrame:
 
 
 def load_camera_frame(frame_dir: Path) -> CameraFrame:
+    """Load the camera-only view of a recorded dataset frame."""
     meta = _load_json(_require_path(frame_dir, "meta.json"))
     image_rgb = _load_image_rgb(_require_path(frame_dir, "front_rgb.png"))
     return CameraFrame(
@@ -84,6 +90,7 @@ def load_camera_frame(frame_dir: Path) -> CameraFrame:
 
 
 def load_dataset_frame(frame_dir: Path) -> DatasetFrame:
+    """Load all multimodal payloads for a recorded dataset frame."""
     meta = _load_json(_require_path(frame_dir, "meta.json"))
     points = _load_npy(_require_path(frame_dir, "points.npy"))
     ego_box = _load_npy(_require_path(frame_dir, "ego_box.npy"))
@@ -107,4 +114,5 @@ def load_dataset_frame(frame_dir: Path) -> DatasetFrame:
 
 
 def iter_frame_dirs(run_dir: Path) -> List[Path]:
+    """Return the sorted frame directories for the provided runs."""
     return sorted(path for path in run_dir.iterdir() if path.is_dir() and path.name.startswith("frame_"))

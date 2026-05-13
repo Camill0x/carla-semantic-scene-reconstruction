@@ -20,6 +20,7 @@ class ShowDatasetArgs:
 
 
 def parse_args() -> ShowDatasetArgs:
+    """Parse command-line arguments for the dataset viewer command."""
     parser = argparse.ArgumentParser(description="Show a saved dataset run in Rerun")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--fps", type=float, default=20.0, help="Playback speed in frames per second")
@@ -33,6 +34,7 @@ def parse_args() -> ShowDatasetArgs:
 
 
 def main() -> None:
+    """Run the dataset viewer command."""
     args = parse_args()
     logger = configure_logging("tools.dataset.show_dataset")
     config = build_dataset_viewer_config(show_grid=args.show_grid)
@@ -48,11 +50,11 @@ def main() -> None:
     if not frame_dirs:
         raise FileNotFoundError(f"No frame_* directories found in {args.run_dir}")
 
-    logger.info("run dir: %s", args.run_dir)
-    logger.info("frames: %d", len(frame_dirs))
-    logger.info("fps: %.2f", args.fps)
+    logger.info("Run dir: %s", args.run_dir)
+    logger.info("Frames: %d", len(frame_dirs))
+    logger.info("FPS: %.2f", args.fps)
     logger.info(
-        "viewer: point_radius=%s, gt_line_radius=%s, lane_line_thickness=%s",
+        "Viewer: point_radius=%s, gt_line_radius=%s, lane_line_thickness=%s",
         config.point_radius,
         config.gt_line_radius,
         config.lane_line_thickness,
@@ -69,7 +71,7 @@ def main() -> None:
         log_dataset_frame(frame, config)
         time.sleep(frame_delay_s)
 
-    logger.info("dataset loaded into Rerun")
+    logger.info("Dataset loaded into Rerun")
 
 
 if __name__ == "__main__":

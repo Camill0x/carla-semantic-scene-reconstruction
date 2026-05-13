@@ -38,6 +38,7 @@ class TestArgs:
 
 
 def parse_args() -> TestArgs:
+    """Parse command-line arguments for the OpenPCDet evaluation command."""
     parser = argparse.ArgumentParser(description="Evaluate an OpenPCDet checkpoint on the held-out test split")
     parser.add_argument("--dataset-name", default="default", help="Prepared dataset variant name")
     cfg_source = parser.add_mutually_exclusive_group(required=True)
@@ -60,6 +61,7 @@ def parse_args() -> TestArgs:
 
 
 def main() -> None:
+    """Run the OpenPCDet evaluation command."""
     args = parse_args()
     logger = configure_logging("tools.openpcdet.test")
 
@@ -121,7 +123,7 @@ def main() -> None:
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 
-    logger.info("results saved to: %s", repo_relative_or_absolute(output_dir))
+    logger.info("Results saved to: %s", repo_relative_or_absolute(output_dir))
 
 
 if __name__ == "__main__":

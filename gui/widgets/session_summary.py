@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout, QWidget
 
 class SessionSummary(QWidget):
     def __init__(self, specs: Optional[List[Tuple[str, str]]] = None) -> None:
+        """Build the summary cards shown at the top of a workflow window."""
         super().__init__()
         self.cards: Dict[str, QLabel] = {}
 
@@ -36,5 +37,6 @@ class SessionSummary(QWidget):
             self.cards[key] = value_label
 
     def update_values(self, values: Dict[str, str]) -> None:
+        """Update the displayed summary-card values."""
         for key, label in self.cards.items():
             label.setText(str(values.get(key, "-")))

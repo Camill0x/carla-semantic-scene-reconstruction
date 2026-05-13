@@ -20,6 +20,7 @@ def points_inside_oriented_box(
     yaw_rad: float,
     half_sizes_xyz: Float64Array,
 ) -> BoolArray:
+    """Return a mask indicating which points fall inside an oriented 3D box."""
     rel = points_xyz - center_xyz.reshape(1, 3)
 
     c = math.cos(-yaw_rad)
@@ -47,6 +48,7 @@ def get_ego_box_in_lidar_frame(
     lidar: carla.Sensor,
     padding: float = 0.15,
 ) -> EgoBox:
+    """Compute the ego-vehicle bounding box in the LiDAR frame."""
     bbox = hero.bounding_box
     actor_tf = carla_transform_to_matrix(hero.get_transform())
     bbox_center_local = np.array(
@@ -85,6 +87,7 @@ def filter_points_inside_ego_vehicle(
     hero: carla.Actor,
     lidar: carla.Sensor,
 ) -> Float64Array:
+    """Remove LiDAR points that fall inside the ego vehicle box."""
     ego_box = get_ego_box_in_lidar_frame(hero, lidar)
     inside = points_inside_oriented_box(
         points_xyz=points[:, :3],
@@ -96,6 +99,7 @@ def filter_points_inside_ego_vehicle(
 
 
 def get_bbox_center_world_from_actor(actor: carla.Actor) -> Float64Array:
+    """Return the world-space center of an actor bounding box."""
     bbox = actor.bounding_box
     actor_tf = carla_transform_to_matrix(actor.get_transform())
     center_local = np.array(
@@ -111,6 +115,7 @@ def actor_matches_level_bbox(
     center_thresh: float = 1.5,
     extent_thresh: float = 1.0,
 ) -> bool:
+    """Return whether an actor geometry matches a level bounding box."""
     actor_center = get_bbox_center_world_from_actor(actor)
     level_center = np.array(
         [level_bbox.location.x, level_bbox.location.y, level_bbox.location.z],
@@ -132,6 +137,7 @@ def actor_matches_level_bbox(
 
 
 def get_yaw_in_lidar(obj_yaw_world_deg: float, lidar_yaw_world_deg: float) -> float:
+    """Convert an object yaw angle from world coordinates into the LiDAR frame."""
     relative_yaw_deg = obj_yaw_world_deg - lidar_yaw_world_deg
     yaw_rad = math.radians(relative_yaw_deg)
     yaw_rad = -yaw_rad
@@ -139,6 +145,7 @@ def get_yaw_in_lidar(obj_yaw_world_deg: float, lidar_yaw_world_deg: float) -> fl
 
 
 def actor_to_gt_box(actor: carla.Actor, lidar_transform: carla.Transform) -> Float32Array:
+    """Convert a CARLA actor into the project 7D ground-truth box format."""
     bbox = actor.bounding_box
 
     bbox_local = np.array(
@@ -169,6 +176,7 @@ def actor_to_gt_box(actor: carla.Actor, lidar_transform: carla.Transform) -> Flo
 
 
 def level_bbox_to_gt_box(level_bbox: carla.BoundingBox, lidar_transform: carla.Transform) -> Float32Array:
+    """Convert a static level bounding box into the project 7D ground-truth box format."""
     center_world = np.array(
         [[level_bbox.location.x], [level_bbox.location.y], [level_bbox.location.z], [1.0]],
         dtype=np.float64,

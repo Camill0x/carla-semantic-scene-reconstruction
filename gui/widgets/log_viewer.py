@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 class LogViewer(QWidget):
     def __init__(self) -> None:
+        """Build the log viewer widgets used in workflow windows."""
         super().__init__()
         self.log_texts: Dict[str, str] = {}
         self._known_log_names: list[str] = []
@@ -37,6 +38,7 @@ class LogViewer(QWidget):
         layout.addWidget(self.editor, 1)
 
     def set_logs(self, logs: Dict[str, str]) -> None:
+        """Replace the available log payloads and preserve the current selection when possible."""
         current = self.selector.currentText()
         self.log_texts = dict(logs)
         names = sorted(self.log_texts)
@@ -55,10 +57,12 @@ class LogViewer(QWidget):
         self.refresh()
 
     def _handle_selection_changed(self) -> None:
+        """Refresh the displayed log when the selected process log changes."""
         self._force_scroll_to_bottom = True
         self.refresh()
 
     def refresh(self) -> None:
+        """Refresh the displayed log tail for the currently selected process."""
         name = self.selector.currentText()
         text = self.log_texts.get(name)
         if text is None:
@@ -75,6 +79,7 @@ class LogViewer(QWidget):
         self._force_scroll_to_bottom = False
 
     def _scroll_to_bottom(self) -> None:
+        """Scroll the log editor to the newest displayed line."""
         cursor = self.editor.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self.editor.setTextCursor(cursor)

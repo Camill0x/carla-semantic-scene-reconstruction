@@ -30,6 +30,7 @@ class LiveProducerArgs:
 
 
 def parse_args() -> LiveProducerArgs:
+    """Parse command-line arguments for the live CARLA producer."""
     parser = argparse.ArgumentParser(description="CARLA live producer")
     parser.add_argument("--every-nth", type=int, default=1, help="Publish every N-th CARLA frame")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
@@ -41,6 +42,7 @@ def parse_args() -> LiveProducerArgs:
 
 
 def transform_to_dict(transform: carla.Transform) -> Dict[str, object]:
+    """Convert a CARLA transform into a JSON-serializable dictionary."""
     return {
         "location": {
             "x": float(transform.location.x),
@@ -56,10 +58,12 @@ def transform_to_dict(transform: carla.Transform) -> Dict[str, object]:
 
 
 def should_process_frame(frame: int, last_processed_frame: Optional[int], every_nth: int) -> bool:
+    """Return whether the current frame should be processed for the configured sampling interval."""
     return last_processed_frame is None or frame - last_processed_frame >= every_nth
 
 
 def main() -> None:
+    """Run the live CARLA producer."""
     args = parse_args()
     logger = configure_logging("tools.streaming.live_producer", verbose=args.verbose)
     config = build_streaming_producer_config(every_nth=args.every_nth)
@@ -106,11 +110,11 @@ def main() -> None:
     if hero is None:
         raise RuntimeError("Hero vehicle not found")
 
-    logger.info("hero id=%s, type=%s", hero.id, hero.type_id)
-    logger.info("frame buffer: %s", names.frame_buffer)
-    logger.info("camera prefix: %s", names.camera_prefix)
-    logger.info("lidar prefix: %s", names.lidar_prefix)
-    logger.info("sensor_slots: %s", config.sensor_slots)
+    logger.info("Hero id=%s, type=%s", hero.id, hero.type_id)
+    logger.info("Frame buffer: %s", names.frame_buffer)
+    logger.info("Camera prefix: %s", names.camera_prefix)
+    logger.info("Lidar prefix: %s", names.lidar_prefix)
+    logger.info("Sensor slots: %s", config.sensor_slots)
 
     lidar_bp = configure_lidar_blueprint(world, config=config.lidar, fixed_delta_seconds=settings.fixed_delta_seconds)
     lidar_transform_relative = carla.Transform(carla.Location(x=-0.5, z=1.8))

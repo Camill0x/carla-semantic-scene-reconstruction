@@ -11,6 +11,7 @@ from src.common.typing_aliases import JsonDict
 
 
 def frame_has_class_counts(meta: JsonDict, class_names: Sequence[str]) -> bool:
+    """Return whether frame metadata contains counts for all requested classes."""
     class_counts = meta.get("class_counts", {})
     if not isinstance(class_counts, dict):
         return False
@@ -18,6 +19,7 @@ def frame_has_class_counts(meta: JsonDict, class_names: Sequence[str]) -> bool:
 
 
 def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[str]) -> Optional[JsonDict]:
+    """Build one OpenPCDet sample-info record from a recorded CARLA frame."""
     points_path = frame_dir / "points.npy"
     gt_boxes_path = frame_dir / "gt_boxes.npy"
     gt_names_path = frame_dir / "gt_names.npy"
@@ -77,6 +79,7 @@ def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[st
 
 
 def load_infos(frame_dirs: Sequence[Path], output_root: Path, class_names: Sequence[str]) -> List[JsonDict]:
+    """Load OpenPCDet sample-info records for a list of recorded frames."""
     infos: List[JsonDict] = []
     for frame_dir in frame_dirs:
         info = load_frame_info(frame_dir, output_root, class_names)
@@ -91,6 +94,7 @@ def load_infos(frame_dirs: Sequence[Path], output_root: Path, class_names: Seque
 
 
 def write_split(sample_ids: Sequence[str], output_path: Path) -> None:
+    """Write a sample-id split file for OpenPCDet."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
         for sample_id in sample_ids:
@@ -98,6 +102,7 @@ def write_split(sample_ids: Sequence[str], output_path: Path) -> None:
 
 
 def write_infos(output_root: Path, splits: DatasetSplits[JsonDict]) -> Tuple[Path, Path, Path]:
+    """Write OpenPCDet split files and info pickles for the prepared dataset."""
     infos_root = output_root / "infos"
     image_sets_root = output_root / "ImageSets"
     infos_root.mkdir(parents=True, exist_ok=True)

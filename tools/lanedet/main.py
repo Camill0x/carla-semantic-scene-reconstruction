@@ -46,6 +46,7 @@ class LaneDetArgs:
 
 
 def parse_args() -> LaneDetArgs:
+    """Parse command-line arguments for the LaneDet project wrapper command."""
     parser = argparse.ArgumentParser(description="Run LaneDet from the main project repo")
     config_selection = parser.add_mutually_exclusive_group(required=True)
     config_selection.add_argument("--preset", choices=sorted(LANEDET_PRESETS))
@@ -78,6 +79,7 @@ def parse_args() -> LaneDetArgs:
 
 
 def main() -> None:
+    """Run the LaneDet project wrapper command."""
     args = parse_args()
     logger = configure_logging("tools.lanedet.main")
     validate_run_args(args.validate, args.load_from)
@@ -161,7 +163,7 @@ def main() -> None:
     finally:
         shutil.rmtree(work_root, ignore_errors=True)
 
-    logger.info("results saved to: %s", repo_relative_or_absolute(output_dir))
+    logger.info("Results saved to: %s", repo_relative_or_absolute(output_dir))
 
 
 if __name__ == "__main__":

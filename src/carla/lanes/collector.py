@@ -29,6 +29,7 @@ def collect_lane_annotations(
     camera_fov: float,
     config: LaneAnnotationsConfig,
 ) -> List[ObjectDict]:
+    """Collect lane annotations around the ego vehicle and project them into 2D and 3D."""
     carla_map = world.get_map()
     hero_waypoint = carla_map.get_waypoint(
         hero.get_location(),

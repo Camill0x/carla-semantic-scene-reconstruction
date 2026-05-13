@@ -14,6 +14,7 @@ def build_lidar_frame_message(
     timestamp: float,
     points: Float32Array,
 ) -> JsonDict:
+    """Build the shared payload for one LiDAR frame."""
     points_array = np.asarray(points, dtype=np.float32)
     return {
         "schema": "lidar_frame",
@@ -26,6 +27,7 @@ def build_lidar_frame_message(
 
 
 def parse_lidar_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a serialized LiDAR frame message."""
     frame_id = int(message.get("frame", -1))
     lidar_payload = message.get("lidar", {})
     if not isinstance(lidar_payload, Mapping):
@@ -54,6 +56,7 @@ def build_camera_frame_message(
     timestamp: float,
     camera_front_image: ImageArray,
 ) -> JsonDict:
+    """Build the shared payload for one camera frame."""
     image_array = np.asarray(camera_front_image, dtype=np.uint8)
     if image_array.ndim != 3 or image_array.shape[2] != 3:
         raise ValueError(f"Invalid camera_front image shape: {image_array.shape}")
@@ -71,6 +74,7 @@ def build_camera_frame_message(
 
 
 def parse_camera_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a serialized camera frame message."""
     camera_payload = message.get("camera_front")
     if not isinstance(camera_payload, Mapping):
         raise ValueError("Missing camera_front payload")
@@ -97,6 +101,7 @@ def build_state_frame_message(
     lidar_metadata: Mapping[str, Any],
     camera_front_metadata: Mapping[str, Any],
 ) -> JsonDict:
+    """Build the shared payload for one ego-state frame."""
     return {
         "frame": int(frame),
         "timestamp": float(timestamp),
@@ -115,6 +120,7 @@ def build_state_frame_message(
 
 
 def parse_state_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a serialized ego-state frame message."""
     ego = message.get("ego")
     lidar = message.get("lidar")
     camera_front = message.get("camera_front")
@@ -139,6 +145,7 @@ def build_objects_3d_frame_message(
     lidar_message: Mapping[str, Any],
     objects_3d: Objects3DPrediction,
 ) -> JsonDict:
+    """Build the shared payload for one 3D object prediction frame."""
     return {
         "schema": "objects_3d_frame",
         "frame": int(lidar_message.get("frame", -1)),
@@ -152,6 +159,7 @@ def build_lanes_3d_frame_message(
     camera_message: Mapping[str, Any],
     lanes_3d: Lanes3DPrediction,
 ) -> JsonDict:
+    """Build the shared payload for one 3D lane prediction frame."""
     return {
         "schema": "lanes_3d_frame",
         "frame": int(camera_message.get("frame", -1)),
@@ -161,6 +169,7 @@ def build_lanes_3d_frame_message(
 
 
 def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a serialized 3D object prediction frame."""
     payload = message.get("objects_3d", {})
     if not isinstance(payload, Mapping):
         payload = {}
@@ -176,6 +185,7 @@ def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> JsonDict:
 
 
 def parse_lanes_3d_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a serialized 3D lane prediction frame."""
     payload = message.get("lanes_3d", {})
     if not isinstance(payload, Mapping):
         payload = {}
@@ -199,6 +209,7 @@ def build_frame_snapshot_message(
     lidar_descriptor: SharedArrayDescriptor,
     state_message: Mapping[str, Any],
 ) -> JsonDict:
+    """Build a combined frame snapshot payload for the producer output."""
     return {
         "frame": int(frame),
         "timestamp": float(timestamp),
@@ -216,6 +227,7 @@ def build_frame_snapshot_message(
 
 
 def parse_frame_snapshot_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize a combined frame snapshot payload."""
     camera_payload = message.get("camera_front")
     lidar_payload = message.get("lidar")
     state_payload = message.get("state")
@@ -250,6 +262,7 @@ def build_scene_frame_message(
     objects_message: Optional[Mapping[str, Any]],
     lanes_message: Optional[Mapping[str, Any]],
 ) -> JsonDict:
+    """Build an aggregated live-scene payload from producer and detector messages."""
     parsed_frame = parse_frame_snapshot_message(frame_message)
     parsed_state = parsed_frame["state"]
     parsed_objects = None
@@ -294,6 +307,7 @@ def build_scene_frame_message(
 
 
 def parse_scene_frame_message(message: Mapping[str, Any]) -> JsonDict:
+    """Validate and normalize an aggregated live-scene payload."""
     ego = message.get("ego")
     if not isinstance(ego, Mapping):
         ego = {}

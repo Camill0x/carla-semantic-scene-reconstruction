@@ -28,6 +28,7 @@ class ViewPredictionsArgs:
 
 
 def parse_args() -> ViewPredictionsArgs:
+    """Parse command-line arguments for the benchmark prediction viewer."""
     parser = argparse.ArgumentParser(description="View offline benchmark predictions in Rerun")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--objects", type=Path, default=None, help="Path to directory with OpenPCDet predictions")
@@ -45,6 +46,7 @@ def parse_args() -> ViewPredictionsArgs:
 
 
 def main() -> None:
+    """Run the benchmark prediction viewer."""
     args = parse_args()
     logger = configure_logging("tools.benchmark.view_predictions")
     if args.fps <= 0.0:
@@ -64,13 +66,13 @@ def main() -> None:
     log_legend()
 
     logger.info("=== Offline prediction viewer ===")
-    logger.info("run_dir: %s", args.run_dir)
-    logger.info("frames: %d", len(frame_dirs))
-    logger.info("fps: %.2f", args.fps)
+    logger.info("Run dir: %s", args.run_dir)
+    logger.info("Frames: %d", len(frame_dirs))
+    logger.info("FPS: %.2f", args.fps)
     if args.objects:
-        logger.info("objects: %s", args.objects)
+        logger.info("Objects: %s", args.objects)
     if args.lanes:
-        logger.info("lanes: %s", args.lanes)
+        logger.info("Lanes: %s", args.lanes)
 
     frame_delay_s = 1.0 / args.fps
     for frame_dir in frame_dirs:
@@ -97,7 +99,7 @@ def main() -> None:
 
         time.sleep(frame_delay_s)
 
-    logger.info("predictions loaded into Rerun")
+    logger.info("Predictions loaded into Rerun")
 
 
 if __name__ == "__main__":

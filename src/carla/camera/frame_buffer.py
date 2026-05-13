@@ -10,14 +10,17 @@ from src.common.typing_aliases import ImageArray
 
 class CameraFrameBuffer:
     def __init__(self, camera: carla.Sensor) -> None:
+        """Initialize the camera frame buffer and its pending-frame state."""
         self.camera = camera
         self.queue: "queue.Queue[carla.Image]" = queue.Queue()
         self.pending_image: Optional[carla.Image] = None
 
     def callback(self, image: carla.Image) -> None:
+        """Queue an incoming camera image from the CARLA sensor callback."""
         self.queue.put(image)
 
     def discard_before(self, min_frame: int) -> None:
+        """Discard buffered camera frames older than the requested frame number."""
         while True:
             if self.pending_image is not None:
                 image = self.pending_image
@@ -38,6 +41,7 @@ class CameraFrameBuffer:
         timeout: float = 2.0,
         allow_future: bool = False,
     ) -> Tuple[ImageArray, int, float, carla.Transform]:
+        """Return the next camera frame, optionally waiting for a specific frame id."""
         while True:
             if self.pending_image is not None:
                 image = self.pending_image

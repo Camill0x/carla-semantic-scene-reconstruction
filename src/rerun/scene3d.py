@@ -13,6 +13,7 @@ EMPTY_COLORS: ImageArray = np.zeros((0, 4), dtype=np.uint8)
 
 
 def clear_entity(path: str) -> None:
+    """Clear a logged Rerun entity when the backend supports it."""
     clear = getattr(rr, "Clear", None)
     if clear is not None:
         rr.log(path, clear(recursive=False))
@@ -20,6 +21,7 @@ def clear_entity(path: str) -> None:
 
 
 def boxes_to_rerun(boxes: Float32Array) -> Tuple[Float32Array, Float32Array, List[RotationAxisAngle]]:
+    """Convert 7D boxes into the centers, sizes, and rotations expected by Rerun."""
     if boxes.size == 0:
         return (
             np.zeros((0, 3), dtype=np.float32),
@@ -34,16 +36,19 @@ def boxes_to_rerun(boxes: Float32Array) -> Tuple[Float32Array, Float32Array, Lis
 
 
 def gt_labels(gt_boxes: Float32Array, gt_names: Sequence[str]) -> List[str]:
+    """Build display labels for ground-truth boxes."""
     if gt_names and len(gt_names) == len(gt_boxes):
         return [f"GT {name}" for name in gt_names]
     return [f"GT #{idx}" for idx in range(len(gt_boxes))]
 
 
 def prediction_labels(pred_names: Sequence[str]) -> List[str]:
+    """Build display labels for predicted objects."""
     return [str(name) for name in pred_names]
 
 
 def prediction_names(objects_3d: Objects3DPrediction) -> List[str]:
+    """Return prediction class names aligned with the predicted boxes."""
     if len(objects_3d.names) == len(objects_3d.boxes):
         return [str(name) for name in objects_3d.names]
     if len(objects_3d.labels) == len(objects_3d.boxes):
@@ -52,16 +57,19 @@ def prediction_names(objects_3d: Objects3DPrediction) -> List[str]:
 
 
 def prediction_scores(scores: Float32Array) -> List[float]:
+    """Return rounded prediction scores for display."""
     return [float(value) for value in np.round(scores.astype(np.float32), 2)]
 
 
 def point_positions(points: Float32Array) -> Float32Array:
+    """Extract 3D point positions from a point cloud array."""
     if points.size == 0:
         return EMPTY_POINTS
     return points[:, :3].astype(np.float32)
 
 
 def point_colors(points: Float32Array) -> ImageArray:
+    """Build per-point RGB colors from LiDAR intensity values."""
     if points.size == 0:
         return EMPTY_COLORS
 
@@ -81,6 +89,7 @@ def point_colors(points: Float32Array) -> ImageArray:
 
 
 def log_points(points: Float32Array, *, point_radius: float, visible: bool) -> None:
+    """Log a point cloud to the Rerun 3D scene."""
     if not visible:
         rr.log("world/points", rr.Points3D(positions=EMPTY_POINTS))
         return
@@ -102,6 +111,7 @@ def log_gt_boxes(
     line_radius: float,
     visible: bool,
 ) -> None:
+    """Log ground-truth 3D boxes to the Rerun 3D scene."""
     if not visible:
         rr.log("world/gt", rr.Boxes3D(centers=np.zeros((0, 3), dtype=np.float32)))
         return
@@ -127,6 +137,7 @@ def log_ego_box(
     *,
     line_radius: float,
 ) -> None:
+    """Log the ego-vehicle box to the Rerun 3D scene."""
     if ego_box.size == 0:
         rr.log("world/ego", rr.Boxes3D(centers=np.zeros((0, 3), dtype=np.float32)))
         return
@@ -153,6 +164,7 @@ def log_prediction_objects_3d(
     *,
     line_radius: float,
 ) -> None:
+    """Log predicted 3D objects to the Rerun 3D scene."""
     centers, half_sizes, rotations = boxes_to_rerun(objects_3d.boxes)
     if len(centers) == 0:
         clear_entity("world/predictions")

@@ -8,6 +8,7 @@ PathT = TypeVar("PathT", bound=Path)
 
 
 def read_json(path: Path) -> JsonDict:
+    """Read a JSON object from disk."""
     with path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
     if not isinstance(payload, dict):
@@ -16,12 +17,14 @@ def read_json(path: Path) -> JsonDict:
 
 
 def write_json(path: Path, payload: JsonDict) -> None:
+    """Write a JSON payload to disk with indentation."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, sort_keys=True)
 
 
 def checkpoint_epoch(path: Path) -> int:
+    """Extract the epoch number encoded in a checkpoint filename."""
     stem = Path(path).stem
     for prefix in ("checkpoint_epoch_", "epoch_"):
         if stem.startswith(prefix):
@@ -34,5 +37,6 @@ def checkpoint_epoch(path: Path) -> int:
 
 
 def latest_file(paths: Iterable[PathT]) -> Optional[PathT]:
+    """Return the newest file from an iterable of candidate paths."""
     paths = list(paths)
     return max(paths, key=lambda path: path.stat().st_mtime) if paths else None

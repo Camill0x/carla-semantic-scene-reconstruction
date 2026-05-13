@@ -36,6 +36,7 @@ class WorkflowWindow(QMainWindow):
         manager: ProjectProcessManager,
         on_closed: Optional[Callable[[], None]] = None,
     ) -> None:
+        """Initialize a workflow window around one workflow page."""
         super().__init__()
         self.route = route
         self.page = page
@@ -48,6 +49,7 @@ class WorkflowWindow(QMainWindow):
         QTimer.singleShot(0, self._resize_to_contents)
 
     def _build_ui(self, title_text: str) -> None:
+        """Build the workflow window layout, summary cards, logs, and activity feed."""
         central = QWidget()
         root = QVBoxLayout(central)
         root.setSpacing(14)
@@ -113,6 +115,7 @@ class WorkflowWindow(QMainWindow):
         root.addLayout(footer)
 
     def _section(self, title: str, widget: QWidget) -> QWidget:
+        """Wrap a widget inside a titled framed section."""
         frame = QFrame()
         frame.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
@@ -123,6 +126,7 @@ class WorkflowWindow(QMainWindow):
         return frame
 
     def _build_timer(self) -> None:
+        """Start the periodic timers that refresh workflow state and logs."""
         self.ui_timer = QTimer(self)
         self.ui_timer.setInterval(1000)
         self.ui_timer.timeout.connect(self.refresh_ui)
@@ -134,6 +138,7 @@ class WorkflowWindow(QMainWindow):
         self.log_timer.start()
 
     def append_activity(self, messages: ActivityMessages) -> None:
+        """Append workflow activity messages and refresh the visible state."""
         if isinstance(messages, str):
             messages = [messages]
         stamp = datetime.now().strftime("%H:%M:%S")
@@ -144,6 +149,7 @@ class WorkflowWindow(QMainWindow):
         self.refresh_ui()
 
     def open_process_inspector(self) -> None:
+        """Open the process inspector dialog from the workflow window."""
         dialog = ProcessInspectorDialog(
             fetch_rows=self.manager.status_rows,
             on_stop_selected=lambda name: self.append_activity(self.manager.stop_process(name)),
@@ -153,15 +159,18 @@ class WorkflowWindow(QMainWindow):
         self.refresh_ui()
 
     def refresh_ui(self) -> None:
+        """Refresh the workflow summary and page widgets."""
         self.refresh_logs()
         summary_values: SummaryValues = self.page.summary_values()
         self.session_summary.update_values(summary_values)
         self.page.refresh()
 
     def refresh_logs(self) -> None:
+        """Refresh the workflow log viewer with current process log snapshots."""
         self.log_viewer.set_logs(self.manager.log_snapshots(list(self.page.process_names())))
 
     def _resize_to_contents(self) -> None:
+        """Resize the workflow window to fit its content within screen limits."""
         central = self.centralWidget()
         if central is None:
             return
@@ -180,6 +189,7 @@ class WorkflowWindow(QMainWindow):
         self.resize(width, height)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Warn about workflow-related running processes before closing the window."""
         running = [name for name in self.page.process_names() if name in self.manager.running_process_names()]
         if not running:
             if self.on_closed is not None:

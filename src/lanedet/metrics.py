@@ -1,7 +1,7 @@
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -12,6 +12,7 @@ TUSIMPLE_POINT_THRESH = 0.85
 
 
 def load_jsonl(path: Path) -> List[JsonDict]:
+    """Load newline-delimited JSON records from disk."""
     records: List[JsonDict] = []
     with path.open("r", encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
@@ -26,6 +27,7 @@ def load_jsonl(path: Path) -> List[JsonDict]:
 
 
 def build_gt_map(gt_path: Path) -> Dict[str, JsonDict]:
+    """Build a lookup map from raw frame names to TuSimple ground-truth records."""
     return {record["raw_file"]: record for record in load_jsonl(gt_path) if record.get("raw_file")}
 
 
@@ -34,6 +36,7 @@ def valid_pairs(
     pred_lane: Sequence[Optional[int]],
     h_samples: Sequence[int],
 ) -> List[Tuple[int, int, int]]:
+    """Return the valid paired lane samples between two TuSimple lanes."""
     pairs: List[Tuple[int, int, int]] = []
     for x_gt, x_pred, y in zip(gt_lane, pred_lane, h_samples):
         if x_gt is None or x_pred is None:
@@ -49,6 +52,7 @@ def lane_mae(
     pred_lane: Sequence[Optional[int]],
     h_samples: Sequence[int],
 ) -> Optional[float]:
+    """Compute the mean absolute lateral error between two sampled lanes."""
     pairs = valid_pairs(gt_lane, pred_lane, h_samples)
     if not pairs:
         return None
@@ -60,6 +64,7 @@ def lane_rmse(
     pred_lane: Sequence[Optional[int]],
     h_samples: Sequence[int],
 ) -> Optional[float]:
+    """Compute the root-mean-square lateral error between two sampled lanes."""
     pairs = valid_pairs(gt_lane, pred_lane, h_samples)
     if not pairs:
         return None
@@ -67,10 +72,12 @@ def lane_rmse(
 
 
 def rounded(value: Optional[float], digits: int = 4) -> Optional[float]:
+    """Round an optional float to the requested precision."""
     return round(float(value), digits) if value is not None else None
 
 
 def tusimple_angle(xs: IntArray, y_samples: IntArray) -> float:
+    """Estimate the lane angle used by the TuSimple evaluation rule."""
     xs = np.asarray(xs, dtype=np.int_)
     y_samples = np.asarray(y_samples, dtype=np.int_)
     valid = xs >= 0
@@ -90,6 +97,7 @@ def tusimple_line_accuracy(
     gt_lane: Sequence[int],
     threshold: float,
 ) -> float:
+    """Compute the TuSimple line accuracy for one predicted lane."""
     pred = np.array([x if x >= 0 else -100 for x in pred_lane])
     gt = np.array([x if x >= 0 else -100 for x in gt_lane])
     return float(np.sum(np.where(np.abs(pred - gt) < threshold, 1.0, 0.0)) / len(gt))
@@ -99,6 +107,7 @@ def analyze_predictions(
     gt_map: Dict[str, JsonDict],
     pred_records: List[JsonDict],
 ) -> JsonDict:
+    """Match predicted lanes to ground truth and accumulate detailed error statistics."""
     n_images = 0
     total_gt_lanes = 0
     total_pred_lanes = 0
@@ -214,6 +223,7 @@ def analyze_predictions(
 
 
 def build_tusimple_metrics(pred_json: Path, gt_json: Path) -> JsonDict:
+    """Build the final TuSimple-style summary metrics from predictions and ground truth."""
     pred_records = load_jsonl(pred_json)
     gt_records = load_jsonl(gt_json)
     if len(gt_records) != len(pred_records):

@@ -5,6 +5,7 @@ from gui.widgets.main_window import MainWindow
 
 
 def create_app() -> QApplication:
+    """Create and configure the Qt application instance for the project GUI."""
     app = QApplication.instance()
     if not isinstance(app, QApplication):
         app = QApplication([])
@@ -130,4 +131,5 @@ def create_app() -> QApplication:
 
 
 def create_main_window() -> MainWindow:
+    """Create the main control-center window."""
     return MainWindow()

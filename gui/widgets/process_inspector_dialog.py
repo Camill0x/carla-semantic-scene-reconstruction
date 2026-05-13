@@ -16,6 +16,7 @@ class ProcessInspectorDialog(QDialog):
         on_stop_selected: Callable[[str], None],
         on_stop_all: Callable[[], None],
     ) -> None:
+        """Build the process inspector dialog and wire its actions."""
         super().__init__()
         self.fetch_rows = fetch_rows
         self.on_stop_selected = on_stop_selected
@@ -48,10 +49,12 @@ class ProcessInspectorDialog(QDialog):
         QTimer.singleShot(0, self._resize_to_contents)
 
     def refresh_rows(self) -> None:
+        """Reload the process rows shown in the inspector table."""
         self.table.update_rows(self.fetch_rows())
         self._resize_to_contents()
 
     def _stop_selected(self) -> None:
+        """Stop the process currently selected in the inspector table."""
         row = self.table.currentRow()
         if row < 0:
             return
@@ -63,6 +66,7 @@ class ProcessInspectorDialog(QDialog):
         self.refresh_rows()
 
     def _resize_to_contents(self) -> None:
+        """Resize the inspector dialog to fit its table within screen limits."""
         screen = QGuiApplication.primaryScreen()
         if screen is None:
             return

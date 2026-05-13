@@ -5,6 +5,7 @@ from src.carla.dataset.reader import DatasetFrame
 
 
 def log_dataset_status(frame: DatasetFrame) -> None:
+    """Log the offline dataset status panel to Rerun."""
     lines = [
         "## Status",
         "",
@@ -26,6 +27,7 @@ def log_live_status(
     num_obj: Optional[int] = None,
     num_lanes: Optional[int] = None,
 ) -> None:
+    """Log the live streaming status panel to Rerun."""
     lines = [
         "## Status",
         "",
@@ -41,6 +43,7 @@ def log_live_status(
 
 
 def log_legend() -> None:
+    """Log the viewer legend panel to Rerun."""
     lines = [
         "## Colors",
         "",

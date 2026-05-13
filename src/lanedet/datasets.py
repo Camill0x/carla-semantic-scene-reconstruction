@@ -19,6 +19,7 @@ LanePoint = Tuple[float, float]
 
 
 def load_lane_points(lanes_path: Path) -> List[List[LanePoint]]:
+    """Load lane point polylines from a saved lane-annotation file."""
     with lanes_path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
     if not isinstance(payload, dict):
@@ -36,6 +37,7 @@ def load_lane_points(lanes_path: Path) -> List[List[LanePoint]]:
 
 
 def interpolate_lane_xs(points: Sequence[Tuple[float, float]], h_samples: Sequence[int]) -> List[int]:
+    """Interpolate lane x coordinates for the requested TuSimple y samples."""
     ordered = sorted(points, key=lambda point: point[1])
     deduped = []
     used_y = set()
@@ -62,6 +64,7 @@ def interpolate_lane_xs(points: Sequence[Tuple[float, float]], h_samples: Sequen
 
 
 def lane_bottom_x(lane: Sequence[int], h_samples: Sequence[int]) -> float:
+    """Return the x position of the lowest valid sample in a lane."""
     for x, _ in sorted(zip(lane, h_samples), key=lambda item: item[1], reverse=True):
         if x >= 0:
             return float(x)
@@ -73,6 +76,7 @@ def sample_lanes(
     h_samples: Sequence[int],
     max_lanes: int,
 ) -> List[List[int]]:
+    """Convert lane point polylines into TuSimple-sampled lane arrays."""
     sampled = [interpolate_lane_xs(points, h_samples) for points in lane_points]
     sampled = [lane for lane in sampled if sum(1 for x in lane if x >= 0) >= 2]
     sampled.sort(key=lambda lane: lane_bottom_x(lane, h_samples))
@@ -80,6 +84,7 @@ def sample_lanes(
 
 
 def frame_meta_num_lanes(frame_dir: Path) -> Optional[int]:
+    """Read the number of collected lanes from frame metadata when available."""
     meta_path = frame_dir / "meta.json"
     if not meta_path.exists():
         return None
@@ -91,6 +96,7 @@ def frame_meta_num_lanes(frame_dir: Path) -> Optional[int]:
 
 
 def frame_to_sample(frame_dir: Path, max_lanes: int) -> Optional[JsonDict]:
+    """Convert one recorded CARLA frame into a LaneDet training sample."""
     image_path = frame_dir / "front_rgb.png"
     lanes_path = frame_dir / "lanes.json"
     if not image_path.exists() or not lanes_path.exists():
@@ -117,6 +123,7 @@ def load_samples(
     max_lanes: int,
     show_progress: bool,
 ) -> Tuple[List[JsonDict], Dict[str, int]]:
+    """Load LaneDet training samples from the selected frame directories."""
     samples: List[JsonDict] = []
     skipped_missing_files = 0
     skipped_no_lanes_meta = 0
@@ -155,6 +162,7 @@ def load_samples(
 
 
 def tusimple_payload(sample: JsonDict) -> JsonDict:
+    """Convert an internal lane sample into the TuSimple JSON-lines format."""
     return {
         "lanes": sample["lanes"],
         "h_samples": sample["h_samples"],
@@ -163,6 +171,7 @@ def tusimple_payload(sample: JsonDict) -> JsonDict:
 
 
 def write_json_lines(path: Path, samples: Iterable[JsonDict]) -> None:
+    """Write a sequence of JSON objects as newline-delimited JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         for sample in samples:
@@ -171,6 +180,7 @@ def write_json_lines(path: Path, samples: Iterable[JsonDict]) -> None:
 
 
 def write_train_files(output_root: Path, train_samples: Sequence[JsonDict]) -> None:
+    """Write the LaneDet training label files for the prepared dataset."""
     chunks: List[List[JsonDict]] = [[], []]
     for index, sample in enumerate(train_samples):
         chunks[index % len(chunks)].append(sample)
@@ -180,6 +190,7 @@ def write_train_files(output_root: Path, train_samples: Sequence[JsonDict]) -> N
 
 
 def draw_segmentation_mask(sample: JsonDict, output_root: Path, line_width: int) -> None:
+    """Render a lane sample into its segmentation mask image."""
     image = cv2.imread(str(sample["source_image_path"]))
     if image is None:
         raise FileNotFoundError(sample["source_image_path"])
@@ -207,6 +218,7 @@ def materialize_samples(
     line_width: int,
     show_progress: bool,
 ) -> None:
+    """Write image and mask assets for a collection of LaneDet samples."""
     iterator = tqdm(samples, desc="Writing samples", unit="sample") if show_progress else samples
     for sample in iterator:
         image_target = output_root / sample["raw_file"]
@@ -221,6 +233,7 @@ def write_tusimple_dataset(
     line_width: int,
     show_progress: bool = True,
 ) -> None:
+    """Write the prepared LaneDet dataset in TuSimple-compatible format."""
     all_samples = [*splits.train, *splits.val, *splits.test]
 
     materialize_samples(output_root, all_samples, line_width=line_width, show_progress=show_progress)

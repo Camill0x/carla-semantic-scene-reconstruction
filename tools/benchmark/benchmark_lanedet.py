@@ -30,6 +30,7 @@ class BenchmarkArgs:
 
 
 def parse_args() -> BenchmarkArgs:
+    """Parse command-line arguments for the LaneDet benchmark command."""
     parser = argparse.ArgumentParser(description="Benchmark LaneDet on an offline CARLA raw dataset run")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--config", type=Path, required=True, help="LaneDet config file")
@@ -49,6 +50,7 @@ def parse_args() -> BenchmarkArgs:
 
 
 def cuda_synchronize() -> None:
+    """Synchronize pending CUDA work when torch with CUDA support is available."""
     try:
         import torch
 
@@ -59,11 +61,13 @@ def cuda_synchronize() -> None:
 
 
 def now_synchronized() -> float:
+    """Return a timestamp after synchronizing any pending CUDA work."""
     cuda_synchronize()
     return time.perf_counter()
 
 
 def main() -> None:
+    """Run the LaneDet benchmark command."""
     args = parse_args()
     logger = configure_logging("tools.benchmark.lanedet")
     if args.warmup < 0:
@@ -78,11 +82,11 @@ def main() -> None:
     detector = LaneDetector(args.config, args.ckpt, score_thresh=args.score_thresh, logger=logger)
 
     logger.info("=== LaneDet offline benchmark ===")
-    logger.info("run_dir: %s", args.run_dir)
-    logger.info("frames: %d", len(frame_dirs))
-    logger.info("warmup: %d", args.warmup)
-    logger.info("score_thresh: %.2f", args.score_thresh)
-    logger.info("output_dir: %s", output_dir)
+    logger.info("Run dir: %s", args.run_dir)
+    logger.info("Frames: %d", len(frame_dirs))
+    logger.info("Warmup: %d", args.warmup)
+    logger.info("Score threshold: %.2f", args.score_thresh)
+    logger.info("Output dir: %s", output_dir)
 
     metrics: List[Dict[str, float]] = []
     first_frame_meta = None
@@ -145,7 +149,7 @@ def main() -> None:
     )
     logger.info("model FPS: %.2f", summary.get("model_fps", 0.0))
     logger.info("runtime FPS: %.2f", summary.get("runtime_fps", 0.0))
-    logger.info("results saved to: %s", output_dir)
+    logger.info("Results saved to: %s", output_dir)
 
 
 if __name__ == "__main__":

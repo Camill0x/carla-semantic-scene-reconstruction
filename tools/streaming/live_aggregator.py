@@ -27,6 +27,7 @@ class LiveAggregatorArgs:
 
 
 def parse_args() -> LiveAggregatorArgs:
+    """Parse command-line arguments for the live scene aggregator."""
     parser = argparse.ArgumentParser(description="Scene aggregator for the live streaming pipeline")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
     parsed = parser.parse_args()
@@ -34,11 +35,13 @@ def parse_args() -> LiveAggregatorArgs:
 
 
 def trim_cache(cache: Dict[int, JsonDict], limit: int) -> None:
+    """Trim the oldest cached frames until the cache fits within the limit."""
     while len(cache) > limit:
         del cache[min(cache)]
 
 
 def try_open_buffer(name: str, size_bytes: int) -> Optional[SharedMessageBuffer]:
+    """Try to attach to an existing shared-memory message buffer."""
     try:
         return SharedMessageBuffer(name=name, size_bytes=size_bytes, create=False)
     except FileNotFoundError:
@@ -54,6 +57,7 @@ def next_ready_frame(
     require_lanes: bool,
     last_sent_frame: Optional[int],
 ) -> Optional[int]:
+    """Return the next frame whose required inputs are available across active branches."""
     for frame in sorted(frame_cache):
         if last_sent_frame is not None and frame <= last_sent_frame:
             continue
@@ -66,6 +70,7 @@ def next_ready_frame(
 
 
 def main() -> None:
+    """Run the live scene aggregator."""
     args = parse_args()
     logger = configure_logging("tools.streaming.live_aggregator", verbose=args.verbose)
     config = build_streaming_aggregator_config()
@@ -93,9 +98,9 @@ def main() -> None:
     sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
 
     logger.info("=== Streaming scene aggregator ===")
-    logger.info("frame buffer: %s", names.frame_buffer)
-    logger.info("objects buffer: %s", names.objects_buffer)
-    logger.info("lanes buffer: %s", names.lanes_buffer)
+    logger.info("Frame buffer: %s", names.frame_buffer)
+    logger.info("Objects buffer: %s", names.objects_buffer)
+    logger.info("Lanes buffer: %s", names.lanes_buffer)
     logger.info("ZMQ scene OUT: %s", config.scene_bind)
 
     try:
@@ -135,7 +140,7 @@ def main() -> None:
                     trim_cache(frame_cache, frame_cache_limit)
                     updated = True
                 except Exception as exc:
-                    logger.warning("invalid frame snapshot: %s", exc)
+                    logger.warning("Invalid frame snapshot: %s", exc)
 
             if objects_buffer is not None:
                 new_objects_version, objects_payload = objects_buffer.read(last_version=objects_version)
@@ -151,7 +156,7 @@ def main() -> None:
                         objects_last_update_t = now
                         updated = True
                     except Exception as exc:
-                        logger.warning("invalid objects frame: %s", exc)
+                        logger.warning("Invalid objects frame: %s", exc)
 
             if lanes_buffer is not None:
                 new_lanes_version, lanes_payload = lanes_buffer.read(last_version=lanes_version)
@@ -167,21 +172,21 @@ def main() -> None:
                         lanes_last_update_t = now
                         updated = True
                     except Exception as exc:
-                        logger.warning("invalid lanes frame: %s", exc)
+                        logger.warning("Invalid lanes frame: %s", exc)
 
             if objects_active and objects_last_update_t is not None and now - objects_last_update_t > stale_timeout_s:
                 objects_active = False
                 objects_last_update_t = None
                 objects_frames.clear()
                 updated = True
-                logger.warning("objects branch inactive; continuing without objects")
+                logger.warning("Objects branch inactive; continuing without objects")
 
             if lanes_active and lanes_last_update_t is not None and now - lanes_last_update_t > stale_timeout_s:
                 lanes_active = False
                 lanes_last_update_t = None
                 lanes_frames.clear()
                 updated = True
-                logger.warning("lanes branch inactive; continuing without lanes")
+                logger.warning("Lanes branch inactive; continuing without lanes")
 
             if not frame_cache:
                 time.sleep(sleep_s)

@@ -26,6 +26,7 @@ class LiveOpenPCDetArgs:
 
 
 def parse_args() -> LiveOpenPCDetArgs:
+    """Parse command-line arguments for the live OpenPCDet inference node."""
     parser = argparse.ArgumentParser(description="OpenPCDet live inference node")
     parser.add_argument("--cfg-file", type=Path, required=True)
     parser.add_argument("--ckpt", type=Path, required=True)
@@ -43,6 +44,7 @@ def parse_args() -> LiveOpenPCDetArgs:
 
 
 def main() -> None:
+    """Run the live OpenPCDet inference node."""
     args = parse_args()
     logger = configure_logging("tools.streaming.live_openpcdet_inference", verbose=args.verbose)
     config = build_streaming_openpcdet_inference_config(
@@ -70,8 +72,8 @@ def main() -> None:
     sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
 
     logger.info("=== OpenPCDet streaming inference ===")
-    logger.info("frame buffer: %s", names.frame_buffer)
-    logger.info("objects buffer: %s", names.objects_buffer)
+    logger.info("Frame buffer: %s", names.frame_buffer)
+    logger.info("Objects buffer: %s", names.objects_buffer)
 
     try:
         while True:

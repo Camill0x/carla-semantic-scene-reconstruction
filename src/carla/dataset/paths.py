@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 def ensure_dataset_run_dir(root_dir: Path) -> Path:
+    """Create and return the next available raw dataset run directory."""
     root_dir.mkdir(parents=True, exist_ok=True)
 
     existing_indices = []

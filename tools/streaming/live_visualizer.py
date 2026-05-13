@@ -23,6 +23,7 @@ class LiveVisualizerArgs:
 
 
 def parse_args() -> LiveVisualizerArgs:
+    """Parse command-line arguments for the live streaming visualizer."""
     parser = argparse.ArgumentParser(description="Rerun viewer for the live streaming pipeline")
     parser.add_argument("--show-grid", action="store_true", help="Show the ground grid")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
@@ -34,6 +35,7 @@ def parse_args() -> LiveVisualizerArgs:
 
 
 def main() -> None:
+    """Run the live streaming visualizer."""
     args = parse_args()
     logger = configure_logging("tools.streaming.live_visualizer", verbose=args.verbose)
     config = build_streaming_visualizer_config(show_grid=args.show_grid)
@@ -66,7 +68,7 @@ def main() -> None:
                     logger.debug("received_frame=%s", scene["frame"])
                     latest_scene = scene
                 except Exception as exc:
-                    logger.warning("invalid scene_frame: %s", exc)
+                    logger.warning("Invalid scene_frame: %s", exc)
 
             if latest_scene is not None:
                 source_frames = latest_scene.get("source_frames", {})

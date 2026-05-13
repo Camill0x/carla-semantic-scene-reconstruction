@@ -22,6 +22,7 @@ InputWidget: TypeAlias = Union[QCheckBox, QComboBox, QLineEdit]
 
 class FlagForm(QWidget):
     def __init__(self, flags: List[FlagSpec], allow_extra_args: bool) -> None:
+        """Build the flag form for one process panel."""
         super().__init__()
         self.flags = list(flags)
         self.allow_extra_args = allow_extra_args
@@ -47,12 +48,14 @@ class FlagForm(QWidget):
             form.addRow(extras_label, self.extra_args)
 
     def _build_label(self, flag: FlagSpec) -> QLabel:
+        """Build the label widget for one CLI flag."""
         label = QLabel(flag.label)
         if flag.help_text:
             label.setToolTip(flag.help_text)
         return label
 
     def _build_input(self, flag: FlagSpec) -> QWidget:
+        """Build the input widget for one CLI flag definition."""
         if flag.kind == "bool":
             checkbox = QCheckBox()
             checkbox.setChecked(bool(flag.default))
@@ -81,6 +84,7 @@ class FlagForm(QWidget):
         return line_edit
 
     def _build_path_row(self, flag: FlagSpec) -> QWidget:
+        """Build a file-or-directory picker row for one path flag."""
         container = QWidget()
         row = QHBoxLayout(container)
         row.setContentsMargins(0, 0, 0, 0)
@@ -98,6 +102,7 @@ class FlagForm(QWidget):
         return container
 
     def _browse(self, kind: str, line_edit: QLineEdit) -> None:
+        """Open a path picker dialog for the requested flag kind."""
         current = line_edit.text().strip()
         start_dir = str(Path(current).expanduser().resolve().parent) if current else ""
         if kind == "dir":
@@ -108,6 +113,7 @@ class FlagForm(QWidget):
             line_edit.setText(chosen)
 
     def values(self) -> Dict[str, object]:
+        """Return the current form values as a normalized dictionary."""
         payload: Dict[str, object] = {}
         for flag in self.flags:
             widget = self.inputs[flag.key]
@@ -121,6 +127,7 @@ class FlagForm(QWidget):
         return payload
 
     def set_values(self, values: Dict[str, object]) -> None:
+        """Populate the form widgets from a value dictionary."""
         for flag in self.flags:
             if flag.key not in values:
                 continue
@@ -139,6 +146,7 @@ class FlagForm(QWidget):
             self.extra_args.setText(str(extra))
 
     def set_from_args(self, args: List[str]) -> None:
+        """Populate the form widgets by parsing a CLI argument list."""
         parsed: Dict[str, object] = {}
         extra_tokens: List[str] = []
         flag_by_arg = {flag.arg: flag for flag in self.flags}
@@ -181,6 +189,7 @@ class FlagForm(QWidget):
         self.set_values(parsed)
 
     def to_args(self) -> List[str]:
+        """Convert the current form values back into a CLI argument list."""
         args: List[str] = []
         values = self.values()
         config_file_selected = any(str(values.get(key, "")).strip() for key in ["cfg_file", "config"])
@@ -217,6 +226,7 @@ class FlagForm(QWidget):
         return args
 
     def validation_error(self) -> Optional[str]:
+        """Return the first validation error for the current form values, if any."""
         values = self.values()
         for flag in self.flags:
             value = values.get(flag.key)

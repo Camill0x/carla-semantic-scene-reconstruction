@@ -26,6 +26,7 @@ class LiveLaneDetArgs:
 
 
 def parse_args() -> LiveLaneDetArgs:
+    """Parse command-line arguments for the live LaneDet inference node."""
     parser = argparse.ArgumentParser(description="LaneDet live inference node")
     parser.add_argument("--config", type=Path, required=True, help="LaneDet config file")
     parser.add_argument("--ckpt", type=Path, required=True)
@@ -41,6 +42,7 @@ def parse_args() -> LiveLaneDetArgs:
 
 
 def main() -> None:
+    """Run the live LaneDet inference node."""
     args = parse_args()
     logger = configure_logging("tools.streaming.live_lanedet_inference", verbose=args.verbose)
     config = build_streaming_lanedet_inference_config(
@@ -67,8 +69,8 @@ def main() -> None:
     sleep_s = max(0.001, config.common.poll_interval_ms / 1000.0)
 
     logger.info("=== LaneDet streaming inference ===")
-    logger.info("frame buffer: %s", names.frame_buffer)
-    logger.info("lanes buffer: %s", names.lanes_buffer)
+    logger.info("Frame buffer: %s", names.frame_buffer)
+    logger.info("Lanes buffer: %s", names.lanes_buffer)
 
     try:
         while True:
@@ -83,7 +85,7 @@ def main() -> None:
                     raise ValueError("Frame payload is not a mapping")
                 frame_message = parse_frame_snapshot_message(payload)
             except Exception as exc:
-                logger.warning("invalid frame snapshot: %s", exc)
+                logger.warning("Invalid frame snapshot: %s", exc)
                 continue
 
             frame_id = int(frame_message["frame"])

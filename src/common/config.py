@@ -8,6 +8,7 @@ class CarlaConnectionConfig:
     port: int
 
     def __post_init__(self) -> None:
+        """Validate the CarlaConnectionConfig configuration after initialization."""
         if not self.host:
             raise ValueError("CARLA host must not be empty")
         if self.port <= 0:
@@ -23,6 +24,7 @@ class LidarConfig:
     lower_fov: float
 
     def __post_init__(self) -> None:
+        """Validate the LidarConfig configuration after initialization."""
         if self.max_range <= 0.0:
             raise ValueError("LiDAR range must be > 0")
         if self.channels <= 0:
@@ -44,6 +46,7 @@ class CameraConfig:
     roll: float
 
     def __post_init__(self) -> None:
+        """Validate the CameraConfig configuration after initialization."""
         if self.width <= 0:
             raise ValueError("Camera width must be > 0")
         if self.height <= 0:
@@ -61,6 +64,7 @@ class LaneAnnotationsConfig:
     dedupe_distance_px: float
 
     def __post_init__(self) -> None:
+        """Validate the LaneAnnotationsConfig configuration after initialization."""
         if self.distance_m <= 0.0:
             raise ValueError("Lane distance_m must be > 0")
         if self.step_m <= 0.0:
@@ -78,6 +82,7 @@ class GtAnnotationsConfig:
     min_lidar_points_in_box: int
 
     def __post_init__(self) -> None:
+        """Validate the GtAnnotationsConfig configuration after initialization."""
         if self.min_lidar_points_in_box < 0:
             raise ValueError("GT annotations min_lidar_points_in_box must be >= 0")
 
@@ -94,6 +99,7 @@ class CollectorConfig:
     every_nth: int
 
     def __post_init__(self) -> None:
+        """Validate the CollectorConfig configuration after initialization."""
         if not self.dataset_root_dir:
             raise ValueError("Collector dataset_root_dir must not be empty")
         if self.num_frames <= 0:
@@ -110,6 +116,7 @@ class DatasetViewerConfig:
     lane_line_thickness: float
 
     def __post_init__(self) -> None:
+        """Validate the DatasetViewerConfig configuration after initialization."""
         if self.point_radius <= 0.0:
             raise ValueError("Dataset viewer point_radius must be > 0")
         if self.gt_line_radius <= 0.0:
@@ -127,6 +134,7 @@ class StreamingCommonConfig:
     lanes_buffer_size_bytes: int
 
     def __post_init__(self) -> None:
+        """Validate the StreamingCommonConfig configuration after initialization."""
         if not self.prefix:
             raise ValueError("Streaming prefix must not be empty")
         if self.poll_interval_ms < 0:
@@ -150,6 +158,7 @@ class StreamingProducerConfig:
     lidar_slot_capacity_bytes: int
 
     def __post_init__(self) -> None:
+        """Validate the StreamingProducerConfig configuration after initialization."""
         if self.every_nth <= 0:
             raise ValueError("Streaming producer every_nth must be >= 1")
         if self.sensor_slots <= 0:
@@ -167,6 +176,7 @@ class StreamingOpenPCDetInferenceConfig:
     point_stride: int
 
     def __post_init__(self) -> None:
+        """Validate the StreamingOpenPCDetInferenceConfig configuration after initialization."""
         if not self.cfg_file:
             raise ValueError("Streaming OpenPCDet cfg_file must not be empty")
         if not self.ckpt:
@@ -185,6 +195,7 @@ class StreamingLaneDetInferenceConfig:
     score_thresh: float
 
     def __post_init__(self) -> None:
+        """Validate the StreamingLaneDetInferenceConfig configuration after initialization."""
         if not self.cfg_file:
             raise ValueError("Streaming LaneDet cfg_file must not be empty")
         if not self.ckpt:
@@ -199,6 +210,7 @@ class StreamingAggregatorConfig:
     scene_bind: str
 
     def __post_init__(self) -> None:
+        """Validate the StreamingAggregatorConfig configuration after initialization."""
         if not self.scene_bind:
             raise ValueError("Streaming aggregator scene_bind must not be empty")
 
@@ -211,6 +223,7 @@ class StreamingVisualizerConfig:
     ego_line_radius: float
 
     def __post_init__(self) -> None:
+        """Validate the StreamingVisualizerConfig configuration after initialization."""
         if not self.scene_connect:
             raise ValueError("Streaming visualizer scene_connect must not be empty")
         if self.pred_line_radius <= 0.0:

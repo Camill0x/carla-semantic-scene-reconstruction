@@ -4,6 +4,7 @@ import carla
 
 
 def find_hero_vehicle(world: carla.World) -> Optional[carla.Actor]:
+    """Return the hero vehicle actor from the current CARLA world, if present."""
     for vehicle in world.get_actors().filter("vehicle.*"):
         if vehicle.attributes.get("role_name") == "hero":
             return vehicle
@@ -11,6 +12,7 @@ def find_hero_vehicle(world: carla.World) -> Optional[carla.Actor]:
 
 
 def classify_vehicle_actor(actor: carla.Actor) -> str:
+    """Map a CARLA vehicle actor to one of the project object classes."""
     type_id = actor.type_id.lower()
 
     if "bus" in type_id:

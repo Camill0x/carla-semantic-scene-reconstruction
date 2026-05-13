@@ -19,6 +19,7 @@ def build_train_command(
     dataset_name: str,
     set_cfgs: Optional[Sequence[str]],
 ) -> List[str]:
+    """Build the upstream training command for the selected model wrapper."""
     command = [
         "--cfg_file",
         relative_to_openpcdet(cfg_file),
@@ -65,6 +66,7 @@ def build_test_command(
     dataset_name: str,
     set_cfgs: Optional[Sequence[str]],
 ) -> List[str]:
+    """Build the upstream evaluation command for the selected model wrapper."""
     command = [
         "--cfg_file",
         relative_to_openpcdet(cfg_file),
@@ -97,12 +99,14 @@ def build_test_command(
 
 
 def run_openpcdet_train(command: List[str]) -> None:
+    """Run the prepared OpenPCDet training command."""
     exit_code = run_openpcdet_tool("train.py", command)
     if exit_code != 0:
         raise SystemExit(exit_code)
 
 
 def run_openpcdet_test(command: List[str]) -> None:
+    """Run the prepared OpenPCDet evaluation command."""
     exit_code = run_openpcdet_tool("test.py", command)
     if exit_code != 0:
         raise SystemExit(exit_code)

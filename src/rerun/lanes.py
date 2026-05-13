@@ -14,6 +14,7 @@ def clamp_lane_annotations_to_image(
     image_width: int,
     image_height: int,
 ) -> List[JsonDict]:
+    """Clamp lane-annotation points to the image bounds."""
     clamped_lanes: List[JsonDict] = []
     max_x = float(max(image_width - 1, 0))
     max_y = float(max(image_height - 1, 0))
@@ -43,6 +44,7 @@ def clamp_lane_annotations_to_image(
 
 
 def log_lane_annotations_2d(lanes: List[JsonDict], *, line_thickness: float) -> None:
+    """Log collected 2D lane annotations to the Rerun image view."""
     strips = []
     colors = []
     labels = []
@@ -76,6 +78,7 @@ def log_lane_annotations_3d(
     *,
     line_radius: float,
 ) -> None:
+    """Log collected 3D lane annotations to the Rerun 3D scene."""
     strips = []
     colors = []
     labels = []
@@ -105,6 +108,7 @@ def log_lane_annotations_3d(
 
 
 def log_prediction_lanes_2d(lanes_2d: Union[Lanes2DPrediction, JsonDict], *, line_thickness: float) -> None:
+    """Log predicted 2D lanes to the Rerun image view."""
     if isinstance(lanes_2d, Lanes2DPrediction):
         strips_payload = lanes_2d.strips
         scores = lanes_2d.scores
@@ -151,6 +155,7 @@ def log_prediction_lanes_2d(lanes_2d: Union[Lanes2DPrediction, JsonDict], *, lin
 
 
 def log_prediction_lanes_3d(lanes_3d: Union[Lanes3DPrediction, JsonDict], *, line_radius: float) -> None:
+    """Log predicted 3D lanes to the Rerun 3D scene."""
     if isinstance(lanes_3d, Lanes3DPrediction):
         strips_payload = lanes_3d.strips
         scores = lanes_3d.scores

@@ -19,6 +19,7 @@ from gui.widgets.workflow_window import WorkflowWindow
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
+        """Initialize the main control-center window and shared process manager."""
         super().__init__()
         self.manager = ProjectProcessManager()
         self.workflow_windows: Dict[str, WorkflowWindow] = {}
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
         self.refresh_ui()
 
     def _build_ui(self) -> None:
+        """Build the main control-center window layout and actions."""
         central = QWidget()
         root = QVBoxLayout(central)
         root.setSpacing(14)
@@ -68,6 +70,7 @@ class MainWindow(QMainWindow):
         root.addLayout(footer)
 
     def _section(self, title: str, widget: QWidget) -> QWidget:
+        """Wrap a widget inside a titled framed section."""
         frame = QFrame()
         frame.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
@@ -81,6 +84,7 @@ class MainWindow(QMainWindow):
         self,
         route: str,
     ) -> Union[CarlaPage, DatasetPage, TrainingPage, BenchmarkPage, StreamingPage]:
+        """Build the workflow page instance for the requested route."""
         if route == "carla":
             return CarlaPage(self.manager, self._append_nowhere)
         if route == "dataset":
@@ -94,9 +98,11 @@ class MainWindow(QMainWindow):
         raise KeyError(route)
 
     def _append_nowhere(self, messages: ActivityMessages) -> None:
+        """Discard activity messages that do not need to be shown in the main window."""
         return None
 
     def open_workflow(self, route: str) -> None:
+        """Open the requested workflow window and hide the control center."""
         titles = {
             "carla": "Manual Control",
             "dataset": "Dataset Workflow",
@@ -124,6 +130,7 @@ class MainWindow(QMainWindow):
         self.refresh_ui()
 
     def open_process_inspector(self) -> None:
+        """Open the process inspector dialog from the control center."""
         dialog = ProcessInspectorDialog(
             fetch_rows=self.manager.status_rows,
             on_stop_selected=self._stop_selected_from_inspector,
@@ -135,6 +142,7 @@ class MainWindow(QMainWindow):
             window.refresh_ui()
 
     def clear_logs(self) -> None:
+        """Confirm and clear all GUI-managed log files."""
         message = QMessageBox(self)
         message.setWindowTitle("Clear Logs")
         message.setMinimumWidth(560)
@@ -153,20 +161,25 @@ class MainWindow(QMainWindow):
             window.refresh_ui()
 
     def refresh_ui(self) -> None:
+        """Refresh the main control-center UI state."""
         return None
 
     def _stop_selected_from_inspector(self, name: str) -> None:
+        """Stop the process selected in the process inspector."""
         self._append_nowhere(self.manager.stop_process(name))
 
     def _stop_all_from_inspector(self) -> None:
+        """Stop all currently running processes from the process inspector."""
         self._append_nowhere(self.manager.stop_many(self.manager.running_process_names()))
 
     def _show_control_center(self) -> None:
+        """Show the main control-center window again after a workflow window closes."""
         self.show()
         self.raise_()
         self.activateWindow()
 
     def _resize_to_contents(self) -> None:
+        """Resize the control-center window to fit its content within screen limits."""
         central = self.centralWidget()
         if central is None:
             return
@@ -181,6 +194,7 @@ class MainWindow(QMainWindow):
         self.resize(width, height)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        """Warn about running processes before closing the control-center window."""
         running = self.manager.running_process_names()
         if not running:
             self.manager.save_state()

@@ -25,6 +25,7 @@ class PrepareDatasetArgs:
 
 
 def parse_args() -> PrepareDatasetArgs:
+    """Parse command-line arguments for the OpenPCDet dataset preparation command."""
     parser = argparse.ArgumentParser(description="Build OpenPCDet metadata for collected CARLA dataset runs")
     parser.add_argument(
         "--class-filter",
@@ -52,6 +53,7 @@ def parse_args() -> PrepareDatasetArgs:
 
 
 def main() -> None:
+    """Run the OpenPCDet dataset preparation command."""
     args = parse_args()
     logger = configure_logging("tools.openpcdet.prepare_dataset")
     source_root = RAW_DATASET_ROOT
@@ -68,11 +70,11 @@ def main() -> None:
 
     run_dirs = selected_run_dirs(source_root, None if args.use_all else args.runs)
     frame_dirs = iter_frame_dirs(run_dirs)
-    logger.info("runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
-    logger.info("found %d frame directories", len(frame_dirs))
+    logger.info("Runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
+    logger.info("Found %d frame directories", len(frame_dirs))
 
     infos = load_infos(frame_dirs, output_root, class_names)
-    logger.info("loaded %d valid samples", len(infos))
+    logger.info("Loaded %d valid samples", len(infos))
 
     splits = train_val_test_split(
         items=infos,
@@ -82,10 +84,10 @@ def main() -> None:
     )
     write_infos(output_root, splits)
 
-    logger.info("train samples: %d", len(splits.train))
-    logger.info("val samples: %d", len(splits.val))
-    logger.info("test samples: %d", len(splits.test))
-    logger.info("saved dataset: %s", repo_relative_or_absolute(output_root))
+    logger.info("Train samples: %d", len(splits.train))
+    logger.info("Val samples: %d", len(splits.val))
+    logger.info("Test samples: %d", len(splits.test))
+    logger.info("Saved dataset: %s", repo_relative_or_absolute(output_root))
 
 
 if __name__ == "__main__":

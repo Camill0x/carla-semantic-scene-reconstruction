@@ -15,6 +15,7 @@ from src.lanedet.prediction import Lanes2DPrediction
 
 
 def _to_device(data: JsonDict, device: torch.device) -> JsonDict:
+    """Move a LaneDet batch dictionary onto the requested torch device."""
     out: JsonDict = {}
     for key, value in data.items():
         out[key] = value.to(device) if isinstance(value, torch.Tensor) else value
@@ -22,12 +23,14 @@ def _to_device(data: JsonDict, device: torch.device) -> JsonDict:
 
 
 def _synchronize_cuda() -> None:
+    """Synchronize pending CUDA work when torch with CUDA support is available."""
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
 
 class LaneDetector:
     def __init__(self, cfg_file: Path, ckpt: Path, score_thresh: float, logger: Logger) -> None:
+        """Load the LaneDet model and runtime transforms for inference."""
         self.cfg = Config.fromfile(str(cfg_file))
         self.cfg.show = False
         self.cfg.savedir = None
@@ -46,6 +49,7 @@ class LaneDetector:
         self.net = net
 
     def preprocess(self, image_bgr: ImageArray) -> JsonDict:
+        """Handle preprocess."""
         ori_img = np.asarray(image_bgr, dtype=np.uint8)
         img = ori_img[self.cfg.cut_height :, :, :].astype(np.float32)
         data: JsonDict = {"img": img, "lanes": []}
@@ -55,6 +59,7 @@ class LaneDetector:
         return _to_device(data, self.device)
 
     def infer_lanes_2d(self, image_bgr: ImageArray, *, return_forward_time: bool = False) -> Any:
+        """Handle infer lanes 2d."""
         data = self.preprocess(image_bgr)
 
         if return_forward_time:

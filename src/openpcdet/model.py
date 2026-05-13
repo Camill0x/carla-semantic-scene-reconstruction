@@ -16,6 +16,7 @@ from src.openpcdet.runner import working_directory
 
 class InferenceDataset(DatasetTemplate):  # type: ignore[misc]
     def __init__(self, dataset_cfg: Any, class_names: Any, logger: Any = None) -> None:
+        """Initialize the lightweight OpenPCDet dataset wrapper used for single-frame inference."""
         super().__init__(
             dataset_cfg=dataset_cfg,
             class_names=class_names,
@@ -25,18 +26,22 @@ class InferenceDataset(DatasetTemplate):  # type: ignore[misc]
         )
 
     def __len__(self) -> int:
+        """Return the fixed dataset length used by the inference wrapper."""
         return 1
 
     def __getitem__(self, index: int) -> Any:
+        """Reject direct indexing because inference uses prepare_data and collate_batch only."""
         raise NotImplementedError("InferenceDataset is only used through prepare_data/collate_batch")
 
 
 def append_zero_timestamps(points4: Any) -> Any:
+    """Append a zero timestamp column to 4D point features for OpenPCDet inference."""
     timestamps = np.zeros((points4.shape[0], 1), dtype=np.float32)
     return np.hstack([points4.astype(np.float32), timestamps])
 
 
 def synchronize_cuda() -> None:
+    """Synchronize pending CUDA work when torch with CUDA support is available."""
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
@@ -47,6 +52,7 @@ def load_inference_model(
     *,
     logger: Logger,
 ) -> Tuple[InferenceDataset, torch.nn.Module, Any]:
+    """Load inference model."""
     cfg_file_path = cfg_file.expanduser().resolve()
     ckpt_path = ckpt.expanduser().resolve()
 
@@ -78,6 +84,7 @@ def run_inference(
     *,
     return_forward_time: bool = False,
 ) -> Any:
+    """Run inference."""
     points5 = append_zero_timestamps(points4)
     input_dict = {
         "points": points5,

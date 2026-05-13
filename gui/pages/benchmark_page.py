@@ -9,6 +9,7 @@ from gui.widgets.process_panel import ProcessPanel
 
 class BenchmarkPage(WorkflowPage):
     def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
+        """Build the benchmark workflow page and its process control panels."""
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -56,12 +57,15 @@ class BenchmarkPage(WorkflowPage):
         layout.addStretch(1)
 
     def window_subtitle(self) -> str:
+        """Return the subtitle shown for the benchmark workflow window."""
         return "Offline measurement workflow for comparing model throughput and then browsing the saved predictions."
 
     def preferred_window_size(self) -> tuple[int, int]:
+        """Return the preferred size for the benchmark workflow window."""
         return (980, 720)
 
     def summary_specs(self) -> list[SummarySpec]:
+        """Return the summary-card definitions for the benchmark workflow."""
         return [
             ("running", "Active Processes"),
             ("pcdet", "OpenPCDet"),
@@ -70,6 +74,7 @@ class BenchmarkPage(WorkflowPage):
         ]
 
     def summary_values(self) -> SummaryValues:
+        """Return the current summary values for the benchmark workflow."""
         running = self.manager.running_process_names()
         return {
             "running": f"{len([name for name in self.process_names() if name in running])} / {len(self.process_names())}",
@@ -79,9 +84,11 @@ class BenchmarkPage(WorkflowPage):
         }
 
     def process_names(self) -> list[str]:
+        """Return the process names managed by the benchmark workflow."""
         return ["benchmark_openpcdet", "benchmark_lanedet", "benchmark_view_predictions"]
 
     def _start(self, name: str, args: ArgsList) -> None:
+        """Validate the selected benchmark panel and start its process."""
         panel = {
             "benchmark_openpcdet": self.openpcdet_panel,
             "benchmark_lanedet": self.lanedet_panel,
@@ -94,6 +101,7 @@ class BenchmarkPage(WorkflowPage):
         self.append_activity(self.manager.start_process(name, args=args))
 
     def refresh(self) -> None:
+        """Refresh benchmark panel statuses from the process manager."""
         rows = {row["name"]: row for row in self.manager.status_rows()}
         self.openpcdet_panel.set_status(rows["benchmark_openpcdet"]["status"])
         self.lanedet_panel.set_status(rows["benchmark_lanedet"]["status"])

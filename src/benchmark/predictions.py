@@ -12,6 +12,7 @@ JsonValue = Union[None, bool, int, float, str, List["JsonValue"], JsonDict]
 
 
 def save_objects_prediction(path: Path, objects_3d: Objects3DPrediction) -> None:
+    """Save a 3D object prediction payload as a compressed NumPy archive."""
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
         path,
@@ -23,6 +24,7 @@ def save_objects_prediction(path: Path, objects_3d: Objects3DPrediction) -> None
 
 
 def load_objects_prediction(path: Path) -> Objects3DPrediction:
+    """Load a 3D object prediction payload from a compressed NumPy archive."""
     with np.load(path, allow_pickle=False) as data:
         payload = {
             "boxes": np.asarray(data["boxes"], dtype=np.float32),
@@ -38,6 +40,7 @@ def load_objects_prediction(path: Path) -> Objects3DPrediction:
 
 
 def _jsonify(value: object) -> JsonValue:
+    """Convert nested values into JSON-serializable primitives."""
     if isinstance(value, np.ndarray):
         return cast(JsonValue, value.astype(float).tolist())
     if isinstance(value, dict):
@@ -57,6 +60,7 @@ def save_lanes_prediction(
     lanes_2d: Lanes2DPrediction,
     lanes_3d: Lanes3DPrediction,
 ) -> None:
+    """Save 2D and 3D lane predictions to a JSON file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "lanes_2d": lanes_2d.to_payload(),
@@ -67,6 +71,7 @@ def save_lanes_prediction(
 
 
 def load_lanes_prediction(path: Path) -> JsonDict:
+    """Load saved lane predictions from a JSON file."""
     with path.open("r", encoding="utf-8") as handle:
         payload = cast(JsonDict, json.load(handle))
 

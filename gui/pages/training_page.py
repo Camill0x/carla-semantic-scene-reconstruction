@@ -16,6 +16,7 @@ from gui.widgets.process_panel import ProcessPanel
 
 class TrainingPage(WorkflowPage):
     def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
+        """Build the training workflow page and its model-specific tabs."""
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
 
@@ -25,12 +26,15 @@ class TrainingPage(WorkflowPage):
         layout.addWidget(tabs)
 
     def window_subtitle(self) -> str:
+        """Return the subtitle shown for the training workflow window."""
         return "Prepare datasets, launch training jobs and run checkpoint evaluation for both OpenPCDet and LaneDet."
 
     def preferred_window_size(self) -> tuple[int, int]:
+        """Return the preferred size for the training workflow window."""
         return (1020, 780)
 
     def summary_specs(self) -> list[SummarySpec]:
+        """Return the summary-card definitions for the training workflow."""
         return [
             ("running", "Active Processes"),
             ("prepare", "Preparation Jobs"),
@@ -39,6 +43,7 @@ class TrainingPage(WorkflowPage):
         ]
 
     def summary_values(self) -> SummaryValues:
+        """Return the current summary values for the training workflow."""
         running = self.manager.running_process_names()
         prepare = sum(1 for name in ["openpcdet_prepare_dataset", "lanedet_prepare_dataset"] if name in running)
         train = sum(1 for name in ["openpcdet_train", "lanedet_main"] if name in running)
@@ -51,6 +56,7 @@ class TrainingPage(WorkflowPage):
         }
 
     def process_names(self) -> list[str]:
+        """Return the process names managed by the training workflow."""
         return [
             "openpcdet_prepare_dataset",
             "openpcdet_train",
@@ -67,6 +73,7 @@ class TrainingPage(WorkflowPage):
         flags: list[FlagSpec],
         allow_extra_args: bool,
     ) -> ProcessPanel:
+        """Build a reusable process panel for one training workflow command."""
         def start(args: ArgsList) -> None:
             self._start(process_name, args)
 
@@ -88,6 +95,7 @@ class TrainingPage(WorkflowPage):
         )
 
     def _openpcdet_tab(self) -> QWidget:
+        """Build the OpenPCDet tab for the training workflow."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
         self.openpcdet_prepare_panel = self._panel(
@@ -118,6 +126,7 @@ class TrainingPage(WorkflowPage):
         return tab
 
     def _lanedet_tab(self) -> QWidget:
+        """Build the LaneDet tab for the training workflow."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
         self.lanedet_prepare_panel = self._panel(
@@ -140,6 +149,7 @@ class TrainingPage(WorkflowPage):
         return tab
 
     def _start(self, process_name: str, args: ArgsList) -> None:
+        """Validate the selected training panel and start its process."""
         panel = {
             "openpcdet_prepare_dataset": self.openpcdet_prepare_panel,
             "openpcdet_train": self.openpcdet_train_panel,
@@ -154,6 +164,7 @@ class TrainingPage(WorkflowPage):
         self.append_activity(self.manager.start_process(process_name, args=args))
 
     def refresh(self) -> None:
+        """Refresh training workflow panel statuses from the process manager."""
         rows = {row["name"]: row for row in self.manager.status_rows()}
         self.openpcdet_prepare_panel.set_status(rows["openpcdet_prepare_dataset"]["status"])
         self.openpcdet_train_panel.set_status(rows["openpcdet_train"]["status"])

@@ -16,10 +16,12 @@ JsonValue = Union[None, bool, int, float, str, List["JsonValue"], Dict[str, "Jso
 
 
 def _normalize_shape(shape: Sequence[int]) -> Tuple[int, ...]:
+    """Normalize an array shape into a tuple of integers."""
     return tuple(int(dim) for dim in shape)
 
 
 def _disable_shared_memory_tracking() -> None:
+    """Disable Python shared-memory tracking on runtimes that would unlink segments too early."""
     if "track" in inspect.signature(shared_memory.SharedMemory).parameters:
         return
 
@@ -51,6 +53,7 @@ _disable_shared_memory_tracking()
 
 
 def _to_jsonable(value: object) -> JsonValue:
+    """Convert nested values into JSON-serializable primitives."""
     if isinstance(value, np.ndarray):
         return cast(JsonValue, value.tolist())
     if isinstance(value, (np.integer,)):
@@ -67,6 +70,7 @@ def _to_jsonable(value: object) -> JsonValue:
 
 
 def _segment_buffer(segment: shared_memory.SharedMemory) -> memoryview:
+    """Return a usable memoryview for a shared-memory segment."""
     buffer = segment.buf
     if buffer is None:
         raise RuntimeError(f"Shared memory buffer is unavailable for {segment.name}")
@@ -74,10 +78,12 @@ def _segment_buffer(segment: shared_memory.SharedMemory) -> memoryview:
 
 
 def encode_json_payload(payload: object) -> bytes:
+    """Encode a JSON-serializable payload into UTF-8 bytes."""
     return json.dumps(_to_jsonable(payload), separators=(",", ":")).encode("utf-8")
 
 
 def measure_json_payload_bytes(payload: object) -> int:
+    """Return the encoded size of a JSON payload in bytes."""
     return len(encode_json_payload(payload))
 
 
@@ -88,6 +94,7 @@ class SharedArrayDescriptor:
     dtype: str
 
     def to_payload(self) -> Dict[str, object]:
+        """Serialize the shared-array descriptor into a JSON payload."""
         return {
             "name": self.name,
             "shape": list(self.shape),
@@ -96,6 +103,7 @@ class SharedArrayDescriptor:
 
     @classmethod
     def from_payload(cls, payload: Dict[str, object]) -> "SharedArrayDescriptor":
+        """Build a shared-array descriptor from a serialized payload."""
         if "name" not in payload or "shape" not in payload or "dtype" not in payload:
             raise ValueError("Shared array payload must contain name, shape, and dtype")
         shape = payload["shape"]
@@ -110,6 +118,7 @@ class SharedArrayDescriptor:
 
 class SharedArrayPool:
     def __init__(self, *, prefix: str, slot_capacity_bytes: int, num_slots: int) -> None:
+        """Create a pool of reusable shared-memory array slots."""
         if slot_capacity_bytes <= 0:
             raise ValueError("slot_capacity_bytes must be > 0")
         if num_slots <= 0:
@@ -127,6 +136,7 @@ class SharedArrayPool:
             )
 
     def write(self, array: ArrayAny, *, slot_index: int) -> SharedArrayDescriptor:
+        """Write an array into a shared-memory slot and return its descriptor."""
         segment = self._segments[int(slot_index) % len(self._segments)]
         contiguous = np.ascontiguousarray(array)
         nbytes = int(contiguous.nbytes)
@@ -148,6 +158,7 @@ class SharedArrayPool:
         )
 
     def close(self) -> None:
+        """Close and optionally unlink all shared-memory slots owned by the pool."""
         for segment in self._segments:
             try:
                 segment.close()
@@ -160,9 +171,11 @@ class SharedArrayPool:
 
 class SharedArrayReader:
     def __init__(self) -> None:
+        """Initialize the shared-array reader and its segment cache."""
         self._segments: Dict[str, shared_memory.SharedMemory] = {}
 
     def _get_segment(self, name: str) -> shared_memory.SharedMemory:
+        """Return a cached shared-memory segment, attaching to it if needed."""
         segment = self._segments.get(name)
         if segment is None:
             segment = shared_memory.SharedMemory(name=name, create=False)
@@ -170,6 +183,7 @@ class SharedArrayReader:
         return segment
 
     def read(self, descriptor_payload: Dict[str, object]) -> ArrayAny:
+        """Read an array view described by a shared-array payload."""
         descriptor = SharedArrayDescriptor.from_payload(descriptor_payload)
         segment = self._get_segment(descriptor.name)
         array: ArrayAny = np.ndarray(
@@ -180,6 +194,7 @@ class SharedArrayReader:
         return np.array(array, copy=True)
 
     def close(self) -> None:
+        """Close all shared-memory segments cached by the reader."""
         for segment in self._segments.values():
             segment.close()
         self._segments.clear()
@@ -187,6 +202,7 @@ class SharedArrayReader:
 
 class SharedMessageBuffer:
     def __init__(self, *, name: str, size_bytes: int, create: bool) -> None:
+        """Create or attach to a shared-memory buffer for small JSON messages."""
         if size_bytes <= HEADER_SIZE:
             raise ValueError("size_bytes must be larger than the header size")
         self._name = name
@@ -198,6 +214,7 @@ class SharedMessageBuffer:
             _segment_buffer(self._segment)[:HEADER_SIZE] = b"\x00" * HEADER_SIZE
 
     def write(self, payload: object) -> int:
+        """Atomically write a JSON message payload into the shared buffer."""
         data = encode_json_payload(payload)
         if len(data) > self._size_bytes - HEADER_SIZE:
             raise ValueError(
@@ -214,6 +231,7 @@ class SharedMessageBuffer:
         return end_version
 
     def read(self, *, last_version: Optional[int] = None) -> Tuple[int, Optional[object]]:
+        """Atomically read the latest JSON message payload from the shared buffer."""
         buffer = _segment_buffer(self._segment)
         while True:
             version_1, length_1 = HEADER_STRUCT.unpack_from(buffer, 0)
@@ -230,6 +248,7 @@ class SharedMessageBuffer:
                 return version_2, json.loads(payload_bytes.decode("utf-8"))
 
     def close(self) -> None:
+        """Close and optionally unlink the shared-memory message buffer."""
         try:
             self._segment.close()
         finally:

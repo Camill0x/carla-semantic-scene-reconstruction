@@ -13,14 +13,17 @@ class Lanes2DPrediction:
     names: List[str]
 
     def __len__(self) -> int:
+        """Return the number of predicted 2D lanes."""
         return len(self.strips)
 
     @classmethod
     def empty(cls) -> "Lanes2DPrediction":
+        """Return an empty 2D lane prediction container."""
         return cls(strips=[], scores=np.zeros((0,), dtype=np.float32), names=[])
 
     @classmethod
     def from_detector_output(cls, lanes_2d: Sequence[Tuple[Float32Array, float]]) -> "Lanes2DPrediction":
+        """Handle from detector output."""
         strips: List[Float32Array] = []
         scores: List[float] = []
         names = []
@@ -37,6 +40,7 @@ class Lanes2DPrediction:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "Lanes2DPrediction":
+        """Build a 2D lane prediction container from a serialized payload."""
         strips: List[Float32Array] = []
         for strip in payload.get("strips", []):
             points = np.asarray(strip, dtype=np.float32)
@@ -49,6 +53,7 @@ class Lanes2DPrediction:
         )
 
     def to_payload(self) -> JsonDict:
+        """Serialize the 2D lane prediction container into a transport payload."""
         return {
             "strips": self.strips,
             "scores": self.scores,
@@ -63,14 +68,17 @@ class Lanes3DPrediction:
     names: List[str]
 
     def __len__(self) -> int:
+        """Return the number of predicted 3D lanes."""
         return len(self.strips)
 
     @classmethod
     def empty(cls) -> "Lanes3DPrediction":
+        """Return an empty 3D lane prediction container."""
         return cls(strips=[], scores=np.zeros((0,), dtype=np.float32), names=[])
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "Lanes3DPrediction":
+        """Build a 3D lane prediction container from a serialized payload."""
         strips: List[Float32Array] = []
         for strip in payload.get("strips", []):
             points = np.asarray(strip, dtype=np.float32)
@@ -83,6 +91,7 @@ class Lanes3DPrediction:
         )
 
     def to_payload(self) -> JsonDict:
+        """Serialize the 3D lane prediction container into a transport payload."""
         return {
             "strips": self.strips,
             "scores": self.scores,

@@ -9,6 +9,7 @@ class ProcessTable(QTableWidget):
     HEADERS = ["Process", "Status", "PID", "Last Exit"]
 
     def __init__(self) -> None:
+        """Build the process table used by the inspector dialog."""
         super().__init__(0, len(self.HEADERS))
         self.setHorizontalHeaderLabels(self.HEADERS)
         self.verticalHeader().setVisible(False)
@@ -22,6 +23,7 @@ class ProcessTable(QTableWidget):
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
 
     def update_rows(self, rows: List[Dict[str, str]]) -> None:
+        """Refresh the process table contents from the provided status rows."""
         self.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
             values = [row.get("title", row["name"]), row["status"], row["pid"], row["last_exit"]]

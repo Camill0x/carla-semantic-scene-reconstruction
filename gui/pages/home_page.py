@@ -15,6 +15,7 @@ class HomePage(WorkflowPage):
         append_activity: AppendActivity,
         open_workflow: OpenWorkflow,
     ) -> None:
+        """Build the home page with navigation cards for each major workflow."""
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         self.setMaximumWidth(760)

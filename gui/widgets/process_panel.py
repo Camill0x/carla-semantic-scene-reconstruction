@@ -20,6 +20,7 @@ class ProcessPanel(QFrame):
         allow_extra_args: bool,
         initial_args: Optional[ArgsList] = None,
     ) -> None:
+        """Build the process control panel for one managed command."""
         super().__init__()
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.on_start = on_start
@@ -60,13 +61,16 @@ class ProcessPanel(QFrame):
             self.form.set_from_args(initial_args)
 
     def _start(self) -> None:
+        """Start the managed process using the current form values."""
         self.on_start(self.form.to_args())
 
     def _restart(self) -> None:
+        """Restart the managed process using the current form values."""
         if self.on_restart is not None:
             self.on_restart(self.form.to_args())
 
     def set_status(self, status: str) -> None:
+        """Update the process status label and its color styling."""
         self.status_label.setText(f"Status: {status}")
         if status == "Running":
             color = "#5fd08d"
@@ -77,7 +81,9 @@ class ProcessPanel(QFrame):
         self.status_label.setStyleSheet(f"font-weight: 700; color: {color};")
 
     def load_values(self, values: dict[str, object]) -> None:
+        """Populate the process form from a saved value dictionary."""
         self.form.set_values(values)
 
     def validation_error(self) -> Optional[str]:
+        """Return the first validation error for the current process form, if any."""
         return self.form.validation_error()

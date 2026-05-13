@@ -5,6 +5,7 @@ from src.common.typing_aliases import BoundaryKey, BoundaryMetadata
 
 
 def waypoint_key(waypoint: carla.Waypoint) -> Tuple[int, int, int, int]:
+    """Build a stable hashable key for a CARLA waypoint."""
     return (
         int(waypoint.road_id),
         int(waypoint.section_id),
@@ -14,6 +15,7 @@ def waypoint_key(waypoint: carla.Waypoint) -> Tuple[int, int, int, int]:
 
 
 def choose_best_next_waypoint(current: carla.Waypoint, candidates: List[carla.Waypoint]) -> carla.Waypoint:
+    """Choose the forward waypoint candidate that best continues the current lane."""
     if len(candidates) == 1:
         return candidates[0]
 
@@ -37,6 +39,7 @@ def choose_best_next_waypoint(current: carla.Waypoint, candidates: List[carla.Wa
 
 
 def waypoint_chain_forward(start_waypoint: carla.Waypoint, distance_m: float, step_m: float) -> List[carla.Waypoint]:
+    """Trace a waypoint chain forward for the requested distance."""
     waypoints = [start_waypoint]
     traveled = 0.0
     current = start_waypoint
@@ -58,6 +61,7 @@ def waypoint_chain_forward(start_waypoint: carla.Waypoint, distance_m: float, st
 
 
 def _lane_side_sign(reference: carla.Waypoint, candidate: carla.Waypoint) -> float:
+    """Return the signed lateral side of a candidate lane relative to a reference waypoint."""
     delta_x = candidate.transform.location.x - reference.transform.location.x
     delta_y = candidate.transform.location.y - reference.transform.location.y
     delta_z = candidate.transform.location.z - reference.transform.location.z
@@ -71,6 +75,7 @@ def find_adjacent_driving_lane(
     side: str,
     max_lane_id_delta: int = 8,
 ) -> Optional[carla.Waypoint]:
+    """Find the nearest adjacent driving lane on the requested side."""
     adjacent = waypoint.get_left_lane() if side == "left" else waypoint.get_right_lane()
     if adjacent and adjacent.lane_type == carla.LaneType.Driving:
         return adjacent
@@ -108,6 +113,7 @@ def collect_adjacent_driving_lanes(
     base_waypoint: carla.Waypoint,
     max_side_lanes: int,
 ) -> List[carla.Waypoint]:
+    """Collect adjacent driving lanes around the base waypoint on both sides."""
     lanes = [base_waypoint]
 
     current = base_waypoint
@@ -135,14 +141,17 @@ def collect_adjacent_driving_lanes(
 
 
 def lane_marking_type_name(marking_type: carla.LaneMarkingType) -> str:
+    """Return the enum name of a CARLA lane-marking type."""
     return str(marking_type).split(".")[-1]
 
 
 def lane_marking_color_name(color: carla.LaneMarkingColor) -> str:
+    """Return the enum name of a CARLA lane-marking color."""
     return str(color).split(".")[-1]
 
 
 def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> BoundaryKey:
+    """Build a stable identifier for one lane boundary relative to its neighbors."""
     if side == "left":
         neighbor = find_adjacent_driving_lane(carla_map, waypoint, side="left")
         if (
@@ -171,6 +180,7 @@ def sample_boundary_points(
     waypoint_chain: List[carla.Waypoint],
     side: str,
 ) -> Tuple[List[carla.Location], BoundaryMetadata]:
+    """Sample one lane-boundary polyline and its metadata from a waypoint chain."""
     points: List[carla.Location] = []
     metadata: BoundaryMetadata = {}
     has_non_none_marking = False

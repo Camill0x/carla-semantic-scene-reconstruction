@@ -30,6 +30,7 @@ class CollectDatasetArgs:
 
 
 def parse_args() -> CollectDatasetArgs:
+    """Parse command-line arguments for the raw dataset collection command."""
     parser = argparse.ArgumentParser(description="Collect raw multimodal CARLA dataset frames")
     parser.add_argument("-n", "--num-frames", type=int, default=100, help="How many frames to save")
     parser.add_argument("--every-nth", type=int, default=10, help="Save every N-th synchronized world frame")
@@ -41,10 +42,12 @@ def parse_args() -> CollectDatasetArgs:
 
 
 def should_process_frame(frame: int, last_processed_frame: Optional[int], every_nth: int) -> bool:
+    """Return whether the current frame should be processed for the configured sampling interval."""
     return last_processed_frame is None or frame - last_processed_frame >= every_nth
 
 
 def main() -> None:
+    """Run the raw dataset collection command."""
     args = parse_args()
     logger = configure_logging("tools.dataset.collect_dataset")
     config = build_collector_config(
@@ -66,13 +69,13 @@ def main() -> None:
 
     run_dir = ensure_dataset_run_dir(config.dataset_root_dir)
 
-    logger.info("hero id=%s, type=%s", hero.id, hero.type_id)
-    logger.info("run dir: %s", run_dir)
-    logger.info("num_frames: %d", config.num_frames)
-    logger.info("every_nth: %d", config.every_nth)
-    logger.info("sensors: lidar + front camera")
+    logger.info("Hero id=%s, type=%s", hero.id, hero.type_id)
+    logger.info("Run dir: %s", run_dir)
+    logger.info("Num frames: %d", config.num_frames)
+    logger.info("Every nth: %d", config.every_nth)
+    logger.info("Sensors: lidar + front camera")
     logger.info(
-        "lidar: max_range=%sm, channels=%s, points_per_second=%s, fov=(%s, %s)",
+        "Lidar: max_range=%sm, channels=%s, points_per_second=%s, fov=(%s, %s)",
         config.lidar.max_range,
         config.lidar.channels,
         config.lidar.points_per_second,
@@ -80,7 +83,7 @@ def main() -> None:
         config.lidar.upper_fov,
     )
     logger.info(
-        "front camera: resolution=%sx%s, fov=%s, xyz=(%s, %s, %s)",
+        "Front camera: resolution=%sx%s, fov=%s, xyz=(%s, %s, %s)",
         config.camera_front.width,
         config.camera_front.height,
         config.camera_front.fov,
@@ -89,13 +92,13 @@ def main() -> None:
         config.camera_front.z,
     )
     logger.info(
-        "lane annotations: distance=%sm, step=%sm, max_side_lanes=%s",
+        "Lane annotations: distance=%sm, step=%sm, max_side_lanes=%s",
         config.lane_annotations.distance_m,
         config.lane_annotations.step_m,
         config.lane_annotations.max_side_lanes,
     )
     logger.info(
-        "gt annotations: min_lidar_points_in_box=%s",
+        "GT annotations: min_lidar_points_in_box=%s",
         config.gt_annotations.min_lidar_points_in_box,
     )
 
@@ -248,7 +251,7 @@ def main() -> None:
             last_saved_frame = sim_frame
             saved_count += 1
 
-        logger.info("raw dataset collection finished: %s", run_dir)
+        logger.info("Raw dataset collection finished: %s", run_dir)
 
     finally:
         if lidar is not None:

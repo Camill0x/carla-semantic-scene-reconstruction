@@ -44,6 +44,7 @@ class TrainArgs:
 
 
 def parse_args() -> TrainArgs:
+    """Parse command-line arguments for the OpenPCDet training command."""
     parser = argparse.ArgumentParser(description="Train an OpenPCDet model from the main project repo")
     parser.add_argument("--dataset-name", default="default", help="Prepared dataset variant name")
     cfg_source = parser.add_mutually_exclusive_group(required=True)
@@ -74,6 +75,7 @@ def parse_args() -> TrainArgs:
 
 
 def main() -> None:
+    """Run the OpenPCDet training command."""
     args = parse_args()
     logger = configure_logging("tools.openpcdet.train")
 
@@ -149,7 +151,7 @@ def main() -> None:
     )
     write_json(output_dir / "meta.json", meta)
     shutil.rmtree(work_dir, ignore_errors=True)
-    logger.info("results saved to: %s", repo_relative_or_absolute(output_dir))
+    logger.info("Results saved to: %s", repo_relative_or_absolute(output_dir))
 
 
 if __name__ == "__main__":

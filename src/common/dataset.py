@@ -14,6 +14,7 @@ class DatasetSplits(Generic[T]):
 
 
 def selected_run_dirs(source_root: Path, run_names: Optional[Sequence[str]]) -> List[Path]:
+    """Return the selected raw dataset run directories in sorted order."""
     if run_names is None:
         return sorted(path for path in source_root.iterdir() if path.is_dir() and path.name.startswith("run_"))
 
@@ -29,6 +30,7 @@ def selected_run_dirs(source_root: Path, run_names: Optional[Sequence[str]]) -> 
 
 
 def iter_frame_dirs(run_dirs: Sequence[Path]) -> List[Path]:
+    """Return the sorted frame directories for the provided runs."""
     return [
         frame_dir
         for run_dir in run_dirs
@@ -38,6 +40,7 @@ def iter_frame_dirs(run_dirs: Sequence[Path]) -> List[Path]:
 
 
 def train_val_test_split(items: Sequence[T], val_ratio: float, test_ratio: float, seed: int) -> DatasetSplits[T]:
+    """Split a sequence into shuffled train, validation, and test subsets."""
     if val_ratio < 0.0 or test_ratio < 0.0:
         raise ValueError("Split ratios must be >= 0")
     if val_ratio + test_ratio >= 1.0 and len(items) > 1:

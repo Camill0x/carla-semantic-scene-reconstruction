@@ -10,6 +10,7 @@ def configure_front_camera_blueprint(
     config: CameraConfig,
     fixed_delta_seconds: float,
 ) -> carla.ActorBlueprint:
+    """Configure the front camera blueprint from the project camera settings."""
     blueprint = world.get_blueprint_library().find("sensor.camera.rgb")
     blueprint.set_attribute("image_size_x", str(config.width))
     blueprint.set_attribute("image_size_y", str(config.height))
@@ -19,6 +20,7 @@ def configure_front_camera_blueprint(
 
 
 def front_camera_transform(config: CameraConfig) -> carla.Transform:
+    """Build the front camera transform from the runtime camera configuration."""
     return carla.Transform(
         carla.Location(x=config.x, y=config.y, z=config.z),
         carla.Rotation(pitch=config.pitch, yaw=config.yaw, roll=config.roll),
@@ -26,5 +28,6 @@ def front_camera_transform(config: CameraConfig) -> carla.Transform:
 
 
 def camera_image_to_bgr(image: carla.Image) -> ImageArray:
+    """Convert a raw CARLA camera image into a BGR NumPy array."""
     data = np.frombuffer(image.raw_data, dtype=np.uint8).reshape((image.height, image.width, 4))
     return np.asarray(data[:, :, :3].copy(), dtype=np.uint8)

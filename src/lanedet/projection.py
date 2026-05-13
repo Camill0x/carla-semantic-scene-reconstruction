@@ -7,6 +7,7 @@ from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 
 
 def transform_dict_to_matrix(transform: Mapping[str, object]) -> Float64Array:
+    """Convert serialized transform metadata into a 4x4 matrix."""
     location = transform["location"]
     rotation = transform["rotation"]
     if not isinstance(location, Mapping) or not isinstance(rotation, Mapping):
@@ -44,6 +45,7 @@ def transform_dict_to_matrix(transform: Mapping[str, object]) -> Float64Array:
 
 
 def build_intrinsics(width: int, height: int, fov: float) -> Float64Array:
+    """Build a camera intrinsics matrix from image size and field of view."""
     focal = width / (2.0 * np.tan(float(fov) * np.pi / 360.0))
     matrix = np.eye(3, dtype=np.float64)
     matrix[0, 0] = focal
@@ -54,6 +56,7 @@ def build_intrinsics(width: int, height: int, fov: float) -> Float64Array:
 
 
 def transform_points(points_xyz: Float64Array, transform_matrix: Float64Array) -> Float64Array:
+    """Transform 3D points with a homogeneous transform matrix."""
     points_h = np.concatenate(
         [points_xyz, np.ones((points_xyz.shape[0], 1), dtype=np.float64)],
         axis=1,
@@ -63,6 +66,7 @@ def transform_points(points_xyz: Float64Array, transform_matrix: Float64Array) -
 
 
 def world_to_lidar_matrix(lidar_transform: Mapping[str, object]) -> Float64Array:
+    """Build the world-to-LiDAR transform matrix from serialized metadata."""
     world_to_lidar = np.linalg.inv(transform_dict_to_matrix(lidar_transform))
     flip_y = np.eye(4, dtype=np.float64)
     flip_y[1, 1] = -1.0
@@ -77,6 +81,7 @@ def image_points_to_lidar_ground(
     world_to_lidar: Float64Array,
     ground_z_lidar: float,
 ) -> Float32Array:
+    """Project image points onto the ground plane in the LiDAR frame."""
     if points_2d.size == 0:
         return np.zeros((0, 3), dtype=np.float32)
 
@@ -122,6 +127,7 @@ def lanes_2d_to_lanes_3d(
     state_frame: Mapping[str, object],
     score_thresh: float,
 ) -> Lanes3DPrediction:
+    """Project predicted 2D lanes into the LiDAR ground-plane frame."""
     camera = camera_frame.get("camera_front") or {}
     state_camera = state_frame.get("camera_front") or {}
     lidar = state_frame.get("lidar") or {}

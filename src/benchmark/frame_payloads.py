@@ -4,6 +4,7 @@ from src.common.typing_aliases import ImageArray, JsonDict
 
 
 def transform_from_meta(sensor_payload: Mapping[str, Any]) -> JsonDict:
+    """Extract a transform payload from serialized sensor metadata."""
     return {
         "location": dict(sensor_payload["location"]),
         "rotation": dict(sensor_payload["rotation"]),
@@ -11,6 +12,7 @@ def transform_from_meta(sensor_payload: Mapping[str, Any]) -> JsonDict:
 
 
 def state_frame_from_meta(meta: Mapping[str, Any]) -> JsonDict:
+    """Build the state-frame payload stored alongside benchmark artifacts."""
     lidar_meta = meta["lidar"]
     camera_meta = meta["front_camera"]
     hero_meta = meta.get("hero", {})
@@ -36,6 +38,7 @@ def state_frame_from_meta(meta: Mapping[str, Any]) -> JsonDict:
 
 
 def camera_frame_shape(image_rgb: ImageArray) -> JsonDict:
+    """Build camera shape metadata from an RGB image array."""
     return {
         "camera_front": {
             "height": int(image_rgb.shape[0]),

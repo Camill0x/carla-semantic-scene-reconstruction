@@ -9,6 +9,7 @@ from src.common.typing_aliases import JsonDict
 
 
 def summarize_frame_metrics(frame_metrics: Sequence[Mapping[str, float]], *, model: str, warmup: int) -> JsonDict:
+    """Summarize per-frame benchmark timings into aggregate metrics."""
     measured = [dict(item) for item in frame_metrics if not bool(item.get("warmup", 0.0))]
     summary: JsonDict = {
         "model": model,
@@ -33,6 +34,7 @@ def summarize_frame_metrics(frame_metrics: Sequence[Mapping[str, float]], *, mod
 
 
 def round_metrics(value: Any) -> Any:
+    """Recursively round floating-point metrics for JSON output."""
     if isinstance(value, float):
         return round(value, 2)
     if isinstance(value, dict):
@@ -43,6 +45,7 @@ def round_metrics(value: Any) -> Any:
 
 
 def write_metrics_json(path: Path, *, summary: Mapping[str, Any]) -> None:
+    """Write rounded benchmark metrics to a JSON file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(round_metrics(dict(summary)), handle, indent=2)

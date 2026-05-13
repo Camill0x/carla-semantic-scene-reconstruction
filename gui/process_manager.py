@@ -16,9 +16,13 @@ from gui.config import LOG_DIR, ROOT_DIR, STATE_PATH
 class ProcessHandle(Protocol):
     pid: int
 
-    def poll(self) -> Optional[int]: ...
+    def poll(self) -> Optional[int]:
+        """Return the child-process exit code when it is no longer running."""
+        ...
 
-    def wait(self, timeout: Optional[float] = None) -> int: ...
+    def wait(self, timeout: Optional[float] = None) -> int:
+        """Wait for the child process to exit or until the timeout expires."""
+        ...
 
 
 @dataclass
@@ -35,9 +39,11 @@ class ManagedProcess:
     last_exit_code: Optional[int] = None
 
     def is_running(self) -> bool:
+        """Handle is running."""
         return self.process is not None and self.process.poll() is None
 
     def refresh(self) -> None:
+        """Refresh the widget state."""
         if self.process is None:
             return
         exit_code = self.process.poll()
@@ -49,9 +55,11 @@ class ManagedProcess:
 
 class ReattachedProcess:
     def __init__(self, pid: int) -> None:
+        """Wrap a running PID so the GUI can reattach to an existing process."""
         self.pid = int(pid)
 
     def poll(self) -> Optional[int]:
+        """Return the exit status of the reattached process when it is no longer alive."""
         try:
             os.kill(self.pid, 0)
         except ProcessLookupError:
@@ -61,6 +69,7 @@ class ReattachedProcess:
         return None
 
     def wait(self, timeout: Optional[float] = None) -> int:
+        """Wait for the reattached process to exit or until the timeout expires."""
         deadline = None if timeout is None else time.monotonic() + timeout
         while True:
             exit_code = self.poll()
@@ -74,6 +83,7 @@ class ReattachedProcess:
 
 class ProjectProcessManager:
     def __init__(self) -> None:
+        """Initialize the managed process registry, log files, and persisted GUI state."""
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
         self._log_lock = threading.Lock()
@@ -84,12 +94,14 @@ class ProjectProcessManager:
         self.load_state()
 
     def ensure_log_files(self) -> None:
+        """Create log files for all managed processes if they do not exist yet."""
         for name, process in self.processes.items():
             log_path = LOG_DIR / f"{name}.log"
             log_path.touch(exist_ok=True)
             process.log_path = log_path
 
     def pid_is_alive(self, pid: int) -> bool:
+        """Return whether a PID still appears to be alive on the system."""
         try:
             os.kill(pid, 0)
         except ProcessLookupError:
@@ -99,11 +111,13 @@ class ProjectProcessManager:
         return True
 
     def refresh_all(self) -> None:
+        """Refresh all managed process states and persist the updated GUI state."""
         for process in self.processes.values():
             process.refresh()
         self.save_state()
 
     def start_process(self, name: str, *, args: Optional[List[str]] = None) -> str:
+        """Start one managed process with the provided CLI arguments."""
         process = self.processes[name]
         process.refresh()
         if args is not None:
@@ -150,6 +164,7 @@ class ProjectProcessManager:
         return f"Started {name} (pid={popen.pid})"
 
     def stop_process(self, name: str) -> str:
+        """Stop one managed process by escalating through interrupt and termination signals."""
         process = self.processes[name]
         process.refresh()
         if process.process is None:
@@ -173,21 +188,26 @@ class ProjectProcessManager:
         return f"Stopped {name}"
 
     def restart_process(self, name: str, *, args: Optional[List[str]] = None) -> List[str]:
+        """Restart one managed process and return the activity messages."""
         messages = [self.stop_process(name)]
         messages.append(self.start_process(name, args=args))
         return messages
 
     def stop_many(self, names: List[str]) -> List[str]:
+        """Stop multiple managed processes and return their activity messages."""
         return [self.stop_process(name) for name in names]
 
     def running_process_names(self) -> List[str]:
+        """Return the names of all currently running managed processes."""
         self.refresh_all()
         return [name for name, process in self.processes.items() if process.is_running()]
 
     def process_group_names(self, group_name: str) -> List[str]:
+        """Return the process names associated with a configured workflow group."""
         return list(PROCESS_GROUPS[group_name])
 
     def status_rows(self) -> List[Dict[str, str]]:
+        """Build the process-status rows shown in inspector and workflow views."""
         self.refresh_all()
         rows = []
         for name, spec in PROCESS_SPECS.items():
@@ -218,9 +238,11 @@ class ProjectProcessManager:
         return rows
 
     def available_log_files(self) -> Dict[str, Path]:
+        """Return the available GUI-managed log files by process name."""
         return {name: process.log_path for name, process in self.processes.items() if process.log_path is not None}
 
     def log_snapshots(self, names: List[str], *, limit_lines: int = 400) -> Dict[str, str]:
+        """Return recent log snapshots for the requested process names."""
         snapshots: Dict[str, str] = {}
         for name in names:
             process = self.processes[name]
@@ -232,6 +254,7 @@ class ProjectProcessManager:
         return snapshots
 
     def clear_logs(self) -> None:
+        """Truncate GUI-managed log files and clear in-memory log buffers."""
         for path in LOG_DIR.glob("*.log"):
             try:
                 path.write_text("", encoding="utf-8")
@@ -242,6 +265,7 @@ class ProjectProcessManager:
                 process.log_lines.clear()
 
     def summary(self) -> Dict[str, object]:
+        """Return aggregate process counts for the GUI summary widgets."""
         self.refresh_all()
         running = [name for name, process in self.processes.items() if process.is_running()]
         streaming = PROCESS_GROUPS["streaming"]
@@ -253,9 +277,11 @@ class ProjectProcessManager:
         }
 
     def args_for(self, name: str) -> List[str]:
+        """Return the persisted CLI arguments for the requested process."""
         return list(self.processes[name].args)
 
     def save_state(self) -> None:
+        """Persist the current GUI-managed process state to disk."""
         state = {}
         for name, process in self.processes.items():
             process.refresh()
@@ -270,6 +296,7 @@ class ProjectProcessManager:
             json.dump(state, handle, indent=2)
 
     def load_state(self) -> None:
+        """Reload persisted GUI-managed process state from disk when possible."""
         if not STATE_PATH.exists():
             return
         try:
@@ -296,6 +323,7 @@ class ProjectProcessManager:
                 process.process = ReattachedProcess(pid)
 
     def _consume_process_output(self, process: ManagedProcess) -> None:
+        """Stream one process output into its log file and in-memory buffer."""
         stdout_handle = process.stdout_handle
         log_handle = process.log_handle
         if stdout_handle is None or log_handle is None:
@@ -322,6 +350,7 @@ class ProjectProcessManager:
                 process.log_thread = None
 
     def _read_log_tail(self, path: Optional[Path], *, limit_lines: int) -> str:
+        """Read the tail of a GUI-managed log file."""
         if path is None or not path.exists():
             return ""
         try:

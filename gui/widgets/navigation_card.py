@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QFrame, QLabel, QPushButton, QVBoxLayout
 
 class NavigationCard(QFrame):
     def __init__(self, *, title: str, description: str, button_text: str, on_click: Callable[[], None]) -> None:
+        """Build a home-page navigation card for one workflow route."""
         super().__init__()
         self.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(self)

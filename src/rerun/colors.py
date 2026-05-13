@@ -18,10 +18,12 @@ LANE_RIGHT_COLOR: RGBA = (0, 200, 255, 255)
 
 
 def prediction_colors(pred_names: Iterable[str]) -> list[RGBA]:
+    """Return display colors for the provided prediction class names."""
     return [CLASS_COLORS.get(str(name), (255, 255, 255, 235)) for name in pred_names]
 
 
 def lane_color(lane: Mapping[str, object]) -> RGBA:
+    """Return the display color for a lane annotation or prediction."""
     if str(lane.get("side", "")) == "left":
         return LANE_LEFT_COLOR
     if str(lane.get("side", "")) == "right":

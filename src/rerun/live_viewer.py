@@ -9,6 +9,7 @@ from src.rerun.text import log_live_status
 
 
 def initialize_live_viewer(application_id: str, *, show_grid: bool) -> None:
+    """Initialize the Rerun live viewer and its default blueprint."""
     rr.init(application_id, spawn=True)
     rr.send_blueprint(make_live_blueprint(show_grid=show_grid))
     rr.log("world", rr.ViewCoordinates.FLU, static=True)
@@ -20,6 +21,7 @@ def render_live_scene(
     ego_line_radius: float,
     pred_line_radius: float,
 ) -> None:
+    """Render one aggregated live scene frame in Rerun."""
     source_frames = scene.get("source_frames", {})
     frame = int(scene["frame"])
     objects_frame = source_frames.get("objects_3d")

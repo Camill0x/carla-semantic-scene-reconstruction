@@ -2,7 +2,9 @@
 
 import argparse
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import rerun as rr
 from src.benchmark.predictions import load_lanes_prediction, load_objects_prediction
@@ -15,14 +17,30 @@ from src.rerun.scene3d import log_prediction_objects_3d
 from src.rerun.text import log_legend
 
 
-def parse_args():
+@dataclass(frozen=True)
+class ViewPredictionsArgs:
+    run_dir: Path
+    objects: Optional[Path]
+    lanes: Optional[Path]
+    fps: float
+    show_grid: bool
+
+
+def parse_args() -> ViewPredictionsArgs:
     parser = argparse.ArgumentParser(description="View offline benchmark predictions in Rerun")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--objects", type=Path, default=None, help="Path to directory with OpenPCDet predictions")
     parser.add_argument("--lanes", type=Path, default=None, help="Path to directory with LaneDet predictions")
     parser.add_argument("--fps", type=float, default=20.0, help="Playback speed in frames per second")
     parser.add_argument("--show-grid", action="store_true", help="Show the ground grid in the 3D view")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return ViewPredictionsArgs(
+        run_dir=parsed.run_dir,
+        objects=parsed.objects,
+        lanes=parsed.lanes,
+        fps=float(parsed.fps),
+        show_grid=bool(parsed.show_grid),
+    )
 
 
 def main() -> None:
@@ -78,11 +96,6 @@ def main() -> None:
         time.sleep(frame_delay_s)
 
     print("[info] predictions loaded into Rerun")
-    try:
-        while True:
-            time.sleep(1.0)
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":

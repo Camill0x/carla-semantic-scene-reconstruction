@@ -8,19 +8,26 @@ import numpy as np
 from tqdm import tqdm
 
 from src.common.dataset import DatasetSplits
+from src.common.typing_aliases import JsonDict
 
 TUSIMPLE_H_SAMPLES = list(range(160, 720, 10))
 TRAIN_FILES = ("label_data_0313.json", "label_data_0601.json")
 VAL_FILE = "label_data_0531.json"
 TEST_FILE = "test_label.json"
 
+LanePoint = Tuple[float, float]
 
-def load_lane_points(lanes_path: Path) -> List[List[Tuple[float, float]]]:
+
+def load_lane_points(lanes_path: Path) -> List[List[LanePoint]]:
     with lanes_path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
+    if not isinstance(payload, dict):
+        return []
 
-    lanes = []
+    lanes: List[List[LanePoint]] = []
     for lane in payload.get("lanes", []):
+        if not isinstance(lane, dict):
+            continue
         points = lane.get("points", [])
         clean_points = [(float(point[0]), float(point[1])) for point in points if len(point) >= 2]
         if len(clean_points) >= 2:
@@ -83,7 +90,7 @@ def frame_meta_num_lanes(frame_dir: Path) -> Optional[int]:
     return int(meta["num_lanes"])
 
 
-def frame_to_sample(frame_dir: Path, max_lanes: int) -> Optional[dict]:
+def frame_to_sample(frame_dir: Path, max_lanes: int) -> Optional[JsonDict]:
     image_path = frame_dir / "front_rgb.png"
     lanes_path = frame_dir / "lanes.json"
     if not image_path.exists() or not lanes_path.exists():
@@ -109,8 +116,8 @@ def load_samples(
     frame_dirs: Sequence[Path],
     max_lanes: int,
     show_progress: bool,
-) -> Tuple[List[dict], Dict[str, int]]:
-    samples = []
+) -> Tuple[List[JsonDict], Dict[str, int]]:
+    samples: List[JsonDict] = []
     skipped_missing_files = 0
     skipped_no_lanes_meta = 0
     skipped_no_usable_lanes = 0
@@ -147,7 +154,7 @@ def load_samples(
     return samples, stats
 
 
-def tusimple_payload(sample: dict) -> Dict:
+def tusimple_payload(sample: JsonDict) -> JsonDict:
     return {
         "lanes": sample["lanes"],
         "h_samples": sample["h_samples"],
@@ -155,7 +162,7 @@ def tusimple_payload(sample: dict) -> Dict:
     }
 
 
-def write_json_lines(path: Path, samples: Iterable[dict]) -> None:
+def write_json_lines(path: Path, samples: Iterable[JsonDict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         for sample in samples:
@@ -163,8 +170,8 @@ def write_json_lines(path: Path, samples: Iterable[dict]) -> None:
             handle.write("\n")
 
 
-def write_train_files(output_root: Path, train_samples: Sequence[dict]) -> None:
-    chunks = [[], []]
+def write_train_files(output_root: Path, train_samples: Sequence[JsonDict]) -> None:
+    chunks: List[List[JsonDict]] = [[], []]
     for index, sample in enumerate(train_samples):
         chunks[index % len(chunks)].append(sample)
 
@@ -172,7 +179,7 @@ def write_train_files(output_root: Path, train_samples: Sequence[dict]) -> None:
         write_json_lines(output_root / filename, samples)
 
 
-def draw_segmentation_mask(sample: dict, output_root: Path, line_width: int) -> None:
+def draw_segmentation_mask(sample: JsonDict, output_root: Path, line_width: int) -> None:
     image = cv2.imread(str(sample["source_image_path"]))
     if image is None:
         raise FileNotFoundError(sample["source_image_path"])
@@ -196,7 +203,7 @@ def draw_segmentation_mask(sample: dict, output_root: Path, line_width: int) -> 
 
 def materialize_samples(
     output_root: Path,
-    samples: Sequence[dict],
+    samples: Sequence[JsonDict],
     line_width: int,
     show_progress: bool,
 ) -> None:
@@ -210,7 +217,7 @@ def materialize_samples(
 
 def write_tusimple_dataset(
     output_root: Path,
-    splits: DatasetSplits,
+    splits: DatasetSplits[JsonDict],
     line_width: int,
     show_progress: bool = True,
 ) -> None:

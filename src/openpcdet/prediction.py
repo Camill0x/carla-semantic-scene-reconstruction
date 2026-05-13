@@ -1,14 +1,16 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping
+from typing import Any, List, Mapping
 
 import numpy as np
+
+from src.common.typing_aliases import Float32Array, IntArray, JsonDict
 
 
 @dataclass(frozen=True)
 class Objects3DPrediction:
-    boxes: np.ndarray
-    scores: np.ndarray
-    labels: np.ndarray
+    boxes: Float32Array
+    scores: Float32Array
+    labels: IntArray
     names: List[str]
 
     def __len__(self) -> int:
@@ -24,7 +26,7 @@ class Objects3DPrediction:
         )
 
     @classmethod
-    def from_detector_output(cls, pred_dict) -> "Objects3DPrediction":
+    def from_detector_output(cls, pred_dict: Mapping[str, Any]) -> "Objects3DPrediction":
         # Drop optional fields such as velocity; downstream code uses 7D boxes.
         return cls(
             boxes=pred_dict["pred_boxes"].detach().cpu().numpy()[:, :7].astype(np.float32),
@@ -46,7 +48,7 @@ class Objects3DPrediction:
 
         return cls(boxes=boxes, scores=scores, labels=labels, names=names)
 
-    def to_payload(self) -> Dict[str, Any]:
+    def to_payload(self) -> JsonDict:
         return {
             "boxes": self.boxes,
             "scores": self.scores,

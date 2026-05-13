@@ -1,6 +1,7 @@
 import numpy as np
 
 import rerun as rr
+from src.common.typing_aliases import JsonDict
 from src.rerun.blueprints import make_live_blueprint
 from src.rerun.lanes import log_prediction_lanes_3d
 from src.rerun.scene3d import log_ego_box, log_prediction_objects_3d
@@ -14,7 +15,7 @@ def initialize_live_viewer(application_id: str, *, show_grid: bool) -> None:
 
 
 def render_live_scene(
-    scene: dict,
+    scene: JsonDict,
     *,
     ego_line_radius: float,
     pred_line_radius: float,

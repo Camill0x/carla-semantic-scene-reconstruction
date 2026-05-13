@@ -3,13 +3,13 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, Iterator, List, Optional, Sequence
 
 from src.openpcdet.paths import OPENPCDET_ROOT
 
 
 @contextmanager
-def working_directory(path: Path):
+def working_directory(path: Path) -> Iterator[None]:
     previous_cwd = Path.cwd()
     os.chdir(path)
     try:

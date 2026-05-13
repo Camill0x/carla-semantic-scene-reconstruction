@@ -2,7 +2,9 @@
 
 import argparse
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List
 
 import numpy as np
 from tqdm import tqdm
@@ -16,7 +18,18 @@ from src.openpcdet.model import load_inference_model, run_inference
 from src.openpcdet.postprocess import filter_object_predictions
 
 
-def parse_args():
+@dataclass(frozen=True)
+class BenchmarkArgs:
+    run_dir: Path
+    cfg_file: Path
+    ckpt: Path
+    score_thresh: float
+    point_stride: int
+    warmup: int
+    save_pred: bool
+
+
+def parse_args() -> BenchmarkArgs:
     parser = argparse.ArgumentParser(description="Benchmark OpenPCDet on an offline CARLA raw dataset run")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--cfg-file", type=Path, required=True)
@@ -25,7 +38,16 @@ def parse_args():
     parser.add_argument("--point-stride", type=int, default=1)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--save-pred", action="store_true", help="Save per-frame predictions")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return BenchmarkArgs(
+        run_dir=parsed.run_dir,
+        cfg_file=parsed.cfg_file,
+        ckpt=parsed.ckpt,
+        score_thresh=float(parsed.score_thresh),
+        point_stride=int(parsed.point_stride),
+        warmup=int(parsed.warmup),
+        save_pred=bool(parsed.save_pred),
+    )
 
 
 def cuda_synchronize() -> None:
@@ -66,7 +88,7 @@ def main() -> None:
     logger.info("score_thresh: %.2f", args.score_thresh)
     logger.info("output_dir: %s", output_dir)
 
-    metrics = []
+    metrics: List[Dict[str, float]] = []
     first_frame_meta = None
     for index, frame_dir in enumerate(tqdm(frame_dirs, desc="Benchmarking OpenPCDet", unit="frame")):
         frame = load_points_frame(frame_dir)
@@ -99,13 +121,13 @@ def main() -> None:
                 objects_3d=objects_3d,
             )
 
-        item = {
-            "frame": frame_id,
-            "warmup": bool(index < args.warmup),
+        item: Dict[str, float] = {
+            "frame": float(frame_id),
+            "warmup": float(index < args.warmup),
             "model_forward_ms": 1000.0 * model_forward_s,
             "runtime_ms": 1000.0 * (t1 - t0),
-            "num_points": int(points.shape[0]),
-            "num_predictions": len(objects_3d),
+            "num_points": float(points.shape[0]),
+            "num_predictions": float(len(objects_3d)),
         }
         metrics.append(item)
 

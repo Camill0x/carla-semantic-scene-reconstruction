@@ -2,12 +2,16 @@ import json
 import struct
 from dataclasses import dataclass
 from multiprocessing import resource_tracker, shared_memory
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
+from src.common.typing_aliases import ArrayAny
+
 HEADER_STRUCT = struct.Struct("<QQ")
 HEADER_SIZE = HEADER_STRUCT.size
+
+JsonValue = Union[None, bool, int, float, str, List["JsonValue"], Dict[str, "JsonValue"]]
 
 
 def _normalize_shape(shape: Sequence[int]) -> Tuple[int, ...]:
@@ -16,14 +20,14 @@ def _normalize_shape(shape: Sequence[int]) -> Tuple[int, ...]:
 
 def _unregister_shared_memory(segment: shared_memory.SharedMemory) -> None:
     try:
-        resource_tracker.unregister(segment._name, "shared_memory")
+        resource_tracker.unregister(segment.name, "shared_memory")
     except Exception:
         pass
 
 
-def _to_jsonable(value):
+def _to_jsonable(value: object) -> JsonValue:
     if isinstance(value, np.ndarray):
-        return value.tolist()
+        return cast(JsonValue, value.tolist())
     if isinstance(value, (np.integer,)):
         return int(value)
     if isinstance(value, (np.floating,)):
@@ -32,7 +36,16 @@ def _to_jsonable(value):
         return {str(key): _to_jsonable(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_to_jsonable(item) for item in value]
-    return value
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    return str(value)
+
+
+def _segment_buffer(segment: shared_memory.SharedMemory) -> memoryview:
+    buffer = segment.buf
+    if buffer is None:
+        raise RuntimeError(f"Shared memory buffer is unavailable for {segment.name}")
+    return buffer
 
 
 def encode_json_payload(payload: object) -> bytes:
@@ -88,7 +101,7 @@ class SharedArrayPool:
                 )
             )
 
-    def write(self, array: np.ndarray, *, slot_index: int) -> SharedArrayDescriptor:
+    def write(self, array: ArrayAny, *, slot_index: int) -> SharedArrayDescriptor:
         segment = self._segments[int(slot_index) % len(self._segments)]
         contiguous = np.ascontiguousarray(array)
         nbytes = int(contiguous.nbytes)
@@ -97,7 +110,11 @@ class SharedArrayPool:
                 f"Array of {nbytes} bytes exceeds slot capacity {self._slot_capacity_bytes} for {segment.name}"
             )
 
-        view = np.ndarray(contiguous.shape, dtype=contiguous.dtype, buffer=segment.buf)
+        view: ArrayAny = np.ndarray(
+            contiguous.shape,
+            dtype=contiguous.dtype,
+            buffer=_segment_buffer(segment),
+        )
         view[...] = contiguous
         return SharedArrayDescriptor(
             name=segment.name,
@@ -128,10 +145,14 @@ class SharedArrayReader:
             self._segments[name] = segment
         return segment
 
-    def read(self, descriptor_payload: Dict[str, object]) -> np.ndarray:
+    def read(self, descriptor_payload: Dict[str, object]) -> ArrayAny:
         descriptor = SharedArrayDescriptor.from_payload(descriptor_payload)
         segment = self._get_segment(descriptor.name)
-        array = np.ndarray(descriptor.shape, dtype=np.dtype(descriptor.dtype), buffer=segment.buf)
+        array: ArrayAny = np.ndarray(
+            descriptor.shape,
+            dtype=np.dtype(descriptor.dtype),
+            buffer=_segment_buffer(segment),
+        )
         return np.array(array, copy=True)
 
     def close(self) -> None:
@@ -152,7 +173,7 @@ class SharedMessageBuffer:
             _unregister_shared_memory(self._segment)
         self._write_version = 0
         if create:
-            self._segment.buf[:HEADER_SIZE] = b"\x00" * HEADER_SIZE
+            _segment_buffer(self._segment)[:HEADER_SIZE] = b"\x00" * HEADER_SIZE
 
     def write(self, payload: object) -> int:
         data = encode_json_payload(payload)
@@ -163,15 +184,17 @@ class SharedMessageBuffer:
 
         start_version = self._write_version + 1
         end_version = self._write_version + 2
-        HEADER_STRUCT.pack_into(self._segment.buf, 0, start_version, len(data))
-        self._segment.buf[HEADER_SIZE : HEADER_SIZE + len(data)] = data
-        HEADER_STRUCT.pack_into(self._segment.buf, 0, end_version, len(data))
+        buffer = _segment_buffer(self._segment)
+        HEADER_STRUCT.pack_into(buffer, 0, start_version, len(data))
+        buffer[HEADER_SIZE : HEADER_SIZE + len(data)] = data
+        HEADER_STRUCT.pack_into(buffer, 0, end_version, len(data))
         self._write_version = end_version
         return end_version
 
     def read(self, *, last_version: Optional[int] = None) -> Tuple[int, Optional[object]]:
+        buffer = _segment_buffer(self._segment)
         while True:
-            version_1, length_1 = HEADER_STRUCT.unpack_from(self._segment.buf, 0)
+            version_1, length_1 = HEADER_STRUCT.unpack_from(buffer, 0)
             if version_1 == 0:
                 return 0, None
             if version_1 % 2 == 1:
@@ -179,8 +202,8 @@ class SharedMessageBuffer:
             if last_version is not None and version_1 == last_version:
                 return version_1, None
 
-            payload_bytes = bytes(self._segment.buf[HEADER_SIZE : HEADER_SIZE + length_1])
-            version_2, length_2 = HEADER_STRUCT.unpack_from(self._segment.buf, 0)
+            payload_bytes = bytes(buffer[HEADER_SIZE : HEADER_SIZE + length_1])
+            version_2, length_2 = HEADER_STRUCT.unpack_from(buffer, 0)
             if version_1 == version_2 and length_1 == length_2 and version_2 % 2 == 0:
                 return version_2, json.loads(payload_bytes.decode("utf-8"))
 

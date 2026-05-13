@@ -2,7 +2,9 @@
 
 import argparse
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
+from typing import List, Optional
 
 from src.common.paths import repo_relative_or_absolute
 from src.lanedet.artifacts import (
@@ -26,7 +28,23 @@ from src.lanedet.runner import (
 )
 
 
-def parse_args() -> argparse.Namespace:
+@dataclass(frozen=True)
+class LaneDetArgs:
+    preset: Optional[str]
+    config: Optional[Path]
+    data_root: Optional[Path]
+    validate: bool
+    batch_size: Optional[int]
+    epochs: Optional[int]
+    workers: Optional[int]
+    load_from: Optional[Path]
+    finetune_from: Optional[Path]
+    gpus: List[int]
+    seed: int
+    view: bool
+
+
+def parse_args() -> LaneDetArgs:
     parser = argparse.ArgumentParser(description="Run LaneDet from the main project repo")
     config_selection = parser.add_mutually_exclusive_group(required=True)
     config_selection.add_argument("--preset", choices=sorted(LANEDET_PRESETS))
@@ -41,16 +59,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gpus", nargs="+", type=int, default=[0])
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--view", action="store_true")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LaneDetArgs(
+        preset=None if parsed.preset is None else str(parsed.preset),
+        config=parsed.config,
+        data_root=parsed.data_root,
+        validate=bool(parsed.validate),
+        batch_size=parsed.batch_size,
+        epochs=parsed.epochs,
+        workers=parsed.workers,
+        load_from=parsed.load_from,
+        finetune_from=parsed.finetune_from,
+        gpus=[int(gpu) for gpu in parsed.gpus],
+        seed=int(parsed.seed),
+        view=bool(parsed.view),
+    )
 
 
 def main() -> None:
     args = parse_args()
-    validate_run_args(args)
+    validate_run_args(args.validate, args.load_from)
 
-    cfg_file, model = resolve_run_config(args)
+    cfg_file, model = resolve_run_config(args.preset, args.config)
     mode = "test" if args.validate else "train"
-    dataset_root = resolve_data_root(args)
+    dataset_root = resolve_data_root(args.data_root, args.preset)
     if dataset_root is not None and not (dataset_root / "test_label.json").exists():
         raise FileNotFoundError(f"LaneDet dataset not found: {repo_relative_or_absolute(dataset_root)}")
 
@@ -71,11 +103,27 @@ def main() -> None:
         workers=args.workers,
     )
 
-    command = (
-        build_eval_command(runtime_cfg, args.load_from.expanduser().resolve(), work_root, args)
-        if args.validate
-        else build_train_command(runtime_cfg, work_root, args)
-    )
+    eval_checkpoint = None if args.load_from is None else args.load_from.expanduser().resolve()
+    if args.validate:
+        assert eval_checkpoint is not None
+        command = build_eval_command(
+            runtime_cfg,
+            eval_checkpoint,
+            work_root,
+            gpus=args.gpus,
+            seed=args.seed,
+            view=args.view,
+        )
+    else:
+        command = build_train_command(
+            runtime_cfg,
+            work_root,
+            gpus=args.gpus,
+            seed=args.seed,
+            load_from=args.load_from,
+            finetune_from=args.finetune_from,
+            view=args.view,
+        )
 
     try:
         exit_code = run_lanedet_main(command)

@@ -1,7 +1,8 @@
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Mapping, Optional
 
 import numpy as np
 
+from src.common.typing_aliases import Float32Array, ImageArray, JsonDict
 from src.lanedet.prediction import Lanes3DPrediction
 from src.openpcdet.prediction import Objects3DPrediction
 from src.shared_memory.buffers import SharedArrayDescriptor
@@ -11,8 +12,8 @@ def build_lidar_frame_message(
     *,
     frame: int,
     timestamp: float,
-    points: np.ndarray,
-) -> Dict[str, Any]:
+    points: Float32Array,
+) -> JsonDict:
     points_array = np.asarray(points, dtype=np.float32)
     return {
         "schema": "lidar_frame",
@@ -24,7 +25,7 @@ def build_lidar_frame_message(
     }
 
 
-def parse_lidar_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_lidar_frame_message(message: Mapping[str, Any]) -> JsonDict:
     frame_id = int(message.get("frame", -1))
     lidar_payload = message.get("lidar", {})
     if not isinstance(lidar_payload, Mapping):
@@ -51,8 +52,8 @@ def build_camera_frame_message(
     *,
     frame: int,
     timestamp: float,
-    camera_front_image: np.ndarray,
-) -> Dict[str, Any]:
+    camera_front_image: ImageArray,
+) -> JsonDict:
     image_array = np.asarray(camera_front_image, dtype=np.uint8)
     if image_array.ndim != 3 or image_array.shape[2] != 3:
         raise ValueError(f"Invalid camera_front image shape: {image_array.shape}")
@@ -69,7 +70,7 @@ def build_camera_frame_message(
     }
 
 
-def parse_camera_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_camera_frame_message(message: Mapping[str, Any]) -> JsonDict:
     camera_payload = message.get("camera_front")
     if not isinstance(camera_payload, Mapping):
         raise ValueError("Missing camera_front payload")
@@ -92,10 +93,10 @@ def build_state_frame_message(
     *,
     frame: int,
     timestamp: float,
-    ego_box: np.ndarray,
+    ego_box: Float32Array,
     lidar_metadata: Mapping[str, Any],
     camera_front_metadata: Mapping[str, Any],
-) -> Dict[str, Any]:
+) -> JsonDict:
     return {
         "frame": int(frame),
         "timestamp": float(timestamp),
@@ -113,7 +114,7 @@ def build_state_frame_message(
     }
 
 
-def parse_state_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_state_frame_message(message: Mapping[str, Any]) -> JsonDict:
     ego = message.get("ego")
     lidar = message.get("lidar")
     camera_front = message.get("camera_front")
@@ -137,7 +138,7 @@ def build_objects_3d_frame_message(
     *,
     lidar_message: Mapping[str, Any],
     objects_3d: Objects3DPrediction,
-) -> Dict[str, Any]:
+) -> JsonDict:
     return {
         "schema": "objects_3d_frame",
         "frame": int(lidar_message.get("frame", -1)),
@@ -150,7 +151,7 @@ def build_lanes_3d_frame_message(
     *,
     camera_message: Mapping[str, Any],
     lanes_3d: Lanes3DPrediction,
-) -> Dict[str, Any]:
+) -> JsonDict:
     return {
         "schema": "lanes_3d_frame",
         "frame": int(camera_message.get("frame", -1)),
@@ -159,7 +160,7 @@ def build_lanes_3d_frame_message(
     }
 
 
-def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> JsonDict:
     payload = message.get("objects_3d", {})
     if not isinstance(payload, Mapping):
         payload = {}
@@ -174,7 +175,7 @@ def parse_objects_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]
     }
 
 
-def parse_lanes_3d_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_lanes_3d_frame_message(message: Mapping[str, Any]) -> JsonDict:
     payload = message.get("lanes_3d", {})
     if not isinstance(payload, Mapping):
         payload = {}
@@ -197,7 +198,7 @@ def build_frame_snapshot_message(
     camera_descriptor: SharedArrayDescriptor,
     lidar_descriptor: SharedArrayDescriptor,
     state_message: Mapping[str, Any],
-) -> Dict[str, Any]:
+) -> JsonDict:
     return {
         "frame": int(frame),
         "timestamp": float(timestamp),
@@ -214,7 +215,7 @@ def build_frame_snapshot_message(
     }
 
 
-def parse_frame_snapshot_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_frame_snapshot_message(message: Mapping[str, Any]) -> JsonDict:
     camera_payload = message.get("camera_front")
     lidar_payload = message.get("lidar")
     state_payload = message.get("state")
@@ -248,7 +249,7 @@ def build_scene_frame_message(
     frame_message: Mapping[str, Any],
     objects_message: Optional[Mapping[str, Any]],
     lanes_message: Optional[Mapping[str, Any]],
-) -> Dict[str, Any]:
+) -> JsonDict:
     parsed_frame = parse_frame_snapshot_message(frame_message)
     parsed_state = parsed_frame["state"]
     parsed_objects = None
@@ -292,7 +293,7 @@ def build_scene_frame_message(
     }
 
 
-def parse_scene_frame_message(message: Mapping[str, Any]) -> Dict[str, Any]:
+def parse_scene_frame_message(message: Mapping[str, Any]) -> JsonDict:
     ego = message.get("ego")
     if not isinstance(ego, Mapping):
         ego = {}

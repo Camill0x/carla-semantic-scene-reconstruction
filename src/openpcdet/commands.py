@@ -1,19 +1,31 @@
-from argparse import Namespace
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Sequence
 
 from src.openpcdet.paths import prepared_dataset_data_path, relative_to_openpcdet
 from src.openpcdet.runner import extend_with_set_args, run_openpcdet_tool
 
 
-def build_train_command(cfg_file: Path, work_dir: Path, args: Namespace) -> List[str]:
+def build_train_command(
+    cfg_file: Path,
+    work_dir: Path,
+    *,
+    workers: int,
+    run_name: str,
+    pretrained_model: Optional[Path],
+    resume_checkpoint: Optional[Path],
+    batch_size: Optional[int],
+    epochs: Optional[int],
+    class_filter: str,
+    dataset_name: str,
+    set_cfgs: Optional[Sequence[str]],
+) -> List[str]:
     command = [
         "--cfg_file",
         relative_to_openpcdet(cfg_file),
         "--workers",
-        str(args.workers),
+        str(workers),
         "--extra_tag",
-        args.name,
+        run_name,
         "--max_waiting_mins",
         "0",
         "--max_ckpt_save_num",
@@ -25,30 +37,41 @@ def build_train_command(cfg_file: Path, work_dir: Path, args: Namespace) -> List
         "--output_dir",
         str(work_dir),
     ]
-    if args.pretrained_model is not None:
-        command.extend(["--pretrained_model", str(args.pretrained_model.expanduser().resolve())])
-    if args.ckpt is not None:
-        command.extend(["--ckpt", str(args.ckpt.expanduser().resolve())])
-    if args.batch_size is not None:
-        command.extend(["--batch_size", str(args.batch_size)])
-    if args.epochs is not None:
-        command.extend(["--epochs", str(args.epochs)])
+    if pretrained_model is not None:
+        command.extend(["--pretrained_model", str(pretrained_model.expanduser().resolve())])
+    if resume_checkpoint is not None:
+        command.extend(["--ckpt", str(resume_checkpoint.expanduser().resolve())])
+    if batch_size is not None:
+        command.extend(["--batch_size", str(batch_size)])
+    if epochs is not None:
+        command.extend(["--epochs", str(epochs)])
 
-    set_cfgs = ["DATA_CONFIG.DATA_PATH", prepared_dataset_data_path(args.class_filter, args.dataset_name)]
-    if args.set_cfgs:
-        set_cfgs.extend(args.set_cfgs)
-    return extend_with_set_args(command, set_cfgs)
+    cfg_overrides = ["DATA_CONFIG.DATA_PATH", prepared_dataset_data_path(class_filter, dataset_name)]
+    if set_cfgs:
+        cfg_overrides.extend(set_cfgs)
+    return extend_with_set_args(command, cfg_overrides)
 
 
-def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_tag: str, args: Namespace) -> List[str]:
-    run_name = getattr(args, "name", "test")
+def build_test_command(
+    cfg_file: Path,
+    checkpoint: Path,
+    work_dir: Path,
+    eval_tag: str,
+    *,
+    workers: int,
+    run_name: str,
+    batch_size: Optional[int],
+    class_filter: str,
+    dataset_name: str,
+    set_cfgs: Optional[Sequence[str]],
+) -> List[str]:
     command = [
         "--cfg_file",
         relative_to_openpcdet(cfg_file),
         "--ckpt",
         str(checkpoint),
         "--workers",
-        str(args.workers),
+        str(workers),
         "--extra_tag",
         run_name,
         "--eval_tag",
@@ -57,20 +80,20 @@ def build_test_command(cfg_file: Path, checkpoint: Path, work_dir: Path, eval_ta
         str(work_dir),
         "--quiet_config",
     ]
-    if args.batch_size is not None:
-        command.extend(["--batch_size", str(args.batch_size)])
+    if batch_size is not None:
+        command.extend(["--batch_size", str(batch_size)])
 
-    set_cfgs = [
+    cfg_overrides = [
         "DATA_CONFIG.DATA_PATH",
-        prepared_dataset_data_path(args.class_filter, args.dataset_name),
+        prepared_dataset_data_path(class_filter, dataset_name),
         "DATA_CONFIG.DATA_SPLIT.test",
         "test",
         "DATA_CONFIG.INFO_PATH.test",
         "['infos/infos_test.pkl']",
     ]
-    if args.set_cfgs:
-        set_cfgs.extend(args.set_cfgs)
-    return extend_with_set_args(command, set_cfgs)
+    if set_cfgs:
+        cfg_overrides.extend(set_cfgs)
+    return extend_with_set_args(command, cfg_overrides)
 
 
 def run_openpcdet_train(command: List[str]) -> None:

@@ -1,9 +1,11 @@
-from typing import Dict, List, Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
+from src.common.typing_aliases import Float32Array, Float64Array, ObjectDict, StrArray
 
-def count_points_in_box7(points_xyz: np.ndarray, box7: np.ndarray) -> int:
+
+def count_points_in_box7(points_xyz: Float64Array, box7: Float32Array) -> int:
     x, y, z, dx, dy, dz, yaw = map(float, box7)
     rel = points_xyz - np.array([x, y, z], dtype=np.float64).reshape(1, 3)
 
@@ -24,12 +26,12 @@ def count_points_in_box7(points_xyz: np.ndarray, box7: np.ndarray) -> int:
 
 
 def filter_gt(
-    points: np.ndarray,
-    objects: Sequence[Dict],
-    gt_boxes: np.ndarray,
-    gt_names: np.ndarray,
+    points: Float32Array,
+    objects: Sequence[ObjectDict],
+    gt_boxes: Float32Array,
+    gt_names: StrArray,
     min_points_in_box: int,
-) -> Tuple[List[Dict], np.ndarray, np.ndarray]:
+) -> Tuple[List[ObjectDict], Float32Array, StrArray]:
     if min_points_in_box <= 0 or gt_boxes.shape[0] == 0:
         return list(objects), gt_boxes, gt_names
 
@@ -38,7 +40,7 @@ def filter_gt(
     if len(objects) != gt_boxes.shape[0]:
         raise ValueError(f"objects / gt_boxes mismatch: {len(objects)} vs {gt_boxes.shape[0]}")
 
-    points_xyz = points[:, :3]
+    points_xyz = np.asarray(points[:, :3], dtype=np.float64)
     keep_indices = [
         index for index, box in enumerate(gt_boxes) if count_points_in_box7(points_xyz, box) >= min_points_in_box
     ]

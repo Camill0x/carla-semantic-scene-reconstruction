@@ -1,10 +1,10 @@
 import os
 import shutil
-from argparse import Namespace
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Optional, Sequence
 
 from src.common.paths import repo_relative_or_absolute
+from src.common.typing_aliases import JsonDict
 from src.openpcdet.artifacts import checkpoint_epoch, latest_file, read_json, write_json
 from src.openpcdet.paths import relative_to_openpcdet
 
@@ -40,7 +40,7 @@ def copy_tensorboard(work_dir: Path, target: Path) -> None:
     shutil.copytree(source, target)
 
 
-def read_train_eval_metrics(work_dir: Path, epoch: int) -> Dict:
+def read_train_eval_metrics(work_dir: Path, epoch: int) -> JsonDict:
     result_root = work_dir / "eval" / "eval_with_train" / f"epoch_{epoch}"
     candidates = sorted(result_root.glob("*/metrics.json"))
     if not candidates:
@@ -52,16 +52,18 @@ def select_best_validation_checkpoint(
     work_dir: Path,
     checkpoints: Sequence[Path],
     best_metric: str,
-) -> Dict:
-    best_item = None
+) -> JsonDict:
+    best_item: Optional[JsonDict] = None
     best_value = float("-inf")
 
     for checkpoint in checkpoints:
         epoch = checkpoint_epoch(checkpoint)
         metrics_payload = read_train_eval_metrics(work_dir, epoch)
         metrics = metrics_payload.get("metrics", {})
+        if not isinstance(metrics, dict):
+            metrics = {}
         metric_value = float(metrics.get(best_metric, float("-inf")))
-        item = {
+        item: JsonDict = {
             "epoch": epoch,
             "checkpoint_ref": f"epoch_{epoch}",
             "metric_name": best_metric,
@@ -79,7 +81,7 @@ def select_best_validation_checkpoint(
 
 def copy_selected_checkpoints(
     checkpoints: Sequence[Path],
-    best_item: Dict,
+    best_item: JsonDict,
     target_dir: Path,
     keep_all: bool,
 ) -> Optional[Path]:
@@ -100,38 +102,49 @@ def copy_selected_checkpoints(
 
 def build_train_meta(
     *,
-    args: Namespace,
+    run_name: str,
+    class_filter: str,
+    dataset_name: str,
+    preset: Optional[str],
     cfg_file: Path,
-    best_item: Dict,
+    set_cfgs: Optional[Sequence[str]],
+    epochs: Optional[int],
+    batch_size: Optional[int],
+    workers: int,
+    keep_all_ckpt: bool,
+    pretrained_model: Optional[Path],
+    resume_checkpoint: Optional[Path],
+    best_metric: str,
+    best_item: JsonDict,
     epochs_dir: Optional[Path],
     epoch_checkpoints: Sequence[Path],
-) -> Dict:
+) -> JsonDict:
     return {
         "mode": "train",
-        "run": args.name,
+        "run": run_name,
         "dataset": {
-            "family": args.class_filter,
-            "name": args.dataset_name,
+            "family": class_filter,
+            "name": dataset_name,
         },
         "config": {
-            "preset": args.preset,
+            "preset": preset,
             "source": repo_relative_or_absolute(cfg_file),
-            "overrides": args.set_cfgs or [],
+            "overrides": list(set_cfgs or []),
         },
         "training": {
-            "epochs": args.epochs,
-            "batch_size": args.batch_size,
-            "workers": args.workers,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "workers": workers,
             "checkpoint_interval": 1,
-            "keep_all_ckpt": args.keep_all_ckpt,
-            "pretrained_model": (
-                repo_relative_or_absolute(args.pretrained_model) if args.pretrained_model is not None else None
+            "keep_all_ckpt": keep_all_ckpt,
+            "pretrained_model": repo_relative_or_absolute(pretrained_model) if pretrained_model is not None else None,
+            "resume_checkpoint": (
+                repo_relative_or_absolute(resume_checkpoint) if resume_checkpoint is not None else None
             ),
-            "resume_checkpoint": repo_relative_or_absolute(args.ckpt) if args.ckpt is not None else None,
         },
         "validation": {
             "split": "val",
-            "best_metric": args.best_metric,
+            "best_metric": best_metric,
             "best_epoch": best_item["epoch"],
             "best_value": best_item["metric_value"],
         },
@@ -143,28 +156,39 @@ def build_train_meta(
     }
 
 
-def build_test_meta(*, args: Namespace, cfg_file: Path, checkpoint: Path) -> Dict:
+def build_test_meta(
+    *,
+    run_name: str,
+    class_filter: str,
+    dataset_name: str,
+    preset: Optional[str],
+    set_cfgs: Optional[Sequence[str]],
+    batch_size: Optional[int],
+    workers: int,
+    cfg_file: Path,
+    checkpoint: Path,
+) -> JsonDict:
     epoch = checkpoint_epoch(checkpoint)
     return {
         "mode": "test",
-        "run": args.name,
+        "run": run_name,
         "dataset": {
-            "family": args.class_filter,
-            "name": args.dataset_name,
+            "family": class_filter,
+            "name": dataset_name,
             "split": "test",
         },
         "config": {
-            "preset": args.preset,
+            "preset": preset,
             "source": repo_relative_or_absolute(cfg_file),
-            "overrides": args.set_cfgs or [],
+            "overrides": list(set_cfgs or []),
         },
         "checkpoint": {
             "path": repo_relative_or_absolute(checkpoint),
             "epoch": epoch if epoch >= 0 else None,
         },
         "evaluation": {
-            "batch_size": args.batch_size,
-            "workers": args.workers,
+            "batch_size": batch_size,
+            "workers": workers,
         },
     }
 

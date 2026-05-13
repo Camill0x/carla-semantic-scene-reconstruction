@@ -1,7 +1,11 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import List, Mapping, Sequence, Union
+
+from src.common.typing_aliases import JsonDict
+
+JsonValue = Union[None, bool, int, float, str, List["JsonValue"], JsonDict]
 
 
 def create_benchmark_output_dir(*, run_dir: Path, model_name: str) -> Path:
@@ -16,14 +20,16 @@ def create_benchmark_output_dir(*, run_dir: Path, model_name: str) -> Path:
     return output_dir
 
 
-def _jsonify(value: Any) -> Any:
+def _jsonify(value: object) -> JsonValue:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Mapping):
         return {str(key): _jsonify(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_jsonify(item) for item in value]
-    return value
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    return str(value)
 
 
 def build_openpcdet_meta(
@@ -37,9 +43,9 @@ def build_openpcdet_meta(
     point_stride: int,
     save_predictions: bool,
     model_class_names: Sequence[str],
-    dataset_meta: Mapping[str, Any],
+    dataset_meta: Mapping[str, object],
     created_at: str,
-) -> Mapping[str, Any]:
+) -> JsonDict:
     return {
         "model": "openpcdet",
         "created_at": created_at,
@@ -70,9 +76,9 @@ def build_lanedet_meta(
     warmup: int,
     score_thresh: float,
     save_predictions: bool,
-    dataset_meta: Mapping[str, Any],
+    dataset_meta: Mapping[str, object],
     created_at: str,
-) -> Mapping[str, Any]:
+) -> JsonDict:
     return {
         "model": "lanedet",
         "created_at": created_at,
@@ -91,7 +97,7 @@ def build_lanedet_meta(
     }
 
 
-def write_meta_json(path: Path, *, payload: Mapping[str, Any]) -> None:
+def write_meta_json(path: Path, *, payload: JsonDict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
-        json.dump(_jsonify(dict(payload)), handle, indent=2)
+        json.dump(_jsonify(payload), handle, indent=2)

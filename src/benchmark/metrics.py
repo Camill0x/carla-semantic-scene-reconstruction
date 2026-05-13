@@ -1,14 +1,16 @@
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, List, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+from src.common.typing_aliases import JsonDict
 
-def summarize_frame_metrics(frame_metrics: List[Mapping[str, float]], *, model: str, warmup: int) -> Dict[str, Any]:
+
+def summarize_frame_metrics(frame_metrics: Sequence[Mapping[str, float]], *, model: str, warmup: int) -> JsonDict:
     measured = [dict(item) for item in frame_metrics if not bool(item.get("warmup", 0.0))]
-    summary: Dict[str, Any] = {
+    summary: JsonDict = {
         "model": model,
         "frames_total": len(frame_metrics),
         "frames_measured": len(measured),

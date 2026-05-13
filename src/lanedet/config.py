@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from types import ModuleType
 from typing import Optional
 
 
@@ -51,7 +52,7 @@ def write_runtime_config(
     return target_cfg
 
 
-def load_config_module(config_path: Path):
+def load_config_module(config_path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location("_lanedet_runtime_config", config_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load config: {config_path}")

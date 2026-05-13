@@ -2,7 +2,9 @@
 
 import argparse
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Mapping
 
 import numpy as np
 
@@ -15,13 +17,27 @@ from src.shared_memory.names import SharedMemoryNames
 from src.streaming.messages import build_lanes_3d_frame_message, parse_frame_snapshot_message
 
 
-def parse_args():
+@dataclass(frozen=True)
+class LiveLaneDetArgs:
+    config: Path
+    ckpt: Path
+    score_thresh: float
+    verbose: bool
+
+
+def parse_args() -> LiveLaneDetArgs:
     parser = argparse.ArgumentParser(description="LaneDet live inference node")
     parser.add_argument("--config", type=Path, required=True, help="LaneDet config file")
     parser.add_argument("--ckpt", type=Path, required=True)
     parser.add_argument("--score-thresh", type=float, default=0.2, help="Score threshold for predictions")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LiveLaneDetArgs(
+        config=parsed.config,
+        ckpt=parsed.ckpt,
+        score_thresh=float(parsed.score_thresh),
+        verbose=bool(parsed.verbose),
+    )
 
 
 def main() -> None:
@@ -62,6 +78,8 @@ def main() -> None:
 
             last_version = version
             try:
+                if not isinstance(payload, Mapping):
+                    raise ValueError("Frame payload is not a mapping")
                 frame_message = parse_frame_snapshot_message(payload)
             except Exception as exc:
                 print(f"[warn] invalid frame snapshot: {exc}")

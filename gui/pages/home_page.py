@@ -1,11 +1,20 @@
+from functools import partial
+
 from PySide6.QtWidgets import QGridLayout, QLabel, QVBoxLayout
 
 from gui.pages.base import WorkflowPage
+from gui.process_manager import ProjectProcessManager
+from gui.types import AppendActivity, OpenWorkflow
 from gui.widgets.navigation_card import NavigationCard
 
 
 class HomePage(WorkflowPage):
-    def __init__(self, manager, append_activity, open_workflow) -> None:
+    def __init__(
+        self,
+        manager: ProjectProcessManager,
+        append_activity: AppendActivity,
+        open_workflow: OpenWorkflow,
+    ) -> None:
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         self.setMaximumWidth(760)
@@ -59,7 +68,7 @@ class HomePage(WorkflowPage):
                 title=title_text,
                 description=description,
                 button_text=button,
-                on_click=lambda _checked=False, route_name=route: open_workflow(route_name),
+                on_click=partial(open_workflow, route),
             )
             grid.addWidget(card, index // 2, index % 2)
         layout.addLayout(grid)

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QFrame, QLabel, QPushButton, QVBoxLayout
 class NavigationCard(QFrame):
     def __init__(self, *, title: str, description: str, button_text: str, on_click: Callable[[], None]) -> None:
         super().__init__()
-        self.setFrameShape(QFrame.StyledPanel)
+        self.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(self)
         title_label = QLabel(title)
         title_label.setStyleSheet("font-size: 22px; font-weight: 700;")

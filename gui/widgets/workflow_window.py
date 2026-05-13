@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QCloseEvent, QGuiApplication
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from gui.config import APP_NAME
 from gui.pages.base import WorkflowPage
 from gui.process_manager import ProjectProcessManager
+from gui.types import ActivityMessages, SummaryValues
 from gui.widgets.log_viewer import LogViewer
 from gui.widgets.process_inspector_dialog import ProcessInspectorDialog
 from gui.widgets.session_summary import SessionSummary
@@ -53,7 +54,7 @@ class WorkflowWindow(QMainWindow):
         self.setCentralWidget(central)
 
         header = QFrame()
-        header.setFrameShape(QFrame.StyledPanel)
+        header.setFrameShape(QFrame.Shape.StyledPanel)
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(18, 16, 18, 16)
         labels = QVBoxLayout()
@@ -82,11 +83,11 @@ class WorkflowWindow(QMainWindow):
         self.page.setMaximumWidth(920)
         left_scroll.setMinimumWidth(720)
         left_scroll.setWidget(self.page)
-        left_scroll.setFrameShape(QFrame.NoFrame)
+        left_scroll.setFrameShape(QFrame.Shape.NoFrame)
         body.addWidget(left_scroll)
 
         right_splitter = QSplitter()
-        right_splitter.setOrientation(Qt.Vertical)
+        right_splitter.setOrientation(Qt.Orientation.Vertical)
         right_splitter.setChildrenCollapsible(False)
         body.addWidget(right_splitter)
         body.setStretchFactor(0, 7)
@@ -113,7 +114,7 @@ class WorkflowWindow(QMainWindow):
 
     def _section(self, title: str, widget: QWidget) -> QWidget:
         frame = QFrame()
-        frame.setFrameShape(QFrame.StyledPanel)
+        frame.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
         label = QLabel(title)
         label.setStyleSheet("font-size: 16px; font-weight: 700;")
@@ -127,7 +128,7 @@ class WorkflowWindow(QMainWindow):
         self.timer.timeout.connect(self.refresh_ui)
         self.timer.start()
 
-    def append_activity(self, messages) -> None:
+    def append_activity(self, messages: ActivityMessages) -> None:
         if isinstance(messages, str):
             messages = [messages]
         stamp = datetime.now().strftime("%H:%M:%S")
@@ -152,7 +153,8 @@ class WorkflowWindow(QMainWindow):
             if name in set(self.page.process_names())
         }
         self.log_viewer.set_logs(logs)
-        self.session_summary.update_values(self.page.summary_values())
+        summary_values: SummaryValues = self.page.summary_values()
+        self.session_summary.update_values(summary_values)
         self.page.refresh()
 
     def _resize_to_contents(self) -> None:
@@ -173,7 +175,7 @@ class WorkflowWindow(QMainWindow):
         )
         self.resize(width, height)
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event: QCloseEvent) -> None:
         running = [name for name in self.page.process_names() if name in self.manager.running_process_names()]
         if not running:
             if self.on_closed is not None:
@@ -183,13 +185,13 @@ class WorkflowWindow(QMainWindow):
 
         message = QMessageBox(self)
         message.setWindowTitle("Active Processes")
-        message.setIcon(QMessageBox.Warning)
+        message.setIcon(QMessageBox.Icon.Warning)
         message.setText("This workflow still has running processes related to it.")
         message.setInformativeText(
             "\n".join(f"- {name}" for name in running) + "\n\nYou can manage these processes via Process Inspector."
         )
-        cancel_button = message.addButton("Cancel", QMessageBox.RejectRole)
-        close_button = message.addButton("Close", QMessageBox.AcceptRole)
+        cancel_button = message.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        close_button = message.addButton("Close", QMessageBox.ButtonRole.AcceptRole)
         cancel_button.setStyleSheet("background: #d97706; color: #ffffff;")
         close_button.setStyleSheet("background: #dc2626; color: #ffffff;")
         message.exec()

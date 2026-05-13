@@ -2,7 +2,9 @@
 
 import argparse
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Mapping
 
 from src.common.cli_logging import print_verbose
 from src.common.constants import NUSCENES_LIKE_CLASSES
@@ -14,14 +16,30 @@ from src.shared_memory.names import SharedMemoryNames
 from src.streaming.messages import build_objects_3d_frame_message, parse_frame_snapshot_message
 
 
-def parse_args():
+@dataclass(frozen=True)
+class LiveOpenPCDetArgs:
+    cfg_file: Path
+    ckpt: Path
+    score_thresh: float
+    point_stride: int
+    verbose: bool
+
+
+def parse_args() -> LiveOpenPCDetArgs:
     parser = argparse.ArgumentParser(description="OpenPCDet live inference node")
     parser.add_argument("--cfg-file", type=Path, required=True)
     parser.add_argument("--ckpt", type=Path, required=True)
     parser.add_argument("--score-thresh", type=float, default=0.05, help="Score threshold for predictions")
     parser.add_argument("--point-stride", type=int, default=1, help="Take every N-th point before inference")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LiveOpenPCDetArgs(
+        cfg_file=parsed.cfg_file,
+        ckpt=parsed.ckpt,
+        score_thresh=float(parsed.score_thresh),
+        point_stride=int(parsed.point_stride),
+        verbose=bool(parsed.verbose),
+    )
 
 
 def main() -> None:
@@ -63,6 +81,8 @@ def main() -> None:
 
             last_version = version
             try:
+                if not isinstance(payload, Mapping):
+                    raise ValueError("Frame payload is not a mapping")
                 frame_message = parse_frame_snapshot_message(payload)
             except Exception as exc:
                 logger.warning("Skipping invalid frame snapshot: %s", exc)

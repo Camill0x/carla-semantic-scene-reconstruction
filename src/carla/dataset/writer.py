@@ -10,9 +10,10 @@ import carla
 from src.carla.geometry.boxes import actor_to_gt_box
 from src.common.config import CameraConfig, CollectorConfig, LaneAnnotationsConfig, LidarConfig
 from src.common.constants import NUSCENES_LIKE_CLASSES
+from src.common.typing_aliases import Float32Array, Float64Array, ImageArray, StrArray
 
 
-def hero_to_dict(hero: carla.Actor) -> Dict:
+def hero_to_dict(hero: carla.Actor) -> Dict[str, object]:
     transform = hero.get_transform()
     bbox = hero.bounding_box
     return {
@@ -50,7 +51,7 @@ def hero_to_dict(hero: carla.Actor) -> Dict:
     }
 
 
-def lidar_to_dict(lidar_transform: carla.Transform, config: LidarConfig) -> Dict:
+def lidar_to_dict(lidar_transform: carla.Transform, config: LidarConfig) -> Dict[str, object]:
     return {
         "max_range": float(config.max_range),
         "channels": int(config.channels),
@@ -70,7 +71,7 @@ def lidar_to_dict(lidar_transform: carla.Transform, config: LidarConfig) -> Dict
     }
 
 
-def camera_to_dict(camera_transform: carla.Transform, config: CameraConfig) -> Dict:
+def camera_to_dict(camera_transform: carla.Transform, config: CameraConfig) -> Dict[str, object]:
     return {
         "width": int(config.width),
         "height": int(config.height),
@@ -96,7 +97,7 @@ def camera_to_dict(camera_transform: carla.Transform, config: CameraConfig) -> D
     }
 
 
-def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict:
+def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict[str, object]:
     return {
         "distance_m": float(config.distance_m),
         "step_m": float(config.step_m),
@@ -106,7 +107,7 @@ def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict:
     }
 
 
-def _write_json(path: Path, payload: Dict) -> None:
+def _write_json(path: Path, payload: Dict[str, object]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
 
@@ -120,13 +121,13 @@ def save_multimodal_frame(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     camera_transform: carla.Transform,
-    points: np.ndarray,
-    image_bgr: np.ndarray,
-    lanes: List[Dict],
-    objects: List[Dict],
+    points: Float64Array,
+    image_bgr: ImageArray,
+    lanes: List[Dict[str, object]],
+    objects: List[Dict[str, object]],
     class_counts: Dict[str, int],
-    gt_boxes: np.ndarray,
-    gt_names: np.ndarray,
+    gt_boxes: Float32Array,
+    gt_names: StrArray,
     config: CollectorConfig,
 ) -> Path:
     frame_dir = output_root / f"frame_{frame_index:06d}"

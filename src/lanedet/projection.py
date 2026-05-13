@@ -2,10 +2,11 @@ from typing import Mapping
 
 import numpy as np
 
+from src.common.typing_aliases import Float32Array, Float64Array
 from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 
 
-def transform_dict_to_matrix(transform: Mapping[str, object]) -> np.ndarray:
+def transform_dict_to_matrix(transform: Mapping[str, object]) -> Float64Array:
     location = transform["location"]
     rotation = transform["rotation"]
     if not isinstance(location, Mapping) or not isinstance(rotation, Mapping):
@@ -42,7 +43,7 @@ def transform_dict_to_matrix(transform: Mapping[str, object]) -> np.ndarray:
     return matrix
 
 
-def build_intrinsics(width: int, height: int, fov: float) -> np.ndarray:
+def build_intrinsics(width: int, height: int, fov: float) -> Float64Array:
     focal = width / (2.0 * np.tan(float(fov) * np.pi / 360.0))
     matrix = np.eye(3, dtype=np.float64)
     matrix[0, 0] = focal
@@ -52,30 +53,30 @@ def build_intrinsics(width: int, height: int, fov: float) -> np.ndarray:
     return matrix
 
 
-def transform_points(points_xyz: np.ndarray, transform_matrix: np.ndarray) -> np.ndarray:
+def transform_points(points_xyz: Float64Array, transform_matrix: Float64Array) -> Float64Array:
     points_h = np.concatenate(
         [points_xyz, np.ones((points_xyz.shape[0], 1), dtype=np.float64)],
         axis=1,
     )
     out = (transform_matrix @ points_h.T).T
-    return out[:, :3]
+    return np.asarray(out[:, :3], dtype=np.float64)
 
 
-def world_to_lidar_matrix(lidar_transform: Mapping[str, object]) -> np.ndarray:
+def world_to_lidar_matrix(lidar_transform: Mapping[str, object]) -> Float64Array:
     world_to_lidar = np.linalg.inv(transform_dict_to_matrix(lidar_transform))
     flip_y = np.eye(4, dtype=np.float64)
     flip_y[1, 1] = -1.0
-    return flip_y @ world_to_lidar
+    return np.asarray(flip_y @ world_to_lidar, dtype=np.float64)
 
 
 def image_points_to_lidar_ground(
-    points_2d: np.ndarray,
+    points_2d: Float32Array,
     *,
-    intrinsics: np.ndarray,
-    camera_to_world: np.ndarray,
-    world_to_lidar: np.ndarray,
+    intrinsics: Float64Array,
+    camera_to_world: Float64Array,
+    world_to_lidar: Float64Array,
     ground_z_lidar: float,
-) -> np.ndarray:
+) -> Float32Array:
     if points_2d.size == 0:
         return np.zeros((0, 3), dtype=np.float32)
 

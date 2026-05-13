@@ -7,12 +7,15 @@ from gui.catalog import (
     OPENPCDET_TEST_FLAGS,
     OPENPCDET_TRAIN_FLAGS,
 )
+from gui.models import FlagSpec
 from gui.pages.base import WorkflowPage
+from gui.process_manager import ProjectProcessManager
+from gui.types import AppendActivity, ArgsList, SummarySpec, SummaryValues
 from gui.widgets.process_panel import ProcessPanel
 
 
 class TrainingPage(WorkflowPage):
-    def __init__(self, manager, append_activity) -> None:
+    def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
 
@@ -24,10 +27,10 @@ class TrainingPage(WorkflowPage):
     def window_subtitle(self) -> str:
         return "Prepare datasets, launch training jobs and run checkpoint evaluation for both OpenPCDet and LaneDet."
 
-    def preferred_window_size(self):
+    def preferred_window_size(self) -> tuple[int, int]:
         return (1020, 780)
 
-    def summary_specs(self):
+    def summary_specs(self) -> list[SummarySpec]:
         return [
             ("running", "Active Processes"),
             ("prepare", "Preparation Jobs"),
@@ -35,7 +38,7 @@ class TrainingPage(WorkflowPage):
             ("eval", "Evaluation Jobs"),
         ]
 
-    def summary_values(self):
+    def summary_values(self) -> SummaryValues:
         running = self.manager.running_process_names()
         prepare = sum(1 for name in ["openpcdet_prepare_dataset", "lanedet_prepare_dataset"] if name in running)
         train = sum(1 for name in ["openpcdet_train", "lanedet_main"] if name in running)
@@ -47,7 +50,7 @@ class TrainingPage(WorkflowPage):
             "eval": str(eval_count),
         }
 
-    def process_names(self):
+    def process_names(self) -> list[str]:
         return [
             "openpcdet_prepare_dataset",
             "openpcdet_train",
@@ -56,16 +59,30 @@ class TrainingPage(WorkflowPage):
             "lanedet_main",
         ]
 
-    def _panel(self, process_name, title, description, flags, allow_extra_args):
+    def _panel(
+        self,
+        process_name: str,
+        title: str,
+        description: str,
+        flags: list[FlagSpec],
+        allow_extra_args: bool,
+    ) -> ProcessPanel:
+        def start(args: ArgsList) -> None:
+            self._start(process_name, args)
+
+        def stop() -> None:
+            self.append_activity(self.manager.stop_process(process_name))
+
+        def restart(args: ArgsList) -> None:
+            self.append_activity(self.manager.restart_process(process_name, args=args))
+
         return ProcessPanel(
             title=title,
             description=description,
             flags=flags,
-            on_start=lambda args, name=process_name: self._start(name, args),
-            on_stop=lambda name=process_name: self.append_activity(self.manager.stop_process(name)),
-            on_restart=lambda args, name=process_name: self.append_activity(
-                self.manager.restart_process(name, args=args)
-            ),
+            on_start=start,
+            on_stop=stop,
+            on_restart=restart,
             allow_extra_args=allow_extra_args,
             initial_args=self.manager.args_for(process_name),
         )
@@ -122,7 +139,7 @@ class TrainingPage(WorkflowPage):
         layout.addStretch(1)
         return tab
 
-    def _start(self, process_name: str, args):
+    def _start(self, process_name: str, args: ArgsList) -> None:
         panel = {
             "openpcdet_prepare_dataset": self.openpcdet_prepare_panel,
             "openpcdet_train": self.openpcdet_train_panel,

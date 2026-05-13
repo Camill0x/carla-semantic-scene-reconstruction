@@ -2,6 +2,7 @@ import numpy as np
 
 import carla
 from src.common.config import CameraConfig
+from src.common.typing_aliases import ImageArray
 
 
 def configure_front_camera_blueprint(
@@ -24,6 +25,6 @@ def front_camera_transform(config: CameraConfig) -> carla.Transform:
     )
 
 
-def camera_image_to_bgr(image: carla.Image) -> np.ndarray:
+def camera_image_to_bgr(image: carla.Image) -> ImageArray:
     data = np.frombuffer(image.raw_data, dtype=np.uint8).reshape((image.height, image.width, 4))
-    return data[:, :, :3].copy()
+    return np.asarray(data[:, :, :3].copy(), dtype=np.uint8)

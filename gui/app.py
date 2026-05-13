@@ -6,7 +6,7 @@ from gui.widgets.main_window import MainWindow
 
 def create_app() -> QApplication:
     app = QApplication.instance()
-    if app is None:
+    if not isinstance(app, QApplication):
         app = QApplication([])
     app.setApplicationName(APP_NAME)
     app.setStyle("Fusion")

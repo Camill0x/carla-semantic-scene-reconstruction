@@ -2,12 +2,14 @@
 
 import argparse
 import time
-from typing import Dict, Optional
+from dataclasses import dataclass
+from typing import Dict, Mapping, Optional
 
 import zmq
 
 from src.common.cli_logging import print_verbose
 from src.common.runtime_config import build_streaming_aggregator_config
+from src.common.typing_aliases import JsonDict
 from src.shared_memory.buffers import SharedMessageBuffer
 from src.shared_memory.names import SharedMemoryNames
 from src.streaming.messages import (
@@ -19,13 +21,19 @@ from src.streaming.messages import (
 from src.streaming.zmq_utils import create_latest_publisher
 
 
-def parse_args():
+@dataclass(frozen=True)
+class LiveAggregatorArgs:
+    verbose: bool
+
+
+def parse_args() -> LiveAggregatorArgs:
     parser = argparse.ArgumentParser(description="Scene aggregator for the live streaming pipeline")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LiveAggregatorArgs(verbose=bool(parsed.verbose))
 
 
-def trim_cache(cache: Dict[int, dict], limit: int) -> None:
+def trim_cache(cache: Dict[int, JsonDict], limit: int) -> None:
     while len(cache) > limit:
         del cache[min(cache)]
 
@@ -39,9 +47,9 @@ def try_open_buffer(name: str, size_bytes: int) -> Optional[SharedMessageBuffer]
 
 def next_ready_frame(
     *,
-    frame_cache: Dict[int, dict],
-    objects_frames: Dict[int, dict],
-    lanes_frames: Dict[int, dict],
+    frame_cache: Dict[int, JsonDict],
+    objects_frames: Dict[int, JsonDict],
+    lanes_frames: Dict[int, JsonDict],
     require_objects: bool,
     require_lanes: bool,
     last_sent_frame: Optional[int],
@@ -68,9 +76,9 @@ def main() -> None:
     context = zmq.Context()
     scene_socket = create_latest_publisher(context, config.scene_bind)
 
-    objects_frames: Dict[int, dict] = {}
-    lanes_frames: Dict[int, dict] = {}
-    frame_cache: Dict[int, dict] = {}
+    objects_frames: Dict[int, JsonDict] = {}
+    lanes_frames: Dict[int, JsonDict] = {}
+    frame_cache: Dict[int, JsonDict] = {}
     frame_cache_limit = 120
     frame_version = None
     objects_version = None
@@ -119,6 +127,8 @@ def main() -> None:
             if frame_payload is not None:
                 frame_version = new_frame_version
                 try:
+                    if not isinstance(frame_payload, Mapping):
+                        raise ValueError("Frame payload is not a mapping")
                     frame_message = parse_frame_snapshot_message(frame_payload)
                     frame_cache[int(frame_message["frame"])] = frame_message
                     trim_cache(frame_cache, frame_cache_limit)
@@ -131,6 +141,8 @@ def main() -> None:
                 if objects_payload is not None:
                     objects_version = new_objects_version
                     try:
+                        if not isinstance(objects_payload, Mapping):
+                            raise ValueError("Objects payload is not a mapping")
                         message = parse_objects_3d_frame_message(objects_payload)
                         objects_frames[int(message["frame"])] = message
                         trim_cache(objects_frames, frame_cache_limit)
@@ -145,6 +157,8 @@ def main() -> None:
                 if lanes_payload is not None:
                     lanes_version = new_lanes_version
                     try:
+                        if not isinstance(lanes_payload, Mapping):
+                            raise ValueError("Lanes payload is not a mapping")
                         message = parse_lanes_3d_frame_message(lanes_payload)
                         lanes_frames[int(message["frame"])] = message
                         trim_cache(lanes_frames, frame_cache_limit)

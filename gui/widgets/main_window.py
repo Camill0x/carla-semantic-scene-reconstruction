@@ -1,7 +1,7 @@
 from typing import Dict
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QCloseEvent, QGuiApplication
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 from gui.config import APP_NAME
@@ -12,6 +12,7 @@ from gui.pages.home_page import HomePage
 from gui.pages.streaming_page import StreamingPage
 from gui.pages.training_page import TrainingPage
 from gui.process_manager import ProjectProcessManager
+from gui.types import ActivityMessages
 from gui.widgets.process_inspector_dialog import ProcessInspectorDialog
 from gui.widgets.workflow_window import WorkflowWindow
 
@@ -33,7 +34,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         header = QFrame()
-        header.setFrameShape(QFrame.StyledPanel)
+        header.setFrameShape(QFrame.Shape.StyledPanel)
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(18, 16, 18, 16)
         labels = QVBoxLayout()
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(self.clear_logs_button)
         root.addWidget(header)
 
-        self.home_page = HomePage(self.manager, lambda messages: None, self.open_workflow)
+        self.home_page = HomePage(self.manager, self._append_nowhere, self.open_workflow)
         home_section = self._section("Workflows", self.home_page)
         home_section.setMaximumWidth(820)
         root.addWidget(home_section, 1)
@@ -68,7 +69,7 @@ class MainWindow(QMainWindow):
 
     def _section(self, title: str, widget: QWidget) -> QWidget:
         frame = QFrame()
-        frame.setFrameShape(QFrame.StyledPanel)
+        frame.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
         label = QLabel(title)
         label.setStyleSheet("font-size: 16px; font-weight: 700;")
@@ -76,7 +77,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(widget, 1)
         return frame
 
-    def _build_workflow_page(self, route: str):
+    def _build_workflow_page(
+        self,
+        route: str,
+    ) -> CarlaPage | DatasetPage | TrainingPage | BenchmarkPage | StreamingPage:
         if route == "carla":
             return CarlaPage(self.manager, self._append_nowhere)
         if route == "dataset":
@@ -89,7 +93,7 @@ class MainWindow(QMainWindow):
             return StreamingPage(self.manager, self._append_nowhere)
         raise KeyError(route)
 
-    def _append_nowhere(self, messages) -> None:
+    def _append_nowhere(self, messages: ActivityMessages) -> None:
         return None
 
     def open_workflow(self, route: str) -> None:
@@ -122,8 +126,8 @@ class MainWindow(QMainWindow):
     def open_process_inspector(self) -> None:
         dialog = ProcessInspectorDialog(
             fetch_rows=self.manager.status_rows,
-            on_stop_selected=lambda name: self.manager.stop_process(name),
-            on_stop_all=lambda: self.manager.stop_many(self.manager.running_process_names()),
+            on_stop_selected=self._stop_selected_from_inspector,
+            on_stop_all=self._stop_all_from_inspector,
         )
         dialog.exec()
         self.refresh_ui()
@@ -136,10 +140,10 @@ class MainWindow(QMainWindow):
         message.setMinimumWidth(560)
         message.setText("Clear all GUI-managed log files?")
         message.setInformativeText("This will truncate the current log files in tmp/gui_logs/*")
-        clear_button = message.addButton("Clear Logs", QMessageBox.AcceptRole)
-        cancel_button = message.addButton("Cancel", QMessageBox.RejectRole)
-        clear_button.setStyleSheet("background: #16a34a; color: #ffffff;")
-        cancel_button.setStyleSheet("background: #d97706; color: #ffffff;")
+        clear_button = message.addButton("Clear Logs", QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = message.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        clear_button.setProperty("buttonRole", "success")
+        cancel_button.setProperty("buttonRole", "warning")
         message.exec()
         if message.clickedButton() != clear_button:
             return
@@ -150,6 +154,12 @@ class MainWindow(QMainWindow):
 
     def refresh_ui(self) -> None:
         return None
+
+    def _stop_selected_from_inspector(self, name: str) -> None:
+        self._append_nowhere(self.manager.stop_process(name))
+
+    def _stop_all_from_inspector(self) -> None:
+        self._append_nowhere(self.manager.stop_many(self.manager.running_process_names()))
 
     def _show_control_center(self) -> None:
         self.show()
@@ -170,7 +180,7 @@ class MainWindow(QMainWindow):
         height = min(max(580, hint.height() + frame_extra.height() + 24), int(available.height() * 0.82))
         self.resize(width, height)
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event: QCloseEvent) -> None:
         running = self.manager.running_process_names()
         if not running:
             self.manager.save_state()
@@ -179,13 +189,13 @@ class MainWindow(QMainWindow):
 
         message = QMessageBox(self)
         message.setWindowTitle("Active Processes")
-        message.setIcon(QMessageBox.Warning)
+        message.setIcon(QMessageBox.Icon.Warning)
         message.setText("This workflow still has running processes related to it.")
         message.setInformativeText(
             "\n".join(f"- {name}" for name in running) + "\n\nYou can manage these processes via Process Inspector."
         )
-        cancel_button = message.addButton("Cancel", QMessageBox.RejectRole)
-        close_button = message.addButton("Close", QMessageBox.AcceptRole)
+        cancel_button = message.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        close_button = message.addButton("Close", QMessageBox.ButtonRole.AcceptRole)
         cancel_button.setStyleSheet("background: #d97706; color: #ffffff;")
         close_button.setStyleSheet("background: #dc2626; color: #ffffff;")
         message.exec()

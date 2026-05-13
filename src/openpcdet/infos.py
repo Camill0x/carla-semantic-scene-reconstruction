@@ -2,21 +2,22 @@ import json
 import os
 import pickle
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 
 from src.common.dataset import DatasetSplits
+from src.common.typing_aliases import JsonDict
 
 
-def frame_has_class_counts(meta: dict, class_names: Sequence[str]) -> bool:
+def frame_has_class_counts(meta: JsonDict, class_names: Sequence[str]) -> bool:
     class_counts = meta.get("class_counts", {})
     if not isinstance(class_counts, dict):
         return False
     return any(class_name in class_counts and int(class_counts[class_name]) > 0 for class_name in class_names)
 
 
-def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[str]):
+def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[str]) -> Optional[JsonDict]:
     points_path = frame_dir / "points.npy"
     gt_boxes_path = frame_dir / "gt_boxes.npy"
     gt_names_path = frame_dir / "gt_names.npy"
@@ -28,6 +29,8 @@ def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[st
 
     with meta_path.open("r", encoding="utf-8") as handle:
         meta = json.load(handle)
+    if not isinstance(meta, dict):
+        return None
 
     if int(meta.get("num_objects", 0)) <= 0:
         return None
@@ -60,7 +63,7 @@ def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[st
             "num_features": 4,
         },
         "metadata": {
-            "frame": int(meta.get("frame", meta.get("sim_frame", -1))),
+            "frame": int(meta["frame"]) if "frame" in meta else int(meta.get("sim_frame", -1)),
             "timestamp": float(meta.get("timestamp", -1.0)),
             "map": meta.get("map", ""),
             "source_run": run_id,
@@ -73,8 +76,8 @@ def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[st
     }
 
 
-def load_infos(frame_dirs: Sequence[Path], output_root: Path, class_names: Sequence[str]) -> List[dict]:
-    infos = []
+def load_infos(frame_dirs: Sequence[Path], output_root: Path, class_names: Sequence[str]) -> List[JsonDict]:
+    infos: List[JsonDict] = []
     for frame_dir in frame_dirs:
         info = load_frame_info(frame_dir, output_root, class_names)
         if info is not None:
@@ -94,7 +97,7 @@ def write_split(sample_ids: Sequence[str], output_path: Path) -> None:
             handle.write(f"{sample_id}\n")
 
 
-def write_infos(output_root: Path, splits: DatasetSplits) -> Tuple[Path, Path, Path]:
+def write_infos(output_root: Path, splits: DatasetSplits[JsonDict]) -> Tuple[Path, Path, Path]:
     infos_root = output_root / "infos"
     image_sets_root = output_root / "ImageSets"
     infos_root.mkdir(parents=True, exist_ok=True)

@@ -22,7 +22,7 @@ class SessionSummary(QWidget):
             ]
         for index, (key, title) in enumerate(specs):
             card = QFrame()
-            card.setFrameShape(QFrame.StyledPanel)
+            card.setFrameShape(QFrame.Shape.StyledPanel)
             card.setProperty("summaryCard", True)
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(14, 14, 14, 14)

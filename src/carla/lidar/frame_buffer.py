@@ -4,10 +4,11 @@ from typing import Optional, Tuple
 import numpy as np
 
 import carla
+from src.common.typing_aliases import Float32Array
 
 
 class LidarFrameBuffer:
-    def __init__(self, hero: carla.Actor, lidar: carla.Sensor):
+    def __init__(self, hero: carla.Actor, lidar: carla.Sensor) -> None:
         self.hero = hero
         self.lidar = lidar
         self.queue: "queue.Queue[carla.LidarMeasurement]" = queue.Queue()
@@ -36,7 +37,7 @@ class LidarFrameBuffer:
         expected_frame: Optional[int] = None,
         timeout: float = 2.0,
         allow_future: bool = False,
-    ) -> Tuple[np.ndarray, int, float, carla.Transform]:
+    ) -> Tuple[Float32Array, int, float, carla.Transform]:
         while True:
             if self.pending_measurement is not None:
                 point_cloud = self.pending_measurement

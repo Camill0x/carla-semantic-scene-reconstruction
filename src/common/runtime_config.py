@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Mapping
 
 from src.common.config import (
     CameraConfig,
@@ -17,11 +17,12 @@ from src.common.config import (
     StreamingProducerConfig,
     StreamingVisualizerConfig,
 )
+from src.common.typing_aliases import JsonDict
 
 DEFAULT_RUNTIME_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "runtime.json"
 
 
-def _read_runtime_config() -> Dict[str, Any]:
+def _read_runtime_config() -> JsonDict:
     with DEFAULT_RUNTIME_CONFIG_PATH.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):

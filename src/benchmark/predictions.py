@@ -1,11 +1,14 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import List, Union, cast
 
 import numpy as np
 
+from src.common.typing_aliases import JsonDict
 from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 from src.openpcdet.prediction import Objects3DPrediction
+
+JsonValue = Union[None, bool, int, float, str, List["JsonValue"], JsonDict]
 
 
 def save_objects_prediction(path: Path, objects_3d: Objects3DPrediction) -> None:
@@ -34,16 +37,18 @@ def load_objects_prediction(path: Path) -> Objects3DPrediction:
     return Objects3DPrediction.from_payload(payload)
 
 
-def _jsonify(value):
+def _jsonify(value: object) -> JsonValue:
     if isinstance(value, np.ndarray):
-        return value.astype(float).tolist()
+        return cast(JsonValue, value.astype(float).tolist())
     if isinstance(value, dict):
         return {str(key): _jsonify(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_jsonify(item) for item in value]
     if isinstance(value, (np.floating, np.integer)):
-        return value.item()
-    return value
+        return cast(JsonValue, value.item())
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    return str(value)
 
 
 def save_lanes_prediction(
@@ -61,15 +66,15 @@ def save_lanes_prediction(
         json.dump(_jsonify(payload), handle, indent=2)
 
 
-def load_lanes_prediction(path: Path) -> Dict[str, Any]:
+def load_lanes_prediction(path: Path) -> JsonDict:
     with path.open("r", encoding="utf-8") as handle:
-        payload = json.load(handle)
+        payload = cast(JsonDict, json.load(handle))
 
     if "lanes_2d" in payload or "lanes_3d" in payload:
-        lanes_2d = payload.get("lanes_2d", {})
-        lanes_3d = payload.get("lanes_3d", {})
+        lanes_2d = cast(JsonDict, payload.get("lanes_2d", {}))
+        lanes_3d = cast(JsonDict, payload.get("lanes_3d", {}))
     else:
-        lanes_2d = {}
+        lanes_2d = cast(JsonDict, {})
         lanes_3d = payload
 
     return {

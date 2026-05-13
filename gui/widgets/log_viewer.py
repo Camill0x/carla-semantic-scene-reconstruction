@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QTextCursor
@@ -18,8 +18,8 @@ class LogViewer(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.log_paths: Dict[str, Path] = {}
-        self._known_log_names = []
-        self._last_text = None
+        self._known_log_names: list[str] = []
+        self._last_text: Optional[str] = None
         self._force_scroll_to_bottom = True
 
         layout = QVBoxLayout(self)

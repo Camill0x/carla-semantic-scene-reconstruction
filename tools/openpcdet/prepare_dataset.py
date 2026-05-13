@@ -2,6 +2,8 @@
 
 import argparse
 import shutil
+from dataclasses import dataclass
+from typing import List, Optional
 
 from src.common.dataset import iter_frame_dirs, selected_run_dirs, train_val_test_split
 from src.common.paths import repo_relative_or_absolute
@@ -10,7 +12,18 @@ from src.openpcdet.infos import load_infos, write_infos
 from src.openpcdet.paths import RAW_DATASET_ROOT, prepared_dataset_root
 
 
-def parse_args() -> argparse.Namespace:
+@dataclass(frozen=True)
+class PrepareDatasetArgs:
+    class_filter: str
+    name: str
+    use_all: bool
+    runs: Optional[List[str]]
+    val_ratio: float
+    test_ratio: float
+    seed: int
+
+
+def parse_args() -> PrepareDatasetArgs:
     parser = argparse.ArgumentParser(description="Build OpenPCDet metadata for collected CARLA dataset runs")
     parser.add_argument(
         "--class-filter",
@@ -25,7 +38,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--test-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return PrepareDatasetArgs(
+        class_filter=str(parsed.class_filter),
+        name=str(parsed.name),
+        use_all=bool(parsed.all),
+        runs=None if parsed.runs is None else [str(item) for item in parsed.runs],
+        val_ratio=float(parsed.val_ratio),
+        test_ratio=float(parsed.test_ratio),
+        seed=int(parsed.seed),
+    )
 
 
 def main() -> None:
@@ -42,7 +64,7 @@ def main() -> None:
         else:
             raise FileExistsError(f"Prepared dataset directory is not empty: {repo_relative_or_absolute(output_root)}")
 
-    run_dirs = selected_run_dirs(source_root, None if args.all else args.runs)
+    run_dirs = selected_run_dirs(source_root, None if args.use_all else args.runs)
     frame_dirs = iter_frame_dirs(run_dirs)
     print(f"Runs: [{', '.join(run_dir.name for run_dir in run_dirs)}]")
     print(f"Found {len(frame_dirs)} frame directories")

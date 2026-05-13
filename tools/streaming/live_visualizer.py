@@ -2,6 +2,8 @@
 
 import argparse
 import time
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
 import zmq
 
@@ -14,11 +16,21 @@ from src.streaming.messages import parse_scene_frame_message
 from src.streaming.zmq_utils import create_latest_subscriber, drain_latest
 
 
-def parse_args():
+@dataclass(frozen=True)
+class LiveVisualizerArgs:
+    show_grid: bool
+    verbose: bool
+
+
+def parse_args() -> LiveVisualizerArgs:
     parser = argparse.ArgumentParser(description="Rerun viewer for the live streaming pipeline")
     parser.add_argument("--show-grid", action="store_true", help="Show the ground grid")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LiveVisualizerArgs(
+        show_grid=bool(parsed.show_grid),
+        verbose=bool(parsed.verbose),
+    )
 
 
 def main() -> None:
@@ -33,7 +45,7 @@ def main() -> None:
     initialize_live_viewer("carla_streaming_visualizer", show_grid=config.show_grid)
     log_legend()
     latest_scene = None
-    last_render_key = ()
+    last_render_key: Optional[Tuple[int, object, object, object]] = None
 
     print("=== Streaming visualizer ===")
     print(f"[info] ZMQ scene IN: {config.scene_connect}")

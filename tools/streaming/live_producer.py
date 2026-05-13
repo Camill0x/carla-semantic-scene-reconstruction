@@ -3,7 +3,8 @@
 import argparse
 import queue
 import time
-from typing import Optional
+from dataclasses import dataclass
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -22,14 +23,24 @@ from src.shared_memory.names import SharedMemoryNames
 from src.streaming.messages import build_frame_snapshot_message, build_state_frame_message
 
 
-def parse_args():
+@dataclass(frozen=True)
+class LiveProducerArgs:
+    every_nth: int
+    verbose: bool
+
+
+def parse_args() -> LiveProducerArgs:
     parser = argparse.ArgumentParser(description="CARLA live producer")
     parser.add_argument("--every-nth", type=int, default=1, help="Publish every N-th CARLA frame")
     parser.add_argument("--verbose", action="store_true", help="Print per-frame logs")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return LiveProducerArgs(
+        every_nth=int(parsed.every_nth),
+        verbose=bool(parsed.verbose),
+    )
 
 
-def transform_to_dict(transform: carla.Transform) -> dict:
+def transform_to_dict(transform: carla.Transform) -> Dict[str, object]:
     return {
         "location": {
             "x": float(transform.location.x),
@@ -133,7 +144,9 @@ def main() -> None:
             expected_frame = int(snapshot.frame) if hasattr(snapshot, "frame") else int(snapshot)
 
             if not should_process_frame(expected_frame, last_published_frame, config.every_nth):
-                next_frame = last_published_frame + config.every_nth
+                next_frame = (
+                    config.every_nth if last_published_frame is None else last_published_frame + config.every_nth
+                )
                 lidar_frame_buffer.discard_before(next_frame)
                 camera_frame_buffer.discard_before(next_frame)
                 continue
@@ -179,7 +192,11 @@ def main() -> None:
             if not should_process_frame(frame_snapshot, last_published_frame, config.every_nth):
                 continue
 
-            points_snapshot = preprocess_lidar_points(points=raw_points, hero=hero, lidar=lidar).astype(np.float32)
+            points_snapshot = preprocess_lidar_points(
+                points=np.asarray(raw_points, dtype=np.float64),
+                hero=hero,
+                lidar=lidar,
+            ).astype(np.float32)
             camera_image_bgr_snapshot = np.asarray(camera_image_bgr_snapshot, dtype=np.uint8)
             ego_box = actor_to_gt_box(hero, lidar_transform_snapshot).astype(np.float32)
 

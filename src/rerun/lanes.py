@@ -3,13 +3,18 @@ from typing import List, Sequence
 import numpy as np
 
 import rerun as rr
+from src.common.typing_aliases import JsonDict
 from src.lanedet.prediction import Lanes2DPrediction, Lanes3DPrediction
 from src.rerun.colors import lane_color
 from src.rerun.scene3d import clear_entity
 
 
-def clamp_lane_annotations_to_image(lanes: List[dict], image_width: int, image_height: int) -> List[dict]:
-    clamped_lanes: List[dict] = []
+def clamp_lane_annotations_to_image(
+    lanes: List[JsonDict],
+    image_width: int,
+    image_height: int,
+) -> List[JsonDict]:
+    clamped_lanes: List[JsonDict] = []
     max_x = float(max(image_width - 1, 0))
     max_y = float(max(image_height - 1, 0))
 
@@ -37,7 +42,7 @@ def clamp_lane_annotations_to_image(lanes: List[dict], image_width: int, image_h
     return clamped_lanes
 
 
-def log_lane_annotations_2d(lanes: List[dict], *, line_thickness: float) -> None:
+def log_lane_annotations_2d(lanes: List[JsonDict], *, line_thickness: float) -> None:
     strips = []
     colors = []
     labels = []
@@ -67,7 +72,7 @@ def log_lane_annotations_2d(lanes: List[dict], *, line_thickness: float) -> None
 
 
 def log_lane_annotations_3d(
-    lanes: Sequence[dict],
+    lanes: Sequence[JsonDict],
     *,
     line_radius: float,
 ) -> None:
@@ -99,7 +104,7 @@ def log_lane_annotations_3d(
     )
 
 
-def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thickness: float) -> None:
+def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | JsonDict, *, line_thickness: float) -> None:
     if isinstance(lanes_2d, Lanes2DPrediction):
         strips_payload = lanes_2d.strips
         scores = lanes_2d.scores
@@ -145,7 +150,7 @@ def log_prediction_lanes_2d(lanes_2d: Lanes2DPrediction | dict, *, line_thicknes
     )
 
 
-def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | dict, *, line_radius: float) -> None:
+def log_prediction_lanes_3d(lanes_3d: Lanes3DPrediction | JsonDict, *, line_radius: float) -> None:
     if isinstance(lanes_3d, Lanes3DPrediction):
         strips_payload = lanes_3d.strips
         scores = lanes_3d.scores

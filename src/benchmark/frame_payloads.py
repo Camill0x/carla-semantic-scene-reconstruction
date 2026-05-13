@@ -1,16 +1,16 @@
-from typing import Any, Dict, Mapping
+from typing import Any, Mapping
 
-import numpy as np
+from src.common.typing_aliases import ImageArray, JsonDict
 
 
-def transform_from_meta(sensor_payload: Mapping[str, Any]) -> Dict[str, Any]:
+def transform_from_meta(sensor_payload: Mapping[str, Any]) -> JsonDict:
     return {
         "location": dict(sensor_payload["location"]),
         "rotation": dict(sensor_payload["rotation"]),
     }
 
 
-def state_frame_from_meta(meta: Mapping[str, Any]) -> Dict[str, Any]:
+def state_frame_from_meta(meta: Mapping[str, Any]) -> JsonDict:
     lidar_meta = meta["lidar"]
     camera_meta = meta["front_camera"]
     hero_meta = meta.get("hero", {})
@@ -35,7 +35,7 @@ def state_frame_from_meta(meta: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
-def camera_frame_shape(image_rgb: np.ndarray) -> Dict[str, Any]:
+def camera_frame_shape(image_rgb: ImageArray) -> JsonDict:
     return {
         "camera_front": {
             "height": int(image_rgb.shape[0]),

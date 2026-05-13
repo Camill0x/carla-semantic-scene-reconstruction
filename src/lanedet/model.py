@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -8,11 +9,12 @@ from lanedet.datasets.process import Process
 from lanedet.models.registry import build_net
 from lanedet.utils.config import Config
 from lanedet.utils.net_utils import load_network
+from src.common.typing_aliases import ImageArray, JsonDict
 from src.lanedet.prediction import Lanes2DPrediction
 
 
-def _to_device(data: dict, device: torch.device) -> dict:
-    out = {}
+def _to_device(data: JsonDict, device: torch.device) -> JsonDict:
+    out: JsonDict = {}
     for key, value in data.items():
         out[key] = value.to(device) if isinstance(value, torch.Tensor) else value
     return out
@@ -24,7 +26,7 @@ def _synchronize_cuda() -> None:
 
 
 class LaneDetector:
-    def __init__(self, cfg_file: Path, ckpt: Path, score_thresh: float = None):
+    def __init__(self, cfg_file: Path, ckpt: Path, score_thresh: float | None = None) -> None:
         self.cfg = Config.fromfile(str(cfg_file))
         self.cfg.show = False
         self.cfg.savedir = None
@@ -43,16 +45,16 @@ class LaneDetector:
         load_network(net, str(ckpt))
         self.net = net
 
-    def preprocess(self, image_bgr: np.ndarray) -> dict:
+    def preprocess(self, image_bgr: ImageArray) -> JsonDict:
         ori_img = np.asarray(image_bgr, dtype=np.uint8)
         img = ori_img[self.cfg.cut_height :, :, :].astype(np.float32)
-        data = {"img": img, "lanes": []}
+        data: JsonDict = {"img": img, "lanes": []}
         data = self.processes(data)
         data["img"] = data["img"].unsqueeze(0)
         data.update({"img_path": "<live>", "ori_img": ori_img})
         return _to_device(data, self.device)
 
-    def infer_lanes_2d(self, image_bgr: np.ndarray, *, return_forward_time: bool = False):
+    def infer_lanes_2d(self, image_bgr: ImageArray, *, return_forward_time: bool = False) -> Any:
         data = self.preprocess(image_bgr)
 
         if return_forward_time:

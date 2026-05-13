@@ -2,11 +2,13 @@ from PySide6.QtWidgets import QGridLayout, QVBoxLayout
 
 from gui.catalog import BENCHMARK_LANEDET_FLAGS, BENCHMARK_OPENPCDET_FLAGS, BENCHMARK_VIEW_FLAGS
 from gui.pages.base import WorkflowPage
+from gui.process_manager import ProjectProcessManager
+from gui.types import AppendActivity, ArgsList, SummarySpec, SummaryValues
 from gui.widgets.process_panel import ProcessPanel
 
 
 class BenchmarkPage(WorkflowPage):
-    def __init__(self, manager, append_activity) -> None:
+    def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -56,10 +58,10 @@ class BenchmarkPage(WorkflowPage):
     def window_subtitle(self) -> str:
         return "Offline measurement workflow for comparing model throughput and then browsing the saved predictions."
 
-    def preferred_window_size(self):
+    def preferred_window_size(self) -> tuple[int, int]:
         return (980, 720)
 
-    def summary_specs(self):
+    def summary_specs(self) -> list[SummarySpec]:
         return [
             ("running", "Active Processes"),
             ("pcdet", "OpenPCDet"),
@@ -67,7 +69,7 @@ class BenchmarkPage(WorkflowPage):
             ("viewer", "Prediction Viewer"),
         ]
 
-    def summary_values(self):
+    def summary_values(self) -> SummaryValues:
         running = self.manager.running_process_names()
         return {
             "running": f"{len([name for name in self.process_names() if name in running])} / {len(self.process_names())}",
@@ -76,10 +78,10 @@ class BenchmarkPage(WorkflowPage):
             "viewer": "Open" if "benchmark_view_predictions" in running else "Closed",
         }
 
-    def process_names(self):
+    def process_names(self) -> list[str]:
         return ["benchmark_openpcdet", "benchmark_lanedet", "benchmark_view_predictions"]
 
-    def _start(self, name: str, args):
+    def _start(self, name: str, args: ArgsList) -> None:
         panel = {
             "benchmark_openpcdet": self.openpcdet_panel,
             "benchmark_lanedet": self.lanedet_panel,

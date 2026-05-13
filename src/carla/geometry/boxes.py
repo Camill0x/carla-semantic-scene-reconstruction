@@ -1,18 +1,25 @@
 import math
-from typing import Dict
+from typing import TypedDict
 
 import numpy as np
 
 import carla
 from src.carla.geometry.transforms import carla_transform_to_matrix, world_to_sensor_point
+from src.common.typing_aliases import BoolArray, Float32Array, Float64Array
+
+
+class EgoBox(TypedDict):
+    center: Float64Array
+    half_sizes: Float64Array
+    yaw: float
 
 
 def points_inside_oriented_box(
-    points_xyz: np.ndarray,
-    center_xyz: np.ndarray,
+    points_xyz: Float64Array,
+    center_xyz: Float64Array,
     yaw_rad: float,
-    half_sizes_xyz: np.ndarray,
-) -> np.ndarray:
+    half_sizes_xyz: Float64Array,
+) -> BoolArray:
     rel = points_xyz - center_xyz.reshape(1, 3)
 
     c = math.cos(-yaw_rad)
@@ -27,10 +34,11 @@ def points_inside_oriented_box(
     )
     local = rel @ rot.T
 
-    return (
+    return np.asarray(
         (np.abs(local[:, 0]) <= half_sizes_xyz[0])
         & (np.abs(local[:, 1]) <= half_sizes_xyz[1])
-        & (np.abs(local[:, 2]) <= half_sizes_xyz[2])
+        & (np.abs(local[:, 2]) <= half_sizes_xyz[2]),
+        dtype=np.bool_,
     )
 
 
@@ -38,7 +46,7 @@ def get_ego_box_in_lidar_frame(
     hero: carla.Actor,
     lidar: carla.Sensor,
     padding: float = 0.15,
-) -> Dict[str, np.ndarray]:
+) -> EgoBox:
     bbox = hero.bounding_box
     actor_tf = carla_transform_to_matrix(hero.get_transform())
     bbox_center_local = np.array(
@@ -51,7 +59,7 @@ def get_ego_box_in_lidar_frame(
     lidar_yaw_world = lidar.get_transform().rotation.yaw
     yaw_sensor = math.radians(bbox_yaw_world - lidar_yaw_world)
 
-    center_sensor = world_to_sensor_point(bbox_center_world, lidar.get_transform())
+    center_sensor = world_to_sensor_point(bbox_center_world.tolist(), lidar.get_transform())
     center_sensor[1] *= -1.0
 
     half_sizes = np.array(
@@ -68,33 +76,33 @@ def get_ego_box_in_lidar_frame(
     return {
         "center": center_sensor,
         "half_sizes": half_sizes,
-        "yaw": np.array(yaw_sensor, dtype=np.float64),
+        "yaw": float(yaw_sensor),
     }
 
 
 def filter_points_inside_ego_vehicle(
-    points: np.ndarray,
+    points: Float64Array,
     hero: carla.Actor,
     lidar: carla.Sensor,
-) -> np.ndarray:
+) -> Float64Array:
     ego_box = get_ego_box_in_lidar_frame(hero, lidar)
     inside = points_inside_oriented_box(
         points_xyz=points[:, :3],
         center_xyz=ego_box["center"],
-        yaw_rad=float(ego_box["yaw"]),
+        yaw_rad=ego_box["yaw"],
         half_sizes_xyz=ego_box["half_sizes"],
     )
-    return points[~inside]
+    return np.asarray(points[~inside], dtype=np.float64)
 
 
-def get_bbox_center_world_from_actor(actor: carla.Actor) -> np.ndarray:
+def get_bbox_center_world_from_actor(actor: carla.Actor) -> Float64Array:
     bbox = actor.bounding_box
     actor_tf = carla_transform_to_matrix(actor.get_transform())
     center_local = np.array(
         [[bbox.location.x], [bbox.location.y], [bbox.location.z], [1.0]],
         dtype=np.float64,
     )
-    return (actor_tf @ center_local)[:3, 0]
+    return np.asarray((actor_tf @ center_local)[:3, 0], dtype=np.float64)
 
 
 def actor_matches_level_bbox(
@@ -120,7 +128,7 @@ def actor_matches_level_bbox(
     )
     extent_distance = np.linalg.norm(actor_extent - level_extent)
 
-    return center_distance <= center_thresh and extent_distance <= extent_thresh
+    return bool(center_distance <= center_thresh and extent_distance <= extent_thresh)
 
 
 def get_yaw_in_lidar(obj_yaw_world_deg: float, lidar_yaw_world_deg: float) -> float:
@@ -130,7 +138,7 @@ def get_yaw_in_lidar(obj_yaw_world_deg: float, lidar_yaw_world_deg: float) -> fl
     return float(yaw_rad)
 
 
-def actor_to_gt_box(actor: carla.Actor, lidar_transform: carla.Transform) -> np.ndarray:
+def actor_to_gt_box(actor: carla.Actor, lidar_transform: carla.Transform) -> Float32Array:
     bbox = actor.bounding_box
 
     bbox_local = np.array(
@@ -157,10 +165,10 @@ def actor_to_gt_box(actor: carla.Actor, lidar_transform: carla.Transform) -> np.
         lidar_yaw_world_deg=lidar_transform.rotation.yaw,
     )
 
-    return np.array([x, y, z, dx, dy, dz, yaw], dtype=np.float32)
+    return np.asarray([x, y, z, dx, dy, dz, yaw], dtype=np.float32)
 
 
-def level_bbox_to_gt_box(level_bbox: carla.BoundingBox, lidar_transform: carla.Transform) -> np.ndarray:
+def level_bbox_to_gt_box(level_bbox: carla.BoundingBox, lidar_transform: carla.Transform) -> Float32Array:
     center_world = np.array(
         [[level_bbox.location.x], [level_bbox.location.y], [level_bbox.location.z], [1.0]],
         dtype=np.float64,
@@ -183,4 +191,4 @@ def level_bbox_to_gt_box(level_bbox: carla.BoundingBox, lidar_transform: carla.T
         lidar_yaw_world_deg=lidar_transform.rotation.yaw,
     )
 
-    return np.array([x, y, z, dx, dy, dz, yaw], dtype=np.float32)
+    return np.asarray([x, y, z, dx, dy, dz, yaw], dtype=np.float32)

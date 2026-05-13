@@ -6,9 +6,10 @@ import carla
 from src.carla.actors.classify import classify_vehicle_actor
 from src.carla.geometry.boxes import actor_matches_level_bbox, actor_to_gt_box, level_bbox_to_gt_box
 from src.carla.geometry.transforms import distance_between_locations
+from src.common.typing_aliases import Float32Array, ObjectDict, StrArray
 
 
-def actor_to_object_dict(actor: carla.Actor, cls_name: str) -> Dict:
+def actor_to_object_dict(actor: carla.Actor, cls_name: str) -> ObjectDict:
     transform = actor.get_transform()
     bbox = actor.bounding_box
 
@@ -54,7 +55,7 @@ def level_bbox_to_object_dict(
     cls_name: str,
     static_id: int,
     type_id: str,
-) -> Dict:
+) -> ObjectDict:
     return {
         "source": "static_level_bbox",
         "id": int(static_id),
@@ -89,11 +90,11 @@ def collect_city_object_gt(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     max_range: float,
-) -> Tuple[List[Dict], List[np.ndarray], List[str]]:
+) -> Tuple[List[ObjectDict], List[Float32Array], List[str]]:
     hero_location = hero.get_transform().location
 
-    objects: List[Dict] = []
-    gt_boxes: List[np.ndarray] = []
+    objects: List[ObjectDict] = []
+    gt_boxes: List[Float32Array] = []
     gt_names: List[str] = []
 
     label_map = [
@@ -140,11 +141,11 @@ def collect_actor_gt(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     max_range: float,
-) -> Tuple[List[Dict], List[np.ndarray], List[str]]:
+) -> Tuple[List[ObjectDict], List[Float32Array], List[str]]:
     hero_location = hero.get_transform().location
 
-    objects: List[Dict] = []
-    gt_boxes: List[np.ndarray] = []
+    objects: List[ObjectDict] = []
+    gt_boxes: List[Float32Array] = []
     gt_names: List[str] = []
 
     for actor in world.get_actors():
@@ -180,7 +181,7 @@ def collect_gt(
     hero: carla.Actor,
     lidar_transform: carla.Transform,
     max_range: float,
-):
+) -> Tuple[List[ObjectDict], Float32Array, StrArray]:
     city_objects, city_boxes, city_names = collect_city_object_gt(
         world=world,
         hero=hero,
@@ -209,9 +210,9 @@ def collect_gt(
     return objects, gt_boxes_array, gt_names_array
 
 
-def count_by_class(objects: Sequence[Dict]) -> Dict[str, int]:
+def count_by_class(objects: Sequence[ObjectDict]) -> Dict[str, int]:
     counts: Dict[str, int] = {}
     for obj in objects:
-        cls_name = obj["class_name"]
+        cls_name = str(obj["class_name"])
         counts[cls_name] = counts.get(cls_name, 0) + 1
     return counts

@@ -1,9 +1,10 @@
-from typing import Callable, Dict, List
+from typing import Callable
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QVBoxLayout
 
+from gui.types import StatusRows
 from gui.widgets.process_table import ProcessTable
 
 
@@ -11,7 +12,7 @@ class ProcessInspectorDialog(QDialog):
     def __init__(
         self,
         *,
-        fetch_rows: Callable[[], List[Dict[str, str]]],
+        fetch_rows: Callable[[], StatusRows],
         on_stop_selected: Callable[[str], None],
         on_stop_all: Callable[[], None],
     ) -> None:
@@ -73,7 +74,8 @@ class ProcessInspectorDialog(QDialog):
             table_width += header.sectionSize(section)
         table_width += self.table.frameWidth() * 2
 
-        hint = self.layout().sizeHint() if self.layout() is not None else self.sizeHint()
+        layout = self.layout()
+        hint = layout.sizeHint() if layout is not None else self.sizeHint()
         width = min(max(540, max(table_width + 40, hint.width())), int(available.width() * 0.72))
         height = min(max(360, hint.height() + 24), int(available.height() * 0.75))
         self.resize(width, height)

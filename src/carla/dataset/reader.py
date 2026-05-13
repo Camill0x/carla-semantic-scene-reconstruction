@@ -1,37 +1,39 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List, cast
 
 import cv2
 import numpy as np
+
+from src.common.typing_aliases import ArrayAny, ImageArray, JsonDict
 
 
 @dataclass(frozen=True)
 class DatasetFrame:
     frame_dir: Path
-    meta: Dict[str, Any]
-    points: np.ndarray
-    ego_box: np.ndarray
-    gt_boxes: np.ndarray
+    meta: JsonDict
+    points: ArrayAny
+    ego_box: ArrayAny
+    gt_boxes: ArrayAny
     gt_names: List[str]
-    objects: List[Dict[str, Any]]
-    lanes: List[Dict[str, Any]]
-    image_rgb: np.ndarray
+    objects: List[JsonDict]
+    lanes: List[JsonDict]
+    image_rgb: ImageArray
 
 
 @dataclass(frozen=True)
 class PointsFrame:
     frame_dir: Path
-    meta: Dict[str, Any]
-    points: np.ndarray
+    meta: JsonDict
+    points: ArrayAny
 
 
 @dataclass(frozen=True)
 class CameraFrame:
     frame_dir: Path
-    meta: Dict[str, Any]
-    image_rgb: np.ndarray
+    meta: JsonDict
+    image_rgb: ImageArray
 
 
 def _require_path(frame_dir: Path, filename: str) -> Path:
@@ -41,20 +43,23 @@ def _require_path(frame_dir: Path, filename: str) -> Path:
     return path
 
 
-def _load_json(path: Path) -> Dict[str, Any]:
+def _load_json(path: Path) -> JsonDict:
     with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected JSON object in {path}")
+    return cast(JsonDict, payload)
 
 
-def _load_npy(path: Path) -> np.ndarray:
-    return np.load(path)
+def _load_npy(path: Path) -> ArrayAny:
+    return np.asarray(np.load(path))
 
 
-def _load_image_rgb(path: Path) -> np.ndarray:
+def _load_image_rgb(path: Path) -> ImageArray:
     image_bgr = cv2.imread(str(path), cv2.IMREAD_COLOR)
     if image_bgr is None:
         raise RuntimeError(f"Failed to read image: {path}")
-    return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    return np.asarray(cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB), dtype=np.uint8)
 
 
 def load_points_frame(frame_dir: Path) -> PointsFrame:
@@ -95,8 +100,8 @@ def load_dataset_frame(frame_dir: Path) -> DatasetFrame:
         ego_box=ego_box,
         gt_boxes=gt_boxes,
         gt_names=[str(name) for name in gt_names.tolist()],
-        objects=objects_payload.get("objects", []),
-        lanes=lanes_payload.get("lanes", []),
+        objects=[cast(JsonDict, item) for item in objects_payload.get("objects", []) if isinstance(item, dict)],
+        lanes=[cast(JsonDict, item) for item in lanes_payload.get("lanes", []) if isinstance(item, dict)],
         image_rgb=image_rgb,
     )
 

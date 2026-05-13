@@ -2,11 +2,13 @@ from PySide6.QtWidgets import QGridLayout, QVBoxLayout
 
 from gui.catalog import MANUAL_CONTROL_FLAGS, TRAFFIC_FLAGS
 from gui.pages.base import WorkflowPage
+from gui.process_manager import ProjectProcessManager
+from gui.types import AppendActivity, ArgsList, SummarySpec, SummaryValues
 from gui.widgets.process_panel import ProcessPanel
 
 
 class CarlaPage(WorkflowPage):
-    def __init__(self, manager, append_activity) -> None:
+    def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -54,10 +56,10 @@ class CarlaPage(WorkflowPage):
     def window_subtitle(self) -> str:
         return "Quick simulator workflow for checking that CARLA, ego spawning and traffic generation behave correctly."
 
-    def preferred_window_size(self):
+    def preferred_window_size(self) -> tuple[int, int]:
         return (940, 700)
 
-    def summary_specs(self):
+    def summary_specs(self) -> list[SummarySpec]:
         return [
             ("running", "Active Processes"),
             ("server", "Server"),
@@ -65,7 +67,7 @@ class CarlaPage(WorkflowPage):
             ("traffic", "Traffic"),
         ]
 
-    def summary_values(self):
+    def summary_values(self) -> SummaryValues:
         running = self.manager.running_process_names()
         return {
             "running": f"{len([name for name in self.process_names() if name in running])} / {len(self.process_names())}",
@@ -74,10 +76,10 @@ class CarlaPage(WorkflowPage):
             "traffic": "Running" if "traffic" in running else "Stopped",
         }
 
-    def process_names(self):
+    def process_names(self) -> list[str]:
         return ["server", "manual_control", "traffic"]
 
-    def _start_manual(self, args):
+    def _start_manual(self, args: ArgsList) -> None:
         if "server" not in self.manager.running_process_names():
             self.notify_error("Server Required", "Start the CARLA server before launching manual control.")
             return
@@ -87,7 +89,7 @@ class CarlaPage(WorkflowPage):
             return
         self.append_activity(self.manager.start_process("manual_control", args=args))
 
-    def _start_traffic(self, args):
+    def _start_traffic(self, args: ArgsList) -> None:
         running = self.manager.running_process_names()
         if "manual_control" not in running:
             self.notify_error(
@@ -96,24 +98,24 @@ class CarlaPage(WorkflowPage):
             return
         self.append_activity(self.manager.start_process("traffic", args=args))
 
-    def _stop_server(self):
+    def _stop_server(self) -> None:
         self.append_activity(self.manager.stop_many(["traffic", "manual_control", "server"]))
 
-    def _restart_server(self, args):
+    def _restart_server(self, args: ArgsList) -> None:
         self.append_activity(self.manager.stop_many(["traffic", "manual_control", "server"]))
         self.append_activity(self.manager.start_process("server", args=args))
 
-    def _stop_manual(self):
+    def _stop_manual(self) -> None:
         self.append_activity(self.manager.stop_many(["traffic", "manual_control"]))
 
-    def _restart_manual(self, args):
+    def _restart_manual(self, args: ArgsList) -> None:
         self.append_activity(self.manager.stop_many(["traffic", "manual_control"]))
         self._start_manual(args)
 
-    def _stop_traffic(self):
+    def _stop_traffic(self) -> None:
         self.append_activity(self.manager.stop_process("traffic"))
 
-    def _restart_traffic(self, args):
+    def _restart_traffic(self, args: ArgsList) -> None:
         self.append_activity(self.manager.stop_process("traffic"))
         self._start_traffic(args)
 

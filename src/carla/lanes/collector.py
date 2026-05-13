@@ -16,6 +16,7 @@ from src.carla.lanes.topology import (
     waypoint_chain_forward,
 )
 from src.common.config import LaneAnnotationsConfig
+from src.common.typing_aliases import ObjectDict
 
 
 def collect_lane_annotations(
@@ -27,7 +28,7 @@ def collect_lane_annotations(
     image_height: int,
     camera_fov: float,
     config: LaneAnnotationsConfig,
-) -> List[Dict]:
+) -> List[ObjectDict]:
     carla_map = world.get_map()
     hero_waypoint = carla_map.get_waypoint(
         hero.get_location(),
@@ -45,7 +46,7 @@ def collect_lane_annotations(
         max_side_lanes=config.max_side_lanes,
     )
 
-    annotations: List[Dict] = []
+    annotations: List[ObjectDict] = []
     used_keys = set()
 
     for lane_waypoint in candidate_lanes:

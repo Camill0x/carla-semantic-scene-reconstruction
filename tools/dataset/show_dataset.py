@@ -2,6 +2,7 @@
 
 import argparse
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import rerun as rr
@@ -10,12 +11,24 @@ from src.common.runtime_config import build_dataset_viewer_config
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
 
 
-def parse_args():
+@dataclass(frozen=True)
+class ShowDatasetArgs:
+    run_dir: Path
+    fps: float
+    show_grid: bool
+
+
+def parse_args() -> ShowDatasetArgs:
     parser = argparse.ArgumentParser(description="Show a saved dataset run in Rerun")
     parser.add_argument("--run-dir", type=Path, required=True, help="Path to datasets/raw/run_XXXX")
     parser.add_argument("--fps", type=float, default=20.0, help="Playback speed in frames per second")
     parser.add_argument("--show-grid", action="store_true", help="Show the ground grid in the 3D view")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return ShowDatasetArgs(
+        run_dir=parsed.run_dir,
+        fps=float(parsed.fps),
+        show_grid=bool(parsed.show_grid),
+    )
 
 
 def main() -> None:
@@ -53,11 +66,6 @@ def main() -> None:
         time.sleep(frame_delay_s)
 
     print("[info] dataset loaded into Rerun")
-    try:
-        while True:
-            time.sleep(1.0)
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":

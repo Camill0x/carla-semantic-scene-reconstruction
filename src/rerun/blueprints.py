@@ -1,7 +1,9 @@
+from typing import Any
+
 import rerun.blueprint as rrb
 
 
-def make_dataset_blueprint(show_grid: bool):
+def make_dataset_blueprint(show_grid: bool) -> Any:
     return rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
@@ -26,7 +28,7 @@ def make_dataset_blueprint(show_grid: bool):
     )
 
 
-def make_live_blueprint(show_grid: bool):
+def make_live_blueprint(show_grid: bool) -> Any:
     return rrb.Blueprint(
         rrb.Horizontal(
             rrb.Spatial3DView(

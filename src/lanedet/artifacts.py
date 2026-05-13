@@ -1,9 +1,10 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from src.common.paths import repo_relative_or_absolute
+from src.common.typing_aliases import JsonDict
 from src.lanedet.metrics import build_tusimple_metrics
 
 
@@ -37,7 +38,7 @@ def copy_config(source_work_dir: Path, target: Path) -> Path:
     return target
 
 
-def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> Dict[str, Optional[Path]]:
+def copy_train_checkpoints(source_work_dir: Path, target_dir: Path) -> dict[str, Path | None]:
     source_ckpt_dir = source_work_dir / "ckpt"
     if not source_ckpt_dir.exists():
         raise FileNotFoundError(source_ckpt_dir)
@@ -89,7 +90,7 @@ def write_run_metadata(
     load_from: Optional[Path],
     finetune_from: Optional[Path],
 ) -> Path:
-    payload = {
+    payload: JsonDict = {
         "mode": mode,
         "run": run_name,
         "dataset": dataset,
@@ -103,7 +104,7 @@ def write_run_metadata(
     return write_json(output_dir / "meta.json", payload)
 
 
-def write_json(path: Path, payload: dict) -> Path:
+def write_json(path: Path, payload: JsonDict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)

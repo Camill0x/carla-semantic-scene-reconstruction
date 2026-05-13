@@ -1,16 +1,18 @@
 import json
 import math
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+
+from src.common.typing_aliases import IntArray, JsonDict
 
 TUSIMPLE_PIXEL_THRESH = 20.0
 TUSIMPLE_POINT_THRESH = 0.85
 
 
-def load_jsonl(path: Path) -> List[dict]:
-    records = []
+def load_jsonl(path: Path) -> List[JsonDict]:
+    records: List[JsonDict] = []
     with path.open("r", encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
             line = line.strip()
@@ -23,12 +25,16 @@ def load_jsonl(path: Path) -> List[dict]:
     return records
 
 
-def build_gt_map(gt_path: Path) -> Dict[str, dict]:
+def build_gt_map(gt_path: Path) -> Dict[str, JsonDict]:
     return {record["raw_file"]: record for record in load_jsonl(gt_path) if record.get("raw_file")}
 
 
-def valid_pairs(gt_lane: List[int], pred_lane: List[int], h_samples: List[int]) -> List[Tuple[int, int, int]]:
-    pairs = []
+def valid_pairs(
+    gt_lane: Sequence[Optional[int]],
+    pred_lane: Sequence[Optional[int]],
+    h_samples: Sequence[int],
+) -> List[Tuple[int, int, int]]:
+    pairs: List[Tuple[int, int, int]] = []
     for x_gt, x_pred, y in zip(gt_lane, pred_lane, h_samples):
         if x_gt is None or x_pred is None:
             continue
@@ -38,14 +44,22 @@ def valid_pairs(gt_lane: List[int], pred_lane: List[int], h_samples: List[int]) 
     return pairs
 
 
-def lane_mae(gt_lane: List[int], pred_lane: List[int], h_samples: List[int]) -> Optional[float]:
+def lane_mae(
+    gt_lane: Sequence[Optional[int]],
+    pred_lane: Sequence[Optional[int]],
+    h_samples: Sequence[int],
+) -> Optional[float]:
     pairs = valid_pairs(gt_lane, pred_lane, h_samples)
     if not pairs:
         return None
     return sum(abs(x_gt - x_pred) for x_gt, x_pred, _ in pairs) / len(pairs)
 
 
-def lane_rmse(gt_lane: List[int], pred_lane: List[int], h_samples: List[int]) -> Optional[float]:
+def lane_rmse(
+    gt_lane: Sequence[Optional[int]],
+    pred_lane: Sequence[Optional[int]],
+    h_samples: Sequence[int],
+) -> Optional[float]:
     pairs = valid_pairs(gt_lane, pred_lane, h_samples)
     if not pairs:
         return None
@@ -56,9 +70,9 @@ def rounded(value: Optional[float], digits: int = 4) -> Optional[float]:
     return round(float(value), digits) if value is not None else None
 
 
-def tusimple_angle(xs: np.ndarray, y_samples: np.ndarray) -> float:
-    xs = np.asarray(xs)
-    y_samples = np.asarray(y_samples)
+def tusimple_angle(xs: IntArray, y_samples: IntArray) -> float:
+    xs = np.asarray(xs, dtype=np.int_)
+    y_samples = np.asarray(y_samples, dtype=np.int_)
     valid = xs >= 0
     xs = xs[valid]
     ys = y_samples[valid]
@@ -71,16 +85,20 @@ def tusimple_angle(xs: np.ndarray, y_samples: np.ndarray) -> float:
     return float(np.arctan(slope))
 
 
-def tusimple_line_accuracy(pred_lane: List[int], gt_lane: List[int], threshold: float) -> float:
+def tusimple_line_accuracy(
+    pred_lane: Sequence[int],
+    gt_lane: Sequence[int],
+    threshold: float,
+) -> float:
     pred = np.array([x if x >= 0 else -100 for x in pred_lane])
     gt = np.array([x if x >= 0 else -100 for x in gt_lane])
     return float(np.sum(np.where(np.abs(pred - gt) < threshold, 1.0, 0.0)) / len(gt))
 
 
 def analyze_predictions(
-    gt_map: Dict[str, dict],
-    pred_records: List[dict],
-) -> dict:
+    gt_map: Dict[str, JsonDict],
+    pred_records: List[JsonDict],
+) -> JsonDict:
     n_images = 0
     total_gt_lanes = 0
     total_pred_lanes = 0
@@ -95,8 +113,10 @@ def analyze_predictions(
         if "raw_file" not in pred or "lanes" not in pred or "run_time" not in pred:
             raise ValueError("raw_file or lanes or run_time not in some predictions.")
 
-        raw_file = pred.get("raw_file")
-        gt = gt_map.get(raw_file)
+        raw_file_value = pred.get("raw_file")
+        if not isinstance(raw_file_value, str):
+            raise ValueError("Prediction raw_file must be a string.")
+        gt = gt_map.get(raw_file_value)
         if gt is None:
             raise ValueError("Some raw_file from your predictions do not exist in the test tasks.")
 
@@ -193,7 +213,7 @@ def analyze_predictions(
     }
 
 
-def build_tusimple_metrics(pred_json: Path, gt_json: Path) -> dict:
+def build_tusimple_metrics(pred_json: Path, gt_json: Path) -> JsonDict:
     pred_records = load_jsonl(pred_json)
     gt_records = load_jsonl(gt_json)
     if len(gt_records) != len(pred_records):

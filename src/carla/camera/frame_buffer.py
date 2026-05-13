@@ -5,10 +5,11 @@ import numpy as np
 
 import carla
 from src.carla.camera.sensor import camera_image_to_bgr
+from src.common.typing_aliases import ImageArray
 
 
 class CameraFrameBuffer:
-    def __init__(self, camera: carla.Sensor):
+    def __init__(self, camera: carla.Sensor) -> None:
         self.camera = camera
         self.queue: "queue.Queue[carla.Image]" = queue.Queue()
         self.pending_image: Optional[carla.Image] = None
@@ -36,7 +37,7 @@ class CameraFrameBuffer:
         expected_frame: Optional[int] = None,
         timeout: float = 2.0,
         allow_future: bool = False,
-    ) -> Tuple[np.ndarray, int, float, carla.Transform]:
+    ) -> Tuple[ImageArray, int, float, carla.Transform]:
         while True:
             if self.pending_image is not None:
                 image = self.pending_image

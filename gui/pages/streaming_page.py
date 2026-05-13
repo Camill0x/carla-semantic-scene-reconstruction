@@ -8,11 +8,13 @@ from gui.catalog import (
     TRAFFIC_FLAGS,
 )
 from gui.pages.base import WorkflowPage
+from gui.process_manager import ProjectProcessManager
+from gui.types import AppendActivity, ArgsList, SummarySpec, SummaryValues
 from gui.widgets.process_panel import ProcessPanel
 
 
 class StreamingPage(WorkflowPage):
-    def __init__(self, manager, append_activity) -> None:
+    def __init__(self, manager: ProjectProcessManager, append_activity: AppendActivity) -> None:
         super().__init__(manager, append_activity)
         layout = QVBoxLayout(self)
         grid = QGridLayout()
@@ -95,10 +97,10 @@ class StreamingPage(WorkflowPage):
     def window_subtitle(self) -> str:
         return "Live low-bandwidth inference workflow where raw camera and LiDAR stay local and only detections reach the viewer."
 
-    def preferred_window_size(self):
+    def preferred_window_size(self) -> tuple[int, int]:
         return (1060, 760)
 
-    def summary_specs(self):
+    def summary_specs(self) -> list[SummarySpec]:
         return [
             ("running", "Active Processes"),
             ("server", "Server"),
@@ -108,7 +110,7 @@ class StreamingPage(WorkflowPage):
             ("detectors", "Active Detectors"),
         ]
 
-    def summary_values(self):
+    def summary_values(self) -> SummaryValues:
         running = self.manager.running_process_names()
         detector_count = sum(1 for name in ["stream_openpcdet", "stream_lanedet"] if name in running)
         core_ok = all(name in running for name in ["stream_producer", "stream_aggregator", "stream_visualizer"])
@@ -121,7 +123,7 @@ class StreamingPage(WorkflowPage):
             "detectors": str(detector_count),
         }
 
-    def process_names(self):
+    def process_names(self) -> list[str]:
         return [
             "server",
             "manual_control",
@@ -133,7 +135,7 @@ class StreamingPage(WorkflowPage):
             "stream_lanedet",
         ]
 
-    def _start_manual(self, args):
+    def _start_manual(self, args: ArgsList) -> None:
         if "server" not in self.manager.running_process_names():
             self.notify_error("Server Required", "Start the CARLA server before launching manual control.")
             return
@@ -143,7 +145,7 @@ class StreamingPage(WorkflowPage):
             return
         self.append_activity(self.manager.start_process("manual_control", args=args))
 
-    def _start_traffic(self, args):
+    def _start_traffic(self, args: ArgsList) -> None:
         if "manual_control" not in self.manager.running_process_names():
             self.notify_error(
                 "Manual Control Required", "Traffic generation requires an active manual_control process."
@@ -151,7 +153,7 @@ class StreamingPage(WorkflowPage):
             return
         self.append_activity(self.manager.start_process("traffic", args=args))
 
-    def _start_core(self, args):
+    def _start_core(self, args: ArgsList) -> None:
         running = self.manager.running_process_names()
         if "manual_control" not in running:
             self.notify_error(
@@ -170,22 +172,22 @@ class StreamingPage(WorkflowPage):
         ]
         self.append_activity(messages)
 
-    def _stop_core(self):
+    def _stop_core(self) -> None:
         self.append_activity(
             self.manager.stop_many(
                 ["stream_lanedet", "stream_openpcdet", "stream_visualizer", "stream_aggregator", "stream_producer"]
             )
         )
 
-    def _restart_core(self, args):
+    def _restart_core(self, args: ArgsList) -> None:
         self._stop_core()
         self._start_core(args)
 
-    def _core_args(self):
+    def _core_args(self) -> tuple[ArgsList, ArgsList, ArgsList]:
         values = self.core_panel.form.values()
-        producer_args = []
-        aggregator_args = []
-        visualizer_args = []
+        producer_args: ArgsList = []
+        aggregator_args: ArgsList = []
+        visualizer_args: ArgsList = []
 
         every_nth = str(values.get("every_nth", "")).strip()
         if every_nth:
@@ -201,7 +203,7 @@ class StreamingPage(WorkflowPage):
 
         return producer_args, aggregator_args, visualizer_args
 
-    def _start_detector(self, name: str, args):
+    def _start_detector(self, name: str, args: ArgsList) -> None:
         running = self.manager.running_process_names()
         if not all(component in running for component in ["stream_producer", "stream_aggregator", "stream_visualizer"]):
             self.notify_error(
@@ -215,7 +217,7 @@ class StreamingPage(WorkflowPage):
             return
         self.append_activity(self.manager.start_process(name, args=args))
 
-    def _stop_server(self):
+    def _stop_server(self) -> None:
         self.append_activity(
             self.manager.stop_many(
                 [
@@ -231,11 +233,11 @@ class StreamingPage(WorkflowPage):
             )
         )
 
-    def _restart_server(self, args):
+    def _restart_server(self, args: ArgsList) -> None:
         self._stop_server()
         self.append_activity(self.manager.start_process("server", args=args))
 
-    def _stop_manual(self):
+    def _stop_manual(self) -> None:
         self.append_activity(
             self.manager.stop_many(
                 [
@@ -250,14 +252,14 @@ class StreamingPage(WorkflowPage):
             )
         )
 
-    def _restart_manual(self, args):
+    def _restart_manual(self, args: ArgsList) -> None:
         self._stop_manual()
         self._start_manual(args)
 
-    def _stop_traffic(self):
+    def _stop_traffic(self) -> None:
         self.append_activity(self.manager.stop_process("traffic"))
 
-    def _restart_traffic(self, args):
+    def _restart_traffic(self, args: ArgsList) -> None:
         self.append_activity(self.manager.stop_process("traffic"))
         self._start_traffic(args)
 

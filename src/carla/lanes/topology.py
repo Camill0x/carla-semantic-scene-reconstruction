@@ -1,6 +1,7 @@
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import carla
+from src.common.typing_aliases import BoundaryKey, BoundaryMetadata
 
 
 def waypoint_key(waypoint: carla.Waypoint) -> Tuple[int, int, int, int]:
@@ -61,7 +62,7 @@ def _lane_side_sign(reference: carla.Waypoint, candidate: carla.Waypoint) -> flo
     delta_y = candidate.transform.location.y - reference.transform.location.y
     delta_z = candidate.transform.location.z - reference.transform.location.z
     right = reference.transform.get_right_vector()
-    return delta_x * right.x + delta_y * right.y + delta_z * right.z
+    return float(delta_x * right.x + delta_y * right.y + delta_z * right.z)
 
 
 def find_adjacent_driving_lane(
@@ -141,7 +142,7 @@ def lane_marking_color_name(color: carla.LaneMarkingColor) -> str:
     return str(color).split(".")[-1]
 
 
-def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> Tuple:
+def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> BoundaryKey:
     if side == "left":
         neighbor = find_adjacent_driving_lane(carla_map, waypoint, side="left")
         if (
@@ -169,9 +170,9 @@ def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> T
 def sample_boundary_points(
     waypoint_chain: List[carla.Waypoint],
     side: str,
-) -> Tuple[List[carla.Location], Dict]:
+) -> Tuple[List[carla.Location], BoundaryMetadata]:
     points: List[carla.Location] = []
-    metadata: Dict = {}
+    metadata: BoundaryMetadata = {}
     has_non_none_marking = False
 
     for waypoint in waypoint_chain:

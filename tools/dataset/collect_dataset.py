@@ -2,7 +2,10 @@
 
 import argparse
 import queue
+from dataclasses import dataclass
 from typing import Optional
+
+import numpy as np
 
 import carla
 from src.carla.actors.classify import find_hero_vehicle
@@ -19,14 +22,20 @@ from src.carla.lidar.sensor import configure_lidar_blueprint
 from src.common.runtime_config import build_collector_config
 
 
-def parse_args():
+@dataclass(frozen=True)
+class CollectDatasetArgs:
+    num_frames: int
+    every_nth: int
+
+
+def parse_args() -> CollectDatasetArgs:
     parser = argparse.ArgumentParser(description="Collect raw multimodal CARLA dataset frames")
     parser.add_argument("-n", "--num-frames", type=int, default=100, help="How many frames to save")
     parser.add_argument("--every-nth", type=int, default=10, help="Save every N-th synchronized world frame")
-    args = parser.parse_args()
-    return build_collector_config(
-        num_frames=args.num_frames,
-        every_nth=args.every_nth,
+    parsed = parser.parse_args()
+    return CollectDatasetArgs(
+        num_frames=int(parsed.num_frames),
+        every_nth=int(parsed.every_nth),
     )
 
 
@@ -35,7 +44,11 @@ def should_process_frame(frame: int, last_processed_frame: Optional[int], every_
 
 
 def main() -> None:
-    config = parse_args()
+    args = parse_args()
+    config = build_collector_config(
+        num_frames=args.num_frames,
+        every_nth=args.every_nth,
+    )
 
     client = carla.Client(config.carla.host, config.carla.port)
     client.set_timeout(5.0)
@@ -108,7 +121,7 @@ def main() -> None:
             expected_frame = int(snapshot.frame) if hasattr(snapshot, "frame") else int(snapshot)
 
             if not should_process_frame(expected_frame, last_saved_frame, config.every_nth):
-                next_frame = last_saved_frame + config.every_nth
+                next_frame = config.every_nth if last_saved_frame is None else last_saved_frame + config.every_nth
                 lidar_frame_buffer.discard_before(next_frame)
                 camera_frame_buffer.discard_before(next_frame)
                 continue
@@ -155,7 +168,7 @@ def main() -> None:
                 continue
 
             points_snapshot = preprocess_lidar_points(
-                points=raw_points,
+                points=np.asarray(raw_points, dtype=np.float64),
                 hero=hero,
                 lidar=lidar,
             )
@@ -168,7 +181,7 @@ def main() -> None:
             )
 
             objects, gt_boxes, gt_names = filter_gt(
-                points=points_snapshot,
+                points=np.asarray(points_snapshot, dtype=np.float32),
                 objects=objects,
                 gt_boxes=gt_boxes,
                 gt_names=gt_names,

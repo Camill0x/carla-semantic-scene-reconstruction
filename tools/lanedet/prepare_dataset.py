@@ -2,6 +2,8 @@
 
 import argparse
 import shutil
+from dataclasses import dataclass
+from typing import List, Optional
 
 from src.common.dataset import iter_frame_dirs, selected_run_dirs, train_val_test_split
 from src.common.paths import repo_relative_or_absolute
@@ -10,7 +12,20 @@ from src.lanedet.datasets import load_samples, write_tusimple_dataset
 from src.lanedet.paths import RAW_DATASET_ROOT, prepared_dataset_root
 
 
-def parse_args() -> argparse.Namespace:
+@dataclass(frozen=True)
+class PrepareDatasetArgs:
+    dataset_format: str
+    name: str
+    use_all: bool
+    runs: Optional[List[str]]
+    val_ratio: float
+    test_ratio: float
+    seed: int
+    max_lanes: int
+    line_width: int
+
+
+def parse_args() -> PrepareDatasetArgs:
     parser = argparse.ArgumentParser(description="Build a TuSimple-like LaneDet dataset from collected CARLA runs")
     parser.add_argument("--format", choices=LANEDET_DATASETS, required=True, help="Prepared LaneDet dataset format")
     parser.add_argument("--name", default="default", help="Prepared dataset variant name")
@@ -22,13 +37,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-lanes", type=int, default=5)
     parser.add_argument("--line-width", type=int, default=15, help="Segmentation mask lane line width in pixels")
-    return parser.parse_args()
+    parsed = parser.parse_args()
+    return PrepareDatasetArgs(
+        dataset_format=str(parsed.format),
+        name=str(parsed.name),
+        use_all=bool(parsed.all),
+        runs=None if parsed.runs is None else [str(item) for item in parsed.runs],
+        val_ratio=float(parsed.val_ratio),
+        test_ratio=float(parsed.test_ratio),
+        seed=int(parsed.seed),
+        max_lanes=int(parsed.max_lanes),
+        line_width=int(parsed.line_width),
+    )
 
 
 def main() -> None:
     args = parse_args()
     source_root = RAW_DATASET_ROOT.resolve()
-    output_root = prepared_dataset_root(args.name, args.format).resolve()
+    output_root = prepared_dataset_root(args.name, args.dataset_format).resolve()
 
     if not source_root.exists():
         raise FileNotFoundError(source_root)
@@ -39,10 +65,10 @@ def main() -> None:
             raise FileExistsError(f"Prepared dataset directory is not empty: {repo_relative_or_absolute(output_root)}")
     output_root.mkdir(parents=True, exist_ok=True)
 
-    run_dirs = selected_run_dirs(source_root, None if args.all else args.runs)
+    run_dirs = selected_run_dirs(source_root, None if args.use_all else args.runs)
     frame_dirs = iter_frame_dirs(run_dirs)
 
-    print(f"Preparing LaneDet dataset: {args.format}")
+    print(f"Preparing LaneDet dataset: {args.dataset_format}")
     print(f"Raw runs: [{', '.join(run_dir.name for run_dir in run_dirs)}]")
     print(f"Frame directories: {len(frame_dirs)}")
     print(f"Output: {repo_relative_or_absolute(output_root)}")

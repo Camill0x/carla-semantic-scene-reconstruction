@@ -1,6 +1,6 @@
 import shlex
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypeAlias
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -18,13 +18,15 @@ from PySide6.QtWidgets import (
 
 from gui.models import FlagSpec
 
+InputWidget: TypeAlias = QCheckBox | QComboBox | QLineEdit
+
 
 class FlagForm(QWidget):
     def __init__(self, flags: List[FlagSpec], allow_extra_args: bool) -> None:
         super().__init__()
         self.flags = list(flags)
         self.allow_extra_args = allow_extra_args
-        self.inputs: Dict[str, QWidget] = {}
+        self.inputs: Dict[str, InputWidget] = {}
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -53,11 +55,11 @@ class FlagForm(QWidget):
 
     def _build_input(self, flag: FlagSpec) -> QWidget:
         if flag.kind == "bool":
-            widget = QCheckBox()
-            widget.setChecked(bool(flag.default))
-            widget.setEnabled(flag.enabled)
-            self.inputs[flag.key] = widget
-            return widget
+            checkbox = QCheckBox()
+            checkbox.setChecked(bool(flag.default))
+            checkbox.setEnabled(flag.enabled)
+            self.inputs[flag.key] = checkbox
+            return checkbox
         if flag.kind == "choice":
             widget = QComboBox()
             for choice in flag.choices or []:
@@ -70,14 +72,14 @@ class FlagForm(QWidget):
         if flag.kind in {"file", "dir"}:
             return self._build_path_row(flag)
 
-        widget = QLineEdit()
+        line_edit = QLineEdit()
         if flag.default not in (None, ""):
-            widget.setText(str(flag.default))
+            line_edit.setText(str(flag.default))
         if flag.placeholder:
-            widget.setPlaceholderText(flag.placeholder)
-        widget.setEnabled(flag.enabled)
-        self.inputs[flag.key] = widget
-        return widget
+            line_edit.setPlaceholderText(flag.placeholder)
+        line_edit.setEnabled(flag.enabled)
+        self.inputs[flag.key] = line_edit
+        return line_edit
 
     def _build_path_row(self, flag: FlagSpec) -> QWidget:
         container = QWidget()
@@ -110,12 +112,12 @@ class FlagForm(QWidget):
         payload: Dict[str, object] = {}
         for flag in self.flags:
             widget = self.inputs[flag.key]
-            if flag.kind == "bool":
-                payload[flag.key] = bool(widget.isChecked())  # type: ignore[attr-defined]
-            elif flag.kind == "choice":
-                payload[flag.key] = str(widget.currentText()).strip()  # type: ignore[attr-defined]
+            if isinstance(widget, QCheckBox):
+                payload[flag.key] = bool(widget.isChecked())
+            elif isinstance(widget, QComboBox):
+                payload[flag.key] = str(widget.currentText()).strip()
             else:
-                payload[flag.key] = str(widget.text()).strip()  # type: ignore[attr-defined]
+                payload[flag.key] = str(widget.text()).strip()
         payload["__extra_args__"] = self.extra_args.text().strip() if self.extra_args is not None else ""
         return payload
 
@@ -125,14 +127,14 @@ class FlagForm(QWidget):
                 continue
             widget = self.inputs[flag.key]
             value = values[flag.key]
-            if flag.kind == "bool":
-                widget.setChecked(bool(value))  # type: ignore[attr-defined]
-            elif flag.kind == "choice":
+            if isinstance(widget, QCheckBox):
+                widget.setChecked(bool(value))
+            elif isinstance(widget, QComboBox):
                 text = str(value)
                 if text:
-                    widget.setCurrentText(text)  # type: ignore[attr-defined]
+                    widget.setCurrentText(text)
             else:
-                widget.setText("" if value is None else str(value))  # type: ignore[attr-defined]
+                widget.setText("" if value is None else str(value))
         extra = values.get("__extra_args__")
         if extra is not None and self.extra_args is not None:
             self.extra_args.setText(str(extra))

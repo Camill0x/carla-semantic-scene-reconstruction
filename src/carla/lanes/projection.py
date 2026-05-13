@@ -4,22 +4,23 @@ import numpy as np
 
 import carla
 from src.carla.geometry.transforms import world_to_sensor
+from src.common.typing_aliases import Float32Array, Float64Array
 
 
-def build_projection_matrix(width: int, height: int, fov: float) -> np.ndarray:
+def build_projection_matrix(width: int, height: int, fov: float) -> Float32Array:
     focal = width / (2.0 * np.tan(fov * np.pi / 360.0))
     matrix = np.identity(3, dtype=np.float32)
     matrix[0, 0] = focal
     matrix[1, 1] = focal
     matrix[0, 2] = width / 2.0
     matrix[1, 2] = height / 2.0
-    return matrix
+    return np.asarray(matrix, dtype=np.float32)
 
 
 def project_world_point(
     location: carla.Location,
-    intrinsics: np.ndarray,
-    world_to_camera: np.ndarray,
+    intrinsics: Float32Array,
+    world_to_camera: Float32Array,
 ) -> Optional[Tuple[float, float, float]]:
     point = np.array([location.x, location.y, location.z, 1.0], dtype=np.float32)
     point_camera = world_to_camera @ point
@@ -37,13 +38,13 @@ def project_world_point(
 
 def project_polyline_with_world_points(
     world_points: List[carla.Location],
-    intrinsics: np.ndarray,
-    world_to_camera: np.ndarray,
+    intrinsics: Float32Array,
+    world_to_camera: Float32Array,
     image_width: int,
     image_height: int,
     projection_margin_px: float,
-) -> List[Tuple[np.ndarray, np.ndarray]]:
-    projected_samples: List[Tuple[np.ndarray, np.ndarray]] = []
+) -> List[Tuple[Float64Array, Float64Array]]:
+    projected_samples: List[Tuple[Float64Array, Float64Array]] = []
 
     for point in world_points:
         image_point = project_world_point(point, intrinsics, world_to_camera)
@@ -67,11 +68,11 @@ def project_polyline_with_world_points(
 
 
 def clip_line_segment_to_image_with_params(
-    start: np.ndarray,
-    end: np.ndarray,
+    start: Float64Array,
+    end: Float64Array,
     image_width: int,
     image_height: int,
-) -> Optional[Tuple[np.ndarray, np.ndarray, float, float]]:
+) -> Optional[Tuple[Float64Array, Float64Array, float, float]]:
     x0, y0 = float(start[0]), float(start[1])
     x1, y1 = float(end[0]), float(end[1])
     dx = x1 - x0
@@ -100,22 +101,22 @@ def clip_line_segment_to_image_with_params(
             if t < u2:
                 u2 = t
 
-    clipped_start = start + (end - start) * u1
-    clipped_end = start + (end - start) * u2
+    clipped_start = np.asarray(start + (end - start) * u1, dtype=np.float64)
+    clipped_end = np.asarray(start + (end - start) * u2, dtype=np.float64)
     return clipped_start, clipped_end, float(u1), float(u2)
 
 
-def world_points_to_lidar(points_world: np.ndarray, lidar_transform: carla.Transform) -> List[List[float]]:
+def world_points_to_lidar(points_world: Float64Array, lidar_transform: carla.Transform) -> List[List[float]]:
     if points_world.size == 0:
         return []
 
     points_lidar = world_to_sensor(points_world, lidar_transform)
     points_lidar[:, 1] *= -1.0
-    return points_lidar.astype(np.float32).tolist()
+    return [[float(value) for value in row] for row in points_lidar.astype(np.float32)]
 
 
 def clip_projected_polyline_to_image_and_lidar(
-    projected_samples: List[Tuple[np.ndarray, np.ndarray]],
+    projected_samples: List[Tuple[Float64Array, Float64Array]],
     image_width: int,
     image_height: int,
     lidar_transform: carla.Transform,
@@ -123,10 +124,10 @@ def clip_projected_polyline_to_image_and_lidar(
     if len(projected_samples) < 2:
         return [], [], 0
 
-    fragments_2d: List[List[np.ndarray]] = []
-    fragments_world: List[List[np.ndarray]] = []
-    current_fragment_2d: List[np.ndarray] = []
-    current_fragment_world: List[np.ndarray] = []
+    fragments_2d: List[List[Float64Array]] = []
+    fragments_world: List[List[Float64Array]] = []
+    current_fragment_2d: List[Float64Array] = []
+    current_fragment_world: List[Float64Array] = []
 
     for (start_2d, start_world), (end_2d, end_world) in zip(projected_samples[:-1], projected_samples[1:]):
         clipped_segment = clip_line_segment_to_image_with_params(
@@ -170,7 +171,7 @@ def clip_projected_polyline_to_image_and_lidar(
         return [], [], 0
 
     best_index = max(range(len(fragments_2d)), key=lambda idx: len(fragments_2d[idx]))
-    points_2d = [point.astype(np.float32).tolist() for point in fragments_2d[best_index]]
+    points_2d = [[float(value) for value in point.astype(np.float32)] for point in fragments_2d[best_index]]
     points_world = np.asarray(fragments_world[best_index], dtype=np.float64)
     points_lidar = world_points_to_lidar(points_world, lidar_transform)
     return points_2d, points_lidar, len(fragments_2d)

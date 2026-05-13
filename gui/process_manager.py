@@ -5,10 +5,18 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, TextIO
+from typing import Dict, List, Optional, Protocol, TextIO
 
 from gui.catalog import PROCESS_GROUPS, PROCESS_SPECS
 from gui.config import LOG_DIR, ROOT_DIR, STATE_PATH
+
+
+class ProcessHandle(Protocol):
+    pid: int
+
+    def poll(self) -> Optional[int]: ...
+
+    def wait(self, timeout: Optional[float] = None) -> int: ...
 
 
 @dataclass
@@ -16,7 +24,7 @@ class ManagedProcess:
     name: str
     command: List[str]
     args: List[str] = field(default_factory=list)
-    process: Optional[subprocess.Popen] = None
+    process: Optional[ProcessHandle] = None
     log_path: Optional[Path] = None
     log_handle: Optional[TextIO] = None
     last_exit_code: Optional[int] = None
@@ -57,7 +65,8 @@ class ReattachedProcess:
             if exit_code is not None:
                 return exit_code
             if deadline is not None and time.monotonic() >= deadline:
-                raise subprocess.TimeoutExpired(cmd=f"pid {self.pid}", timeout=timeout)
+                timeout_value = timeout if timeout is not None else 0.0
+                raise subprocess.TimeoutExpired(cmd=f"pid {self.pid}", timeout=timeout_value)
             time.sleep(0.1)
 
 
@@ -137,6 +146,8 @@ class ProjectProcessManager:
 
         process.refresh()
         self.save_state()
+        if process.is_running():
+            return f"Failed to stop {name}"
         return f"Stopped {name}"
 
     def restart_process(self, name: str, *, args: Optional[List[str]] = None) -> List[str]:
@@ -160,8 +171,10 @@ class ProjectProcessManager:
         for name, spec in PROCESS_SPECS.items():
             process = self.processes[name]
             if process.is_running():
+                current_process = process.process
+                assert current_process is not None
                 status = "Running"
-                pid = str(process.process.pid)
+                pid = str(current_process.pid)
             elif process.last_exit_code is not None:
                 status = f"Closed ({process.last_exit_code})"
                 pid = "-"

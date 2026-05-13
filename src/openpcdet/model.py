@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Tuple
 
 import numpy as np
 import torch
@@ -14,8 +14,8 @@ from src.openpcdet.prediction import Objects3DPrediction
 from src.openpcdet.runner import working_directory
 
 
-class InferenceDataset(DatasetTemplate):
-    def __init__(self, dataset_cfg, class_names, logger=None):
+class InferenceDataset(DatasetTemplate):  # type: ignore[misc]
+    def __init__(self, dataset_cfg: Any, class_names: Any, logger: Any = None) -> None:
         super().__init__(
             dataset_cfg=dataset_cfg,
             class_names=class_names,
@@ -24,14 +24,14 @@ class InferenceDataset(DatasetTemplate):
             logger=logger,
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 1
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Any:
         raise NotImplementedError("InferenceDataset is only used through prepare_data/collate_batch")
 
 
-def append_zero_timestamps(points4: np.ndarray) -> np.ndarray:
+def append_zero_timestamps(points4: Any) -> Any:
     timestamps = np.zeros((points4.shape[0], 1), dtype=np.float32)
     return np.hstack([points4.astype(np.float32), timestamps])
 
@@ -41,7 +41,7 @@ def synchronize_cuda() -> None:
         torch.cuda.synchronize()
 
 
-def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[InferenceDataset, torch.nn.Module, object, object]:
+def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[InferenceDataset, torch.nn.Module, Any, Any]:
     cfg_file_path = cfg_file.expanduser().resolve()
     ckpt_path = ckpt.expanduser().resolve()
 
@@ -68,12 +68,12 @@ def load_inference_model(cfg_file: Path, ckpt: Path) -> Tuple[InferenceDataset, 
 
 def run_inference(
     dataset: InferenceDataset,
-    model,
-    points4: np.ndarray,
+    model: Any,
+    points4: Any,
     frame_id: int,
     *,
     return_forward_time: bool = False,
-):
+) -> Any:
     points5 = append_zero_timestamps(points4)
     input_dict = {
         "points": points5,

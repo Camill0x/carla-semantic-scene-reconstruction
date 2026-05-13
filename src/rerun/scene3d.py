@@ -1,14 +1,15 @@
-from typing import Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
 import rerun as rr
 from rerun.datatypes import Angle, RotationAxisAngle
+from src.common.typing_aliases import Float32Array, ImageArray
 from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.colors import EGO_COLOR, GT_COLOR, prediction_colors
 
-EMPTY_POINTS = np.zeros((0, 3), dtype=np.float32)
-EMPTY_COLORS = np.zeros((0, 4), dtype=np.uint8)
+EMPTY_POINTS: Float32Array = np.zeros((0, 3), dtype=np.float32)
+EMPTY_COLORS: ImageArray = np.zeros((0, 4), dtype=np.uint8)
 
 
 def clear_entity(path: str) -> None:
@@ -18,7 +19,7 @@ def clear_entity(path: str) -> None:
         return
 
 
-def boxes_to_rerun(boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
+def boxes_to_rerun(boxes: Float32Array) -> Tuple[Float32Array, Float32Array, List[RotationAxisAngle]]:
     if boxes.size == 0:
         return (
             np.zeros((0, 3), dtype=np.float32),
@@ -32,17 +33,17 @@ def boxes_to_rerun(boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
     return centers, half_sizes, rotations
 
 
-def gt_labels(gt_boxes: np.ndarray, gt_names: Sequence[str]) -> list:
+def gt_labels(gt_boxes: Float32Array, gt_names: Sequence[str]) -> List[str]:
     if gt_names and len(gt_names) == len(gt_boxes):
         return [f"GT {name}" for name in gt_names]
     return [f"GT #{idx}" for idx in range(len(gt_boxes))]
 
 
-def prediction_labels(pred_names: Sequence[str]) -> list:
+def prediction_labels(pred_names: Sequence[str]) -> List[str]:
     return [str(name) for name in pred_names]
 
 
-def prediction_names(objects_3d: Objects3DPrediction) -> list:
+def prediction_names(objects_3d: Objects3DPrediction) -> List[str]:
     if len(objects_3d.names) == len(objects_3d.boxes):
         return [str(name) for name in objects_3d.names]
     if len(objects_3d.labels) == len(objects_3d.boxes):
@@ -50,17 +51,17 @@ def prediction_names(objects_3d: Objects3DPrediction) -> list:
     return [f"object_{index}" for index in range(len(objects_3d.boxes))]
 
 
-def prediction_scores(scores: np.ndarray) -> np.ndarray:
-    return np.round(scores.astype(np.float32), 2).astype(float).tolist()
+def prediction_scores(scores: Float32Array) -> List[float]:
+    return [float(value) for value in np.round(scores.astype(np.float32), 2)]
 
 
-def point_positions(points: np.ndarray) -> np.ndarray:
+def point_positions(points: Float32Array) -> Float32Array:
     if points.size == 0:
         return EMPTY_POINTS
     return points[:, :3].astype(np.float32)
 
 
-def point_colors(points: np.ndarray) -> np.ndarray:
+def point_colors(points: Float32Array) -> ImageArray:
     if points.size == 0:
         return EMPTY_COLORS
 
@@ -79,7 +80,7 @@ def point_colors(points: np.ndarray) -> np.ndarray:
     return np.stack([shade, shade, blue, alpha], axis=1)
 
 
-def log_points(points: np.ndarray, *, point_radius: float, visible: bool) -> None:
+def log_points(points: Float32Array, *, point_radius: float, visible: bool) -> None:
     if not visible:
         rr.log("world/points", rr.Points3D(positions=EMPTY_POINTS))
         return
@@ -95,7 +96,7 @@ def log_points(points: np.ndarray, *, point_radius: float, visible: bool) -> Non
 
 
 def log_gt_boxes(
-    gt_boxes: np.ndarray,
+    gt_boxes: Float32Array,
     gt_names: Sequence[str],
     *,
     line_radius: float,
@@ -122,7 +123,7 @@ def log_gt_boxes(
 
 
 def log_ego_box(
-    ego_box: np.ndarray,
+    ego_box: Float32Array,
     *,
     line_radius: float,
 ) -> None:

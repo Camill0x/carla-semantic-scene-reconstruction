@@ -1,8 +1,9 @@
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from gui.models import FlagSpec
+from gui.types import ArgsList
 from gui.widgets.flag_form import FlagForm
 
 
@@ -12,15 +13,15 @@ class ProcessPanel(QFrame):
         *,
         title: str,
         description: str,
-        flags: List[FlagSpec],
-        on_start: Callable[[List[str]], None],
+        flags: list[FlagSpec],
+        on_start: Callable[[ArgsList], None],
         on_stop: Callable[[], None],
-        on_restart: Optional[Callable[[List[str]], None]] = None,
+        on_restart: Optional[Callable[[ArgsList], None]] = None,
         allow_extra_args: bool,
-        initial_args: Optional[List[str]] = None,
+        initial_args: Optional[ArgsList] = None,
     ) -> None:
         super().__init__()
-        self.setFrameShape(QFrame.StyledPanel)
+        self.setFrameShape(QFrame.Shape.StyledPanel)
         self.on_start = on_start
         self.on_stop = on_stop
         self.on_restart = on_restart
@@ -75,7 +76,7 @@ class ProcessPanel(QFrame):
             color = "#9aa5b1"
         self.status_label.setStyleSheet(f"font-weight: 700; color: {color};")
 
-    def load_values(self, values: dict) -> None:
+    def load_values(self, values: dict[str, object]) -> None:
         self.form.set_values(values)
 
     def validation_error(self) -> Optional[str]:

@@ -9,7 +9,7 @@ from typing import Dict, Optional
 import numpy as np
 
 import carla
-from src.carla.actors.classify import find_hero_vehicle
+from src.carla.actors.classify import wait_for_hero_vehicle
 from src.carla.camera.frame_buffer import CameraFrameBuffer
 from src.carla.camera.sensor import configure_front_camera_blueprint, front_camera_transform
 from src.carla.geometry.boxes import actor_to_gt_box
@@ -100,17 +100,12 @@ def main() -> None:
 
     client = carla.Client(config.carla.host, config.carla.port)
     client.set_timeout(5.0)
-    world = client.get_world()
-
+    logger.info("Waiting for a synchronized CARLA world with an active hero vehicle...")
+    world, hero = wait_for_hero_vehicle(client, require_sync=True)
     settings = world.get_settings()
-    if not settings.synchronous_mode:
-        raise RuntimeError("Run manual_control.py with the --sync flag")
-
-    hero = find_hero_vehicle(world)
-    if hero is None:
-        raise RuntimeError("Hero vehicle not found")
 
     logger.info("Hero id=%s, type=%s", hero.id, hero.type_id)
+    logger.info("Map: %s", world.get_map().name)
     logger.info("Frame buffer: %s", names.frame_buffer)
     logger.info("Camera prefix: %s", names.camera_prefix)
     logger.info("Lidar prefix: %s", names.lidar_prefix)

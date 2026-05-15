@@ -60,7 +60,7 @@ def waypoint_chain_forward(start_waypoint: carla.Waypoint, distance_m: float, st
     return waypoints
 
 
-def _lane_side_sign(reference: carla.Waypoint, candidate: carla.Waypoint) -> float:
+def lane_side_sign(reference: carla.Waypoint, candidate: carla.Waypoint) -> float:
     """Return the signed lateral side of a candidate lane relative to a reference waypoint."""
     delta_x = candidate.transform.location.x - reference.transform.location.x
     delta_y = candidate.transform.location.y - reference.transform.location.y
@@ -94,7 +94,7 @@ def find_adjacent_driving_lane(
         if candidate.lane_type != carla.LaneType.Driving:
             continue
 
-        side_sign = _lane_side_sign(waypoint, candidate)
+        side_sign = lane_side_sign(waypoint, candidate)
         if side == "left" and side_sign >= 0.0:
             continue
         if side == "right" and side_sign <= 0.0:
@@ -150,6 +150,11 @@ def lane_marking_color_name(color: carla.LaneMarkingColor) -> str:
     return str(color).split(".")[-1]
 
 
+def is_visible_lane_marking_type(marking_type: str) -> bool:
+    """Return whether a CARLA lane-marking type represents a painted lane line worth annotating."""
+    return marking_type not in {"NONE", "Other", "Grass", "Curb"}
+
+
 def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> BoundaryKey:
     """Build a stable identifier for one lane boundary relative to its neighbors."""
     if side == "left":
@@ -176,14 +181,15 @@ def boundary_key(carla_map: carla.Map, waypoint: carla.Waypoint, side: str) -> B
     return (waypoint.road_id, waypoint.section_id, waypoint.lane_id, "right_edge")
 
 
-def sample_boundary_points(
+def sample_boundary_segments(
     waypoint_chain: List[carla.Waypoint],
     side: str,
-) -> Tuple[List[carla.Location], BoundaryMetadata]:
-    """Sample one lane-boundary polyline and its metadata from a waypoint chain."""
-    points: List[carla.Location] = []
-    metadata: BoundaryMetadata = {}
-    has_non_none_marking = False
+    min_segment_points: int,
+) -> List[Tuple[List[carla.Location], BoundaryMetadata]]:
+    """Sample contiguous visible boundary segments from a waypoint chain."""
+    segments: List[Tuple[List[carla.Location], BoundaryMetadata]] = []
+    current_points: List[carla.Location] = []
+    current_metadata: BoundaryMetadata = {}
 
     for waypoint in waypoint_chain:
         transform = waypoint.transform
@@ -206,11 +212,8 @@ def sample_boundary_points(
                 z=location.z + 0.05,
             )
 
-        points.append(point)
         marking_type = lane_marking_type_name(lane_marking.type)
         marking_color = lane_marking_color_name(lane_marking.color)
-        if marking_type != "NONE":
-            has_non_none_marking = True
 
         sample_metadata = {
             "road_id": waypoint.road_id,
@@ -222,10 +225,19 @@ def sample_boundary_points(
             "marking_color": marking_color,
             "marking_width": float(lane_marking.width),
         }
-        if not metadata or marking_type != "NONE":
-            metadata = sample_metadata
 
-    if metadata and not has_non_none_marking:
-        metadata = {**metadata, "marking_type": "NONE"}
+        if not is_visible_lane_marking_type(marking_type):
+            if len(current_points) >= min_segment_points and current_metadata:
+                segments.append((current_points, current_metadata))
+            current_points = []
+            current_metadata = {}
+            continue
 
-    return points, metadata
+        current_points.append(point)
+        if not current_metadata:
+            current_metadata = sample_metadata
+
+    if len(current_points) >= min_segment_points and current_metadata:
+        segments.append((current_points, current_metadata))
+
+    return segments

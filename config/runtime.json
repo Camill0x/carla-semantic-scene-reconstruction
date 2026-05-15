@@ -23,10 +23,15 @@
   },
   "lane_annotations": {
     "distance_m": 40.0,
-    "step_m": 2.0,
+    "step_m": 1.0,
     "max_side_lanes": 2,
     "projection_margin_px": 50.0,
-    "dedupe_distance_px": 2.0
+    "dedupe_distance_px": 2.0,
+    "min_segment_points": 2,
+    "min_projected_points": 2,
+    "min_length_px": 30.0,
+    "min_length_m": 1.0,
+    "extend_to_bottom_threshold_px": 150.0
   },
   "gt_annotations": {
     "min_lidar_points_in_box": 5

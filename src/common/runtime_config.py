@@ -102,6 +102,11 @@ def load_lane_annotations_config() -> LaneAnnotationsConfig:
         max_side_lanes=int(_require_value(section, "max_side_lanes")),
         projection_margin_px=float(_require_value(section, "projection_margin_px")),
         dedupe_distance_px=float(_require_value(section, "dedupe_distance_px")),
+        min_segment_points=int(_require_value(section, "min_segment_points")),
+        min_projected_points=int(_require_value(section, "min_projected_points")),
+        min_length_px=float(_require_value(section, "min_length_px")),
+        min_length_m=float(_require_value(section, "min_length_m")),
+        extend_to_bottom_threshold_px=float(_require_value(section, "extend_to_bottom_threshold_px")),
     )
 
 

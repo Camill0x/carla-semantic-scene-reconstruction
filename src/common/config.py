@@ -62,6 +62,11 @@ class LaneAnnotationsConfig:
     max_side_lanes: int
     projection_margin_px: float
     dedupe_distance_px: float
+    min_segment_points: int
+    min_projected_points: int
+    min_length_px: float
+    min_length_m: float
+    extend_to_bottom_threshold_px: float
 
     def __post_init__(self) -> None:
         """Validate the LaneAnnotationsConfig configuration after initialization."""
@@ -75,6 +80,16 @@ class LaneAnnotationsConfig:
             raise ValueError("Lane projection_margin_px must be >= 0")
         if self.dedupe_distance_px < 0.0:
             raise ValueError("Lane dedupe_distance_px must be >= 0")
+        if self.min_segment_points < 2:
+            raise ValueError("Lane min_segment_points must be >= 2")
+        if self.min_projected_points < 2:
+            raise ValueError("Lane min_projected_points must be >= 2")
+        if self.min_length_px < 0.0:
+            raise ValueError("Lane min_length_px must be >= 0")
+        if self.min_length_m < 0.0:
+            raise ValueError("Lane min_length_m must be >= 0")
+        if self.extend_to_bottom_threshold_px < 0.0:
+            raise ValueError("Lane extend_to_bottom_threshold_px must be >= 0")
 
 
 @dataclass(frozen=True)

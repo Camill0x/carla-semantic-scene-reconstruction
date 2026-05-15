@@ -120,15 +120,15 @@ def world_points_to_lidar(points_world: Float64Array, lidar_transform: carla.Tra
     return [[float(value) for value in row] for row in points_lidar.astype(np.float32)]
 
 
-def clip_projected_polyline_to_image_and_lidar(
+def clip_projected_polyline_fragments_to_image_and_lidar(
     projected_samples: List[Tuple[Float64Array, Float64Array]],
     image_width: int,
     image_height: int,
     lidar_transform: carla.Transform,
-) -> Tuple[List[List[float]], List[List[float]], int]:
-    """Clip projected lane samples and keep matching LiDAR-space points."""
+) -> List[Tuple[List[List[float]], List[List[float]]]]:
+    """Clip projected lane samples into visible image fragments with matching LiDAR-space points."""
     if len(projected_samples) < 2:
-        return [], [], 0
+        return []
 
     fragments_2d: List[List[Float64Array]] = []
     fragments_world: List[List[Float64Array]] = []
@@ -173,14 +173,35 @@ def clip_projected_polyline_to_image_and_lidar(
         fragments_2d.append(current_fragment_2d)
         fragments_world.append(current_fragment_world)
 
-    if not fragments_2d:
+    clipped_fragments: List[Tuple[List[List[float]], List[List[float]]]] = []
+    for fragment_2d, fragment_world in zip(fragments_2d, fragments_world):
+        points_2d = [[float(value) for value in point.astype(np.float32)] for point in fragment_2d]
+        points_world = np.asarray(fragment_world, dtype=np.float64)
+        points_lidar = world_points_to_lidar(points_world, lidar_transform)
+        clipped_fragments.append((points_2d, points_lidar))
+
+    return clipped_fragments
+
+
+def clip_projected_polyline_to_image_and_lidar(
+    projected_samples: List[Tuple[Float64Array, Float64Array]],
+    image_width: int,
+    image_height: int,
+    lidar_transform: carla.Transform,
+) -> Tuple[List[List[float]], List[List[float]], int]:
+    """Clip projected lane samples and keep matching LiDAR-space points."""
+    fragments = clip_projected_polyline_fragments_to_image_and_lidar(
+        projected_samples,
+        image_width,
+        image_height,
+        lidar_transform,
+    )
+    if not fragments:
         return [], [], 0
 
-    best_index = max(range(len(fragments_2d)), key=lambda idx: len(fragments_2d[idx]))
-    points_2d = [[float(value) for value in point.astype(np.float32)] for point in fragments_2d[best_index]]
-    points_world = np.asarray(fragments_world[best_index], dtype=np.float64)
-    points_lidar = world_points_to_lidar(points_world, lidar_transform)
-    return points_2d, points_lidar, len(fragments_2d)
+    best_index = max(range(len(fragments)), key=lambda idx: len(fragments[idx][0]))
+    points_2d, points_lidar = fragments[best_index]
+    return points_2d, points_lidar, len(fragments)
 
 
 def dedupe_consecutive_points(points: List[List[float]], min_dist: float) -> List[List[float]]:

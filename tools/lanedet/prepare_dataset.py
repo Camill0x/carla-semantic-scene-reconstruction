@@ -38,7 +38,7 @@ def parse_args() -> PrepareDatasetArgs:
     parser.add_argument("--test-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-lanes", type=int, default=5)
-    parser.add_argument("--line-width", type=int, default=15, help="Segmentation mask lane line width in pixels")
+    parser.add_argument("--line-width", type=int, default=10, help="Segmentation mask lane line width in pixels")
     parsed = parser.parse_args()
     return PrepareDatasetArgs(
         dataset_format=str(parsed.format),

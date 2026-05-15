@@ -108,6 +108,11 @@ def lane_annotations_to_dict(config: LaneAnnotationsConfig) -> Dict[str, object]
         "max_side_lanes": int(config.max_side_lanes),
         "projection_margin_px": float(config.projection_margin_px),
         "dedupe_distance_px": float(config.dedupe_distance_px),
+        "min_segment_points": int(config.min_segment_points),
+        "min_projected_points": int(config.min_projected_points),
+        "min_length_px": float(config.min_length_px),
+        "min_length_m": float(config.min_length_m),
+        "extend_to_bottom_threshold_px": float(config.extend_to_bottom_threshold_px),
     }
 
 

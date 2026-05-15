@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -16,6 +17,14 @@ from src.carla.lanes.topology import (
 )
 from src.common.config import LaneAnnotationsConfig
 from src.common.typing_aliases import ObjectDict
+
+
+@dataclass(frozen=True)
+class LaneFragmentCandidate:
+    """Typed working representation of one projected lane fragment."""
+    metadata: ObjectDict
+    points_2d: List[List[float]]
+    points_3d_lidar: List[List[float]]
 
 
 def bottommost_y(points: Sequence[Sequence[float]]) -> float:
@@ -150,7 +159,7 @@ def collect_lane_annotations(
                 side,
                 min_segment_points=config.min_segment_points,
             )
-            best_fragment: Optional[ObjectDict] = None
+            best_fragment: Optional[LaneFragmentCandidate] = None
             best_fragment_y = float("-inf")
             for points_3d, metadata in boundary_segments:
                 projected_samples = project_polyline_with_world_points(
@@ -172,18 +181,18 @@ def collect_lane_annotations(
                     if bottom_y <= best_fragment_y:
                         continue
                     best_fragment_y = bottom_y
-                    best_fragment = {
-                        **metadata,
-                        "points": clipped_points,
-                        "points_lidar": clipped_points_lidar,
-                    }
+                    best_fragment = LaneFragmentCandidate(
+                        metadata=dict(metadata),
+                        points_2d=clipped_points,
+                        points_3d_lidar=clipped_points_lidar,
+                    )
 
             if best_fragment is None:
                 continue
 
             points_2d, points_3d_lidar = extend_polyline_to_bottom(
-                best_fragment["points"],
-                best_fragment["points_lidar"],
+                best_fragment.points_2d,
+                best_fragment.points_3d_lidar,
                 image_height=image_height,
                 threshold_px=config.extend_to_bottom_threshold_px,
             )
@@ -205,7 +214,7 @@ def collect_lane_annotations(
             annotations.append(
                 {
                     "id": len(annotations),
-                    **{key: value for key, value in best_fragment.items() if key not in {"points", "points_lidar"}},
+                    **best_fragment.metadata,
                     "points": points_2d,
                     "points_lidar": points_3d_lidar,
                 }

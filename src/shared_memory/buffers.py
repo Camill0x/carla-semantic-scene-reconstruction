@@ -1,5 +1,5 @@
-import json
 import inspect
+import json
 import struct
 from dataclasses import dataclass
 from multiprocessing import resource_tracker, shared_memory

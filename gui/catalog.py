@@ -210,11 +210,11 @@ LANEDET_PREPARE_FLAGS = [
     FlagSpec("name", "Dataset Name", "--name", default="default"),
     FlagSpec("all_runs", "Use All Runs", "--all", kind="bool", default=True),
     FlagSpec("runs", "Specific Runs", "--runs", default=""),
+    FlagSpec("max_lanes", "Max Lanes", "--max-lanes", kind="int", default=5),
+    FlagSpec("line_width", "Line Width", "--line-width", kind="int", default=15),
     FlagSpec("val_ratio", "Val Ratio", "--val-ratio", kind="float", default=0.2),
     FlagSpec("test_ratio", "Test Ratio", "--test-ratio", kind="float", default=0.2),
     FlagSpec("seed", "Seed", "--seed", kind="int", default=42),
-    FlagSpec("max_lanes", "Max Lanes", "--max-lanes", kind="int", default=5),
-    FlagSpec("line_width", "Line Width", "--line-width", kind="int", default=15),
 ]
 
 LANEDET_MAIN_FLAGS = [

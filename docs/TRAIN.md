@@ -272,11 +272,11 @@ It selects one or more `run_XXXX` directories under `datasets/raw`, scans the re
 * `--name` — choose the prepared dataset variant name (default: `default`)
 * `--all` — use every `run_XXXX` directory under `datasets/raw`
 * `--runs` — select only specific raw runs
+* `--max-lanes` — limit how many lanes are retained per sample (default: `5`)
+* `--line-width` — control segmentation mask line width in pixels (default: `10`)
 * `--val-ratio` — set the validation split ratio (default: `0.2`)
 * `--test-ratio` — set the test split ratio (default: `0.2`)
 * `--seed` — control the split shuffle seed (default: `42`)
-* `--max-lanes` — limit how many lanes are retained per sample (default: `5`)
-* `--line-width` — control segmentation mask line width in pixels (default: `10`)
 
 #### Examples
 

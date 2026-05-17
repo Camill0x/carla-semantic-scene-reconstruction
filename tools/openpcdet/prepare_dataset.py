@@ -73,8 +73,28 @@ def main() -> None:
     logger.info("Runs: [%s]", ", ".join(run_dir.name for run_dir in run_dirs))
     logger.info("Found %d frame directories", len(frame_dirs))
 
-    infos = load_infos(frame_dirs, output_root, class_names)
+    infos, stats = load_infos(frame_dirs, output_root, class_names)
+
+    logger.info("Skipped frames with no objects: %s", stats["skipped_no_objects"])
+    logger.info("Skipped frames for other reasons: %s", stats["skipped_other"])
+
     logger.info("Loaded %d valid samples", len(infos))
+    logger.info("Total objects in valid samples: %s", stats["total_objects"])
+
+    objects_per_class = stats.get("objects_per_class", {})
+    if isinstance(objects_per_class, dict):
+        for class_name in class_names:
+            class_stats = objects_per_class.get(class_name, {})
+            if not isinstance(class_stats, dict):
+                continue
+            logger.info(
+                "Objects %s: total=%s avg=%.2f min=%s max=%s",
+                class_name,
+                class_stats.get("total", 0),
+                float(class_stats.get("avg", 0.0)),
+                class_stats.get("min", 0),
+                class_stats.get("max", 0),
+            )
 
     splits = train_val_test_split(
         items=infos,

@@ -128,6 +128,7 @@ def load_samples(
     skipped_missing_files = 0
     skipped_no_lanes_meta = 0
     skipped_no_usable_lanes = 0
+    total_lanes_in_samples = 0
 
     iterator = tqdm(frame_dirs, desc="Processing frames", unit="frame") if show_progress else frame_dirs
     for frame_dir in iterator:
@@ -144,6 +145,9 @@ def load_samples(
         sample = frame_to_sample(frame_dir, max_lanes=max_lanes)
         if sample is not None:
             samples.append(sample)
+            lanes_payload = sample.get("lanes", [])
+            if isinstance(lanes_payload, list):
+                total_lanes_in_samples += len(lanes_payload)
         else:
             skipped_no_usable_lanes += 1
 
@@ -154,6 +158,7 @@ def load_samples(
     stats = {
         "total_frames": len(frame_dirs),
         "usable_samples": len(samples),
+        "total_lanes_in_samples": total_lanes_in_samples,
         "skipped_missing_files": skipped_missing_files,
         "skipped_no_lanes_meta": skipped_no_lanes_meta,
         "skipped_no_usable_lanes": skipped_no_usable_lanes,

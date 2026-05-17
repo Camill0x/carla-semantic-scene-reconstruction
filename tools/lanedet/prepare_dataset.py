@@ -19,11 +19,11 @@ class PrepareDatasetArgs:
     name: str
     use_all: bool
     runs: Optional[List[str]]
+    max_lanes: int
+    line_width: int
     val_ratio: float
     test_ratio: float
     seed: int
-    max_lanes: int
-    line_width: int
 
 
 def parse_args() -> PrepareDatasetArgs:
@@ -34,22 +34,22 @@ def parse_args() -> PrepareDatasetArgs:
     run_selection = parser.add_mutually_exclusive_group(required=True)
     run_selection.add_argument("--all", action="store_true", help="Use all run_XXXX directories under datasets/raw")
     run_selection.add_argument("--runs", nargs="+", metavar="RUN", help="Use selected raw run directories")
+    parser.add_argument("--max-lanes", type=int, default=5)
+    parser.add_argument("--line-width", type=int, default=10, help="Segmentation mask lane line width in pixels")
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--test-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--max-lanes", type=int, default=5)
-    parser.add_argument("--line-width", type=int, default=10, help="Segmentation mask lane line width in pixels")
     parsed = parser.parse_args()
     return PrepareDatasetArgs(
         dataset_format=str(parsed.format),
         name=str(parsed.name),
         use_all=bool(parsed.all),
         runs=None if parsed.runs is None else [str(item) for item in parsed.runs],
+        max_lanes=int(parsed.max_lanes),
+        line_width=int(parsed.line_width),
         val_ratio=float(parsed.val_ratio),
         test_ratio=float(parsed.test_ratio),
         seed=int(parsed.seed),
-        max_lanes=int(parsed.max_lanes),
-        line_width=int(parsed.line_width),
     )
 
 
@@ -78,7 +78,15 @@ def main() -> None:
     logger.info("Output: %s", repo_relative_or_absolute(output_root))
 
     samples, stats = load_samples(frame_dirs, max_lanes=args.max_lanes, show_progress=True)
-    logger.info("Loaded %d valid lane samples", len(samples))
+
+    logger.info("Skipped missing image/lanes files: %s", stats["skipped_missing_files"])
+    logger.info("Skipped frames with no collected lane annotations: %s", stats["skipped_no_lanes_meta"])
+    logger.info("Skipped frames without usable lane geometry: %s", stats["skipped_no_usable_lanes"])
+    logger.info("Usable lane samples: %s", stats["usable_samples"])
+
+    total_lanes = int(stats["total_lanes_in_samples"])
+    avg_lanes_per_frame = (float(total_lanes) / float(len(samples))) if samples else 0.0
+    logger.info("Total lanes in valid frames: %d (avg %.2f per frame)", total_lanes, avg_lanes_per_frame)
 
     splits = train_val_test_split(
         items=samples,
@@ -92,10 +100,6 @@ def main() -> None:
         line_width=args.line_width,
     )
 
-    logger.info("Skipped missing image/lanes files: %s", stats["skipped_missing_files"])
-    logger.info("Skipped frames with no collected lane annotations: %s", stats["skipped_no_lanes_meta"])
-    logger.info("Skipped frames without usable lane geometry: %s", stats["skipped_no_usable_lanes"])
-    logger.info("Usable lane samples: %s", stats["usable_samples"])
     logger.info("Train samples: %d", len(splits.train))
     logger.info("Val samples: %d", len(splits.val))
     logger.info("Test samples: %d", len(splits.test))

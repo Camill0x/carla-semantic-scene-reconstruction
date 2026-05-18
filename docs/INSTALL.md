@@ -126,6 +126,7 @@ The installer:
 
 * Creates or updates the `openpcdet` Conda environment with Python 3.8 from `envs/openpcdet.yml`
 * Installs `torch==2.2.2` and `torchvision==0.17.2` from the official PyTorch `cu121` index
+* Installs `torch-scatter` from the PyG wheel index for dynamic voxelization / dynamic pillar models such as CenterPoint
 * Installs the `pcdet` package from `third_party/OpenPCDet`
 
 ## LaneDet

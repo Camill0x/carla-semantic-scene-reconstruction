@@ -8,6 +8,7 @@ ENV_NAME="openpcdet"
 TORCH_VERSION="2.2.2"
 TORCHVISION_VERSION="0.17.2"
 TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121"
+PYG_WHEEL_URL="https://data.pyg.org/whl/torch-2.2.0+cu121.html"
 
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
@@ -45,28 +46,33 @@ if ! nvcc --version | grep -q "release 12.1"; then
 fi
 
 if conda env list | awk '{print $1}' | grep -Fxq "${ENV_NAME}"; then
-    echo "[1/5] Updating existing conda environment '${ENV_NAME}' from ${ENV_FILE}"
+    echo "[1/6] Updating existing conda environment '${ENV_NAME}' from ${ENV_FILE}"
     conda env update -n "${ENV_NAME}" -f "${ENV_FILE}" --prune
 else
-    echo "[1/5] Creating conda environment '${ENV_NAME}' from ${ENV_FILE}"
+    echo "[1/6] Creating conda environment '${ENV_NAME}' from ${ENV_FILE}"
     conda env create -f "${ENV_FILE}"
 fi
 
-echo "[2/5] Activating environment"
+echo "[2/6] Activating environment"
 conda activate "${ENV_NAME}"
 
-echo "[3/5] Installing PyTorch wheels from the official cu121 index"
+echo "[3/6] Installing PyTorch wheels from the official cu121 index"
 python -m pip install --upgrade pip
 python -m pip install \
     --index-url "${TORCH_INDEX_URL}" \
     "torch==${TORCH_VERSION}" \
     "torchvision==${TORCHVISION_VERSION}"
 
-echo "[4/5] Installing the OpenPCDet Python package from third_party/OpenPCDet"
+echo "[4/6] Installing torch-scatter for dynamic voxelization / dynamic pillar models"
+python -m pip install \
+    torch-scatter \
+    -f "${PYG_WHEEL_URL}"
+
+echo "[5/6] Installing the OpenPCDet Python package from third_party/OpenPCDet"
 cd "${OPENPCDET_DIR}"
 python -m pip install -e .
 
-echo "[5/5] Checking GPU compute capability against the installed torch build"
+echo "[6/6] Checking GPU compute capability against the installed torch build"
 python - <<'PY'
 import torch
 

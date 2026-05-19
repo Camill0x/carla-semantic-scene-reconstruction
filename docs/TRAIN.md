@@ -213,8 +213,9 @@ python -m tools.openpcdet.test \
   --preset cn6-transfusion-ft \
   --ckpt results/openpcdet/train/carla_nuscenes6/{timestamp}/ckpt/best.ckpt
 
-# Evaluate specified checkpoint and config.
+# Evaluate with an explicit dataset name, checkpoint and config.
 python -m tools.openpcdet.test \
+    --dataset-name {name} \
     --cfg-file /path/to/config.yaml \
     --ckpt /path/to/checkpoint.ckpt
 ```

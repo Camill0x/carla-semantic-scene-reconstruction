@@ -113,12 +113,12 @@ def log_gt_boxes(
 ) -> None:
     """Log ground-truth 3D boxes to the Rerun 3D scene."""
     if not visible:
-        rr.log("world/gt", rr.Boxes3D(centers=np.zeros((0, 3), dtype=np.float32)))
+        rr.log("world/objects_GT", rr.Boxes3D(centers=np.zeros((0, 3), dtype=np.float32)))
         return
 
     centers, half_sizes, rotations = boxes_to_rerun(gt_boxes)
     rr.log(
-        "world/gt",
+        "world/objects_GT",
         rr.Boxes3D(
             centers=centers,
             half_sizes=half_sizes,
@@ -167,7 +167,7 @@ def log_prediction_objects_3d(
     """Log predicted 3D objects to the Rerun 3D scene."""
     centers, half_sizes, rotations = boxes_to_rerun(objects_3d.boxes)
     if len(centers) == 0:
-        clear_entity("world/predictions")
+        clear_entity("world/objects_predicted")
         return
 
     names = prediction_names(objects_3d)
@@ -175,7 +175,7 @@ def log_prediction_objects_3d(
     colors = prediction_colors(names)
     scores = prediction_scores(objects_3d.scores)
     rr.log(
-        "world/predictions",
+        "world/objects_predicted",
         rr.Boxes3D(
             centers=centers,
             half_sizes=half_sizes,

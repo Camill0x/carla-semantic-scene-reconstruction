@@ -58,11 +58,11 @@ def log_lane_annotations_2d(lanes: List[JsonDict], *, line_thickness: float) -> 
         labels.append(f"lane {lane.get('lane_id', '?')} {lane.get('side', '?')} {lane.get('marking_type', '?')}")
 
     if not strips:
-        rr.log("camera/front/lanes", rr.LineStrips2D(strips=[]))
+        rr.log("camera/front/lanes_GT", rr.LineStrips2D(strips=[]))
         return
 
     rr.log(
-        "camera/front/lanes",
+        "camera/front/lanes_GT",
         rr.LineStrips2D(
             strips=strips,
             colors=colors,
@@ -92,11 +92,11 @@ def log_lane_annotations_3d(
         labels.append(f"lane {lane.get('lane_id', '?')} {lane.get('side', '?')} {lane.get('marking_type', '?')}")
 
     if not strips:
-        rr.log("world/lanes", rr.LineStrips3D(strips=[]))
+        rr.log("world/lanes_GT", rr.LineStrips3D(strips=[]))
         return
 
     rr.log(
-        "world/lanes",
+        "world/lanes_GT",
         rr.LineStrips3D(
             strips=strips,
             colors=colors,
@@ -138,11 +138,11 @@ def log_prediction_lanes_2d(lanes_2d: Union[Lanes2DPrediction, JsonDict], *, lin
         scores_log.append(round(float(score), 2) if score is not None else None)
 
     if not strips:
-        rr.log("camera/front/predicted_lanes", rr.LineStrips2D(strips=[]))
+        clear_entity("camera/front/lanes_predicted")
         return
 
     rr.log(
-        "camera/front/predicted_lanes",
+        "camera/front/lanes_predicted",
         rr.LineStrips2D(
             strips=strips,
             colors=colors,
@@ -185,11 +185,11 @@ def log_prediction_lanes_3d(lanes_3d: Union[Lanes3DPrediction, JsonDict], *, lin
         scores_log.append(round(float(score), 2) if score is not None else None)
 
     if not strips:
-        clear_entity("world/predicted_lanes")
+        clear_entity("world/lanes_predicted")
         return
 
     rr.log(
-        "world/predicted_lanes",
+        "world/lanes_predicted",
         rr.LineStrips3D(
             strips=strips,
             colors=colors,

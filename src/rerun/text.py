@@ -4,7 +4,12 @@ import rerun as rr
 from src.carla.dataset.reader import DatasetFrame
 
 
-def log_dataset_status(frame: DatasetFrame) -> None:
+def log_dataset_status(
+    frame: DatasetFrame,
+    *,
+    num_predicted_objects: Optional[int] = None,
+    num_predicted_lanes: Optional[int] = None,
+) -> None:
     """Log the offline dataset status panel to Rerun."""
     lines = [
         "## Status",
@@ -13,9 +18,13 @@ def log_dataset_status(frame: DatasetFrame) -> None:
         f"- Sim frame: {frame.meta.get('sim_frame', -1)}",
         f"- Timestamp: {frame.meta.get('timestamp', -1.0):.3f}",
         f"- Points: {int(frame.points.shape[0])}",
-        f"- GT Objects: {len(frame.objects)}",
-        f"- Lanes: {len(frame.lanes)}",
+        f"- Objects GT: {len(frame.objects)}",
+        f"- Lanes GT: {len(frame.lanes)}",
     ]
+    if num_predicted_objects is not None:
+        lines.append(f"- Objects predicted: {num_predicted_objects}")
+    if num_predicted_lanes is not None:
+        lines.append(f"- Lanes predicted: {num_predicted_lanes}")
     rr.log("status", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN))
 
 
@@ -36,9 +45,9 @@ def log_live_status(
         f"- Scene transfer size: {transfer_bytes / 1024.0:.2f} KiB",
     ]
     if num_obj is not None:
-        lines.append(f"- Predicted objects: {num_obj}")
+        lines.append(f"- Objects predicted: {num_obj}")
     if num_lanes is not None:
-        lines.append(f"- Predicted lanes: {num_lanes}")
+        lines.append(f"- Lanes predicted: {num_lanes}")
     rr.log("status", rr.TextDocument("\n".join(lines), media_type=rr.MediaType.MARKDOWN))
 
 

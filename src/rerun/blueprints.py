@@ -23,7 +23,7 @@ def make_dataset_blueprint(show_grid: bool) -> Any:
                 row_shares=[0.58, 0.42],
             ),
             rrb.TextDocumentView(origin="/status", name="Status"),
-            column_shares=[0.88, 0.12],
+            column_shares=[0.86, 0.14],
         ),
         collapse_panels=False,
     )

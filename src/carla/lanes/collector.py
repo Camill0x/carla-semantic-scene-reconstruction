@@ -40,7 +40,7 @@ def extend_polyline_to_bottom(
     *,
     image_height: int,
     threshold_px: float,
-) -> tuple[List[List[float]], List[List[float]]]:
+) -> Tuple[List[List[float]], List[List[float]]]:
     """Extend a lane polyline to the bottom image edge when it already starts close to the ego side."""
     if len(points_2d) < 2 or len(points_3d_lidar) < 2:
         return points_2d, points_3d_lidar

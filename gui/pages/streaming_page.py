@@ -44,7 +44,7 @@ class StreamingPage(WorkflowPage):
         )
         self.traffic_panel = ProcessPanel(
             title="Generate Traffic",
-            description="Populate the scene with NPC vehicles and pedestrians after the hero vehicle is running.",
+            description="Populate the scene with NPC vehicles and pedestrians.",
             flags=TRAFFIC_FLAGS,
             on_start=self._start_traffic,
             on_stop=self._stop_traffic,
@@ -97,7 +97,7 @@ class StreamingPage(WorkflowPage):
 
     def window_subtitle(self) -> str:
         """Return the subtitle shown for the live-streaming workflow window."""
-        return "Live low-bandwidth inference workflow where raw camera and LiDAR stay local and only detections reach the viewer."
+        return "Live inference workflow where raw camera and LiDAR stay local and only detections reach the viewer."
 
     def preferred_window_size(self) -> tuple[int, int]:
         """Return the preferred size for the live-streaming workflow window."""

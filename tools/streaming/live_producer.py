@@ -197,8 +197,7 @@ def main() -> None:
                 hero=hero,
                 lidar=lidar,
             ).astype(np.float32)
-            camera_image_bgr_snapshot = np.asarray(camera_image_bgr_snapshot, dtype=np.uint8)
-            ego_box = actor_to_gt_box(hero, lidar_transform_snapshot).astype(np.float32)
+            ego_box = actor_to_gt_box(hero, lidar_transform_snapshot)
 
             slot_index = int(frame_snapshot) % config.sensor_slots
             camera_descriptor = camera_pool.write(camera_image_bgr_snapshot, slot_index=slot_index)

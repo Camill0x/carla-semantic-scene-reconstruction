@@ -93,7 +93,7 @@ def main() -> None:
                 continue
 
             try:
-                image_bgr = reader.read(frame_message["camera_front"]["shared_array"]).astype(np.uint8, copy=False)
+                image_bgr = reader.read(frame_message["camera_front"]["shared_array"])
                 camera_frame = {
                     "frame": frame_message["frame"],
                     "timestamp": frame_message["timestamp"],

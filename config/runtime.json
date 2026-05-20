@@ -39,8 +39,8 @@
   "dataset_root_dir": "datasets/raw",
   "dataset_viewer": {
     "point_radius": 0.03,
-    "gt_line_radius": 0.03,
-    "lane_line_thickness": 3.0
+    "gt_line_radius": 0.08,
+    "lane_line_thickness": 5.0
   },
   "streaming": {
     "prefix": "carla_streaming",
@@ -57,8 +57,8 @@
     },
     "visualizer": {
       "scene_connect": "tcp://127.0.0.1:5555",
-      "ego_line_radius": 0.04,
-      "pred_line_radius": 0.04
+      "ego_line_radius": 0.08,
+      "pred_line_radius": 0.08
     }
   }
 }

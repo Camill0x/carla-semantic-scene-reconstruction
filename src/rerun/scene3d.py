@@ -29,8 +29,8 @@ def boxes_to_rerun(boxes: Float32Array) -> Tuple[Float32Array, Float32Array, Lis
             [],
         )
 
-    centers = boxes[:, 0:3].astype(np.float32)
-    half_sizes = (boxes[:, 3:6] * 0.5).astype(np.float32)
+    centers = boxes[:, 0:3]
+    half_sizes = boxes[:, 3:6] * 0.5
     rotations = [RotationAxisAngle(axis=[0.0, 0.0, 1.0], angle=Angle(rad=float(yaw))) for yaw in boxes[:, 6]]
     return centers, half_sizes, rotations
 
@@ -58,14 +58,14 @@ def prediction_names(objects_3d: Objects3DPrediction) -> List[str]:
 
 def prediction_scores(scores: Float32Array) -> List[float]:
     """Return rounded prediction scores for display."""
-    return [float(value) for value in np.round(scores.astype(np.float32), 2)]
+    return [round(float(value), 2) for value in scores]
 
 
 def point_positions(points: Float32Array) -> Float32Array:
     """Extract 3D point positions from a point cloud array."""
     if points.size == 0:
         return EMPTY_POINTS
-    return points[:, :3].astype(np.float32)
+    return points[:, :3]
 
 
 def point_colors(points: Float32Array) -> ImageArray:
@@ -74,7 +74,7 @@ def point_colors(points: Float32Array) -> ImageArray:
         return EMPTY_COLORS
 
     if points.shape[1] >= 4:
-        intensity = points[:, 3].astype(np.float32)
+        intensity = points[:, 3]
         if intensity.size > 0 and float(intensity.max()) > float(intensity.min()):
             normalized = (intensity - intensity.min()) / (intensity.max() - intensity.min())
         else:

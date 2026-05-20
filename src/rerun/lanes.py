@@ -133,7 +133,7 @@ def log_prediction_lanes_2d(lanes_2d: Union[Lanes2DPrediction, JsonDict], *, lin
         label = name
 
         strips.append(points)
-        colors.append((255, 255, 255, 235))
+        colors.append((255, 255, 0, 235))
         labels.append(label)
         scores_log.append(round(float(score), 2) if score is not None else None)
 

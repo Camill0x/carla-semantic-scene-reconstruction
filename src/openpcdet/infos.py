@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from src.common.dataset import DatasetSplits
-from src.common.typing_aliases import JsonDict
+from src.common.typing_aliases import BoolArray, Float32Array, JsonDict, StrArray
 
 
 def frame_has_class_counts(meta: JsonDict, class_names: Sequence[str]) -> bool:
@@ -15,10 +15,14 @@ def frame_has_class_counts(meta: JsonDict, class_names: Sequence[str]) -> bool:
     class_counts = meta.get("class_counts", {})
     if not isinstance(class_counts, dict):
         return False
-    return any(class_name in class_counts and int(class_counts[class_name]) > 0 for class_name in class_names)
+    for class_name in class_names:
+        value = class_counts.get(class_name)
+        if isinstance(value, (int, float, str)) and int(value) > 0:
+            return True
+    return False
 
 
-def validate_filtered_annos(gt_boxes: np.ndarray, gt_names: np.ndarray, frame_dir: Path) -> bool:
+def validate_filtered_annos(gt_boxes: Float32Array, gt_names: StrArray, frame_dir: Path) -> bool:
     """Validate the filtered annotations kept for one frame."""
     if gt_boxes.ndim != 2:
         raise ValueError(f"Invalid gt_boxes shape in {frame_dir / 'gt_boxes.npy'}: {gt_boxes.shape}")
@@ -27,7 +31,7 @@ def validate_filtered_annos(gt_boxes: np.ndarray, gt_names: np.ndarray, frame_di
     return gt_boxes.shape[0] > 0
 
 
-def count_filtered_objects_by_class(gt_names: np.ndarray, class_names: Sequence[str]) -> Dict[str, int]:
+def count_filtered_objects_by_class(gt_names: StrArray, class_names: Sequence[str]) -> Dict[str, int]:
     """Count kept objects per class after filtering to the requested class set."""
     counts: Dict[str, int] = {class_name: 0 for class_name in class_names}
     for name in gt_names.tolist():
@@ -58,12 +62,12 @@ def load_frame_info(frame_dir: Path, output_root: Path, class_names: Sequence[st
     if not frame_has_class_counts(meta, class_names):
         return None
 
-    gt_boxes = np.load(gt_boxes_path).astype(np.float32)
-    gt_names = np.load(gt_names_path)
+    gt_boxes: Float32Array = np.load(gt_boxes_path).astype(np.float32)
+    gt_names: StrArray = np.load(gt_names_path).astype(str)
 
-    mask = np.array([str(name) in class_names for name in gt_names], dtype=bool)
+    mask: BoolArray = np.array([str(name) in class_names for name in gt_names], dtype=bool)
     gt_boxes = gt_boxes[mask]
-    gt_names = gt_names[mask].astype(str)
+    gt_names = gt_names[mask]
 
     if not validate_filtered_annos(gt_boxes, gt_names, frame_dir):
         return None
@@ -145,7 +149,8 @@ def load_infos(
     objects_per_class: JsonDict = {}
     for class_name in class_names:
         total = int(objects_per_class_total[class_name])
-        min_value = 0 if objects_per_class_min[class_name] is None else int(objects_per_class_min[class_name])
+        min_count = objects_per_class_min[class_name]
+        min_value = 0 if min_count is None else int(min_count)
         max_value = int(objects_per_class_max[class_name])
         avg_value = (float(total) / float(usable_samples)) if usable_samples > 0 else 0.0
         objects_per_class[class_name] = {

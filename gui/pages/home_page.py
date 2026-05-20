@@ -59,7 +59,7 @@ class HomePage(WorkflowPage):
             ),
             (
                 "Live Streaming",
-                "Control the live producer, aggregator, visualizer and both detectors for low-bandwidth inference demos.",
+                "Control the live producer, aggregator, visualizer and both detectors for inference demos.",
                 "Open Streaming",
                 "streaming",
             ),

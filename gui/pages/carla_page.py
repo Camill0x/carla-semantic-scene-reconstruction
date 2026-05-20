@@ -18,7 +18,7 @@ class CarlaPage(WorkflowPage):
 
         self.server_panel = ProcessPanel(
             title="CARLA Server",
-            description="Start the simulator process. Everything else in this window depends on it.",
+            description="Start the simulator process.",
             flags=[],
             on_start=lambda args: self.append_activity(self.manager.start_process("server", args=args)),
             on_stop=self._stop_server,
@@ -38,7 +38,7 @@ class CarlaPage(WorkflowPage):
         )
         self.traffic_panel = ProcessPanel(
             title="Generate Traffic",
-            description="Populate the scene with NPC vehicles and pedestrians after the hero vehicle is running.",
+            description="Populate the scene with NPC vehicles and pedestrians.",
             flags=TRAFFIC_FLAGS,
             on_start=self._start_traffic,
             on_stop=self._stop_traffic,

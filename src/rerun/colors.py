@@ -1,8 +1,8 @@
-from typing import Iterable, Mapping, TypeAlias
+from typing import Dict, Iterable, List, Mapping, Tuple, TypeAlias
 
-RGBA: TypeAlias = tuple[int, int, int, int]
+RGBA: TypeAlias = Tuple[int, int, int, int]
 
-CLASS_COLORS: dict[str, RGBA] = {
+CLASS_COLORS: Dict[str, RGBA] = {
     "car": (242, 51, 51, 235),
     "truck": (191, 26, 26, 235),
     "bus": (255, 115, 64, 235),
@@ -17,7 +17,7 @@ LANE_LEFT_COLOR: RGBA = (0, 255, 0, 255)
 LANE_RIGHT_COLOR: RGBA = (0, 200, 255, 255)
 
 
-def prediction_colors(pred_names: Iterable[str]) -> list[RGBA]:
+def prediction_colors(pred_names: Iterable[str]) -> List[RGBA]:
     """Return display colors for the provided prediction class names."""
     return [CLASS_COLORS.get(str(name), (255, 255, 255, 235)) for name in pred_names]
 

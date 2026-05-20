@@ -31,8 +31,8 @@ def filter_object_predictions(
     keep_array = np.array(keep, dtype=np.int64)
 
     return Objects3DPrediction(
-        boxes=objects_3d.boxes[keep_array].astype(np.float32),
-        scores=objects_3d.scores[keep_array].astype(np.float32),
-        labels=objects_3d.labels[keep_array].astype(np.int64),
+        boxes=objects_3d.boxes[keep_array],
+        scores=objects_3d.scores[keep_array],
+        labels=objects_3d.labels[keep_array],
         names=names,
     )

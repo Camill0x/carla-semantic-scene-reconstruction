@@ -58,7 +58,7 @@ class BenchmarkPage(WorkflowPage):
 
     def window_subtitle(self) -> str:
         """Return the subtitle shown for the benchmark workflow window."""
-        return "Offline measurement workflow for comparing model throughput and then browsing the saved predictions."
+        return "Offline measurement workflow for comparing model throughput and then browsing saved predictions."
 
     def preferred_window_size(self) -> tuple[int, int]:
         """Return the preferred size for the benchmark workflow window."""

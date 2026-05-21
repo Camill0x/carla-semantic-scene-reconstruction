@@ -1,5 +1,9 @@
 from typing import Dict, Iterable, List, Mapping, Tuple, TypeAlias
 
+import numpy as np
+
+from src.common.typing_aliases import Float32Array, ImageArray
+
 RGBA: TypeAlias = Tuple[int, int, int, int]
 
 CLASS_COLORS: Dict[str, RGBA] = {
@@ -11,6 +15,7 @@ CLASS_COLORS: Dict[str, RGBA] = {
     "pedestrian": (38, 217, 64, 235),
 }
 
+EMPTY_COLORS: ImageArray = np.zeros((0, 4), dtype=np.uint8)
 GT_COLOR: RGBA = (77, 163, 255, 210)
 EGO_COLOR: RGBA = (64, 255, 255, 235)
 LANE_LEFT_COLOR: RGBA = (0, 255, 0, 255)
@@ -29,3 +34,23 @@ def lane_color(lane: Mapping[str, object]) -> RGBA:
     if str(lane.get("side", "")) == "right":
         return LANE_RIGHT_COLOR
     return (255, 255, 255, 255)
+
+
+def point_colors(points: Float32Array) -> ImageArray:
+    """Build per-point RGB colors from LiDAR intensity values."""
+    if points.size == 0:
+        return EMPTY_COLORS
+
+    if points.shape[1] >= 4:
+        intensity = points[:, 3]
+        if intensity.size > 0 and float(intensity.max()) > float(intensity.min()):
+            normalized = (intensity - intensity.min()) / (intensity.max() - intensity.min())
+        else:
+            normalized = np.full((points.shape[0],), 0.7, dtype=np.float32)
+    else:
+        normalized = np.full((points.shape[0],), 0.7, dtype=np.float32)
+
+    shade = (170 + 85 * normalized).astype(np.uint8)
+    blue = np.full((points.shape[0],), 255, dtype=np.uint8)
+    alpha = np.full((points.shape[0],), 220, dtype=np.uint8)
+    return np.stack([shade, shade, blue, alpha], axis=1)

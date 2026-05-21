@@ -7,7 +7,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Deque, Dict, IO, List, Optional, Protocol, TextIO
+from typing import IO, Deque, Dict, List, Optional, Protocol, TextIO
 
 from gui.catalog import PROCESS_GROUPS, PROCESS_SPECS
 from gui.config import LOG_DIR, ROOT_DIR, STATE_PATH

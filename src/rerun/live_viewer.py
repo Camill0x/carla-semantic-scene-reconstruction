@@ -3,8 +3,7 @@ import numpy as np
 import rerun as rr
 from src.common.typing_aliases import JsonDict
 from src.rerun.blueprints import make_live_blueprint
-from src.rerun.lanes import log_prediction_lanes_3d
-from src.rerun.scene3d import log_ego_box, log_prediction_objects_3d
+from src.rerun.scene import log_ego_box, log_prediction_lanes_3d, log_prediction_objects_3d
 from src.rerun.text import log_live_status
 
 

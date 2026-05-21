@@ -13,10 +13,8 @@ from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_dataset_viewer_config, build_streaming_visualizer_config
 from src.openpcdet.prediction import Objects3DPrediction
 from src.rerun.dataset_viewer import initialize_dataset_viewer, log_dataset_frame
-from src.rerun.lanes import log_prediction_lanes_2d, log_prediction_lanes_3d
-from src.rerun.scene3d import log_prediction_objects_3d
-from src.rerun.text import log_legend
-from src.rerun.text import log_dataset_status
+from src.rerun.scene import log_prediction_lanes_2d, log_prediction_lanes_3d, log_prediction_objects_3d
+from src.rerun.text import log_dataset_status, log_legend
 
 
 @dataclass(frozen=True)

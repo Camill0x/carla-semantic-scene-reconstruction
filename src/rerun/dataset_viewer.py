@@ -2,13 +2,16 @@ import rerun as rr
 from src.carla.dataset.reader import DatasetFrame
 from src.common.config import DatasetViewerConfig
 from src.rerun.blueprints import make_dataset_blueprint
-from src.rerun.lanes import (
-    clamp_lane_annotations_to_image,
+from src.rerun.scene import (
+    log_camera_front_image,
+    log_ego_box,
+    log_gt_boxes,
     log_lane_annotations_2d,
     log_lane_annotations_3d,
+    log_points,
 )
-from src.rerun.scene3d import log_ego_box, log_gt_boxes, log_points
 from src.rerun.text import log_dataset_status
+from src.rerun.utils import clamp_lane_annotations_to_image
 
 
 def initialize_dataset_viewer(config: DatasetViewerConfig) -> None:
@@ -38,7 +41,7 @@ def log_dataset_frame(frame: DatasetFrame, config: DatasetViewerConfig) -> None:
         frame.lanes,
         line_radius=config.gt_line_radius,
     )
-    rr.log("camera/front/image", rr.Image(frame.image_rgb))
+    log_camera_front_image(frame.image_rgb)
     clamped_lanes = clamp_lane_annotations_to_image(
         frame.lanes,
         image_width=int(frame.image_rgb.shape[1]),

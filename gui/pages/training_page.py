@@ -74,6 +74,7 @@ class TrainingPage(WorkflowPage):
         allow_extra_args: bool,
     ) -> ProcessPanel:
         """Build a reusable process panel for one training workflow command."""
+
         def start(args: ArgsList) -> None:
             self._start(process_name, args)
 

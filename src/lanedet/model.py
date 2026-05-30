@@ -35,7 +35,10 @@ class LaneDetector:
         self.cfg.show = False
         self.cfg.savedir = None
         self.cfg.load_from = str(ckpt)
-        self.cfg.test_parameters.conf_threshold = float(score_thresh)
+        if self.cfg.haskey("test_parameters"):
+            self.cfg.test_parameters["conf_threshold"] = float(score_thresh)
+        elif self.cfg.heads["type"] == "LaneSeg":
+            self.cfg.heads["thr"] = float(score_thresh)
         self.processes = Process(self.cfg.val_process, self.cfg)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

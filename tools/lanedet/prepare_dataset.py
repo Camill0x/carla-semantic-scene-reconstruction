@@ -35,7 +35,7 @@ def parse_args() -> PrepareDatasetArgs:
     run_selection.add_argument("--all", action="store_true", help="Use all run_XXXX directories under datasets/raw")
     run_selection.add_argument("--runs", nargs="+", metavar="RUN", help="Use selected raw run directories")
     parser.add_argument("--max-lanes", type=int, default=5)
-    parser.add_argument("--line-width", type=int, default=10, help="Segmentation mask lane line width in pixels")
+    parser.add_argument("--line-width", type=int, default=15, help="Segmentation mask lane line width in pixels")
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--test-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)

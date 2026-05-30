@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
-import numpy as np
-
 from src.common.cli_logging import configure_logging
 from src.common.runtime_config import build_streaming_lanedet_inference_config
 from src.lanedet.model import LaneDetector

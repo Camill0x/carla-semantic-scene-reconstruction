@@ -22,6 +22,7 @@ from src.common.typing_aliases import ObjectDict
 @dataclass(frozen=True)
 class LaneFragmentCandidate:
     """Typed working representation of one projected lane fragment."""
+
     metadata: ObjectDict
     points_2d: List[List[float]]
     points_3d_lidar: List[List[float]]

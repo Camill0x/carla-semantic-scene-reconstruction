@@ -124,12 +124,20 @@ The project has been tested on:
 
 ## Results
 
+Raw CARLA runs used for the reported experiments are available in the:
+[dataset-v1.0 release](https://github.com/Camill0x/carla-semantic-scene-reconstruction/releases/tag/dataset-v1.0)
+
+Trained model checkpoints are available in the:
+[models-v1.0 release](https://github.com/Camill0x/carla-semantic-scene-reconstruction/releases/tag/models-v1.0)
+
+Dataset preparation, training and evaluation commands are documented in [Training](docs/TRAIN.md).
+
 ### OpenPCDet
 
 OpenPCDet results use the project-specific `carla_nuscenes6` dataset family prepared from CARLA recordings.
 
 | Model | mAP (%) | Car AP (%) | Truck AP (%) | Bus AP (%) | Motorcycle AP (%) | Bicycle AP (%) | Pedestrian AP (%) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | TransFusion-L | 67.79 | 87.46 | 74.95 | 87.13 | 76.75 | 44.32 | 36.14 |
 | CenterPoint-PointPillar | 49.77 | 81.61 | 79.43 | 70.30 | 25.74 | 14.69 | 26.84 |
 
@@ -138,14 +146,14 @@ OpenPCDet results use the project-specific `carla_nuscenes6` dataset family prep
 LaneDet results use a CARLA-derived dataset prepared in a TuSimple-compatible format.
 
 | Model | Accuracy (%) | FP (%) | FN (%) | Matched Lane MAE | Matched Lane RMSE | Point MAE | Point RMSE |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | LaneATT-ResNet34 | 91.69 | 14.36 | 13.62 | 8.44 px | 9.39 px | 4.81 px | 16.81 px |
 | RESA-ResNet34 | 93.55 | 7.75 | 11.15 | 5.47 px | 7.33 px | 3.47 px | 14.77 px |
 
 ### Benchmark Summary
 
 | Model | Model FPS | Runtime FPS |
-| --- | --- | --- |
+| --- | :---: | :---: |
 | OpenPCDet TransFusion-L | 31 FPS | 23 FPS |
 | OpenPCDet CenterPoint-PointPillar | 48 FPS | 38 FPS |
 | LaneDet LaneATT-ResNet34 | 124 FPS | 48 FPS |
@@ -156,7 +164,7 @@ LaneDet results use a CARLA-derived dataset prepared in a TuSimple-compatible fo
 Latency experiments use `TransFusion-L` as the 3D object detector and `LaneATT-ResNet34` as the lane detector.
 
 | Detector Setup | Scene Latency |
-| --- | --- |
+| --- | :---: |
 | No detectors | ~ 3.5 ms |
 | 3D object detector only | ~ 88 ms |
 | 3D object detector + lane detector | ~ 104 ms |

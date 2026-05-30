@@ -32,11 +32,12 @@ This benchmark loads LiDAR point clouds from a recorded raw CARLA run, runs Open
 ```bash
 conda activate openpcdet
 
-# Benchmark a recorded raw run with selected config and checkpoint.
+# Benchmark and save predictions for a recorded raw run with selected config and checkpoint.
 python -m tools.benchmark.benchmark_openpcdet \
   --run-dir datasets/raw/{run_XXXX} \
   --cfg-file /path/to/config.yaml \
-  --ckpt /path/to/checkpoint.ckpt
+  --ckpt /path/to/checkpoint.ckpt \
+  --save-pred
 ```
 
 ## LaneDet Benchmark
@@ -57,11 +58,12 @@ This benchmark loads front camera frames from a recorded raw CARLA run, runs Lan
 ```bash
 conda activate lanedet
 
-# Benchmark a recorded raw run with selected config and checkpoint.
+# Benchmark and save predictions for a recorded raw run with selected config and checkpoint.
 python -m tools.benchmark.benchmark_lanedet \
   --run-dir datasets/raw/{run_XXXX} \
   --config /path/to/config.py \
-  --ckpt /path/to/checkpoint.pth
+  --ckpt /path/to/checkpoint.pth \
+  --save-pred
 ```
 
 ## Results Layout

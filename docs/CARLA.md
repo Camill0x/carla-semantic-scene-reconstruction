@@ -43,7 +43,7 @@ The wrapper launches `CarlaUE4.sh` from the simulator directory pointed to by `C
 
 ## Manual Control
 
-This entrypoint is a project-owned variant of the CARLA manual control client. It uses the CARLA connection configured in `config/runtime.json`.
+This entrypoint is a project-owned variant of the CARLA manual control client. It uses the CARLA connection configured in: `config/runtime.json`
 
 ### Useful flags
 

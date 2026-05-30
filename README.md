@@ -2,6 +2,10 @@
 
 CARLA workflow for synchronized dataset collection, detector training, offline benchmarking, and live scene reconstruction with GUI support.
 
+<p align="center">
+  <img src="docs/assets/carla_drive.webp" width="90%">
+</p>
+
 ## Overview
 
 * [Introduction](#introduction)
@@ -37,8 +41,8 @@ Use CARLA 0.9.15 together with the `carla_app` environment to:
 
 The repository supports two detector stacks:
 
-* `OpenPCDet` for 3D object detection on the project-specific `carla_nuscenes6` dataset family
-* `LaneDet` for lane detection on the prepared TuSimple-style dataset built from CARLA runs
+* `OpenPCDet` — 3D object detection on the project-specific `carla_nuscenes6` dataset family
+* `LaneDet` — lane detection on a CARLA-derived dataset prepared in a TuSimple-compatible format
 
 Both stacks are integrated as bundled submodules under `third_party/` and are wrapped by project commands for dataset preparation, training, and evaluation.
 
@@ -96,6 +100,10 @@ carla-semantic-scene-reconstruction/
 
 The repository includes a Project Control Center for interactive workflow control. It launches the same documented CLI commands used throughout the project, but groups them into dedicated workflow windows with process status, logs, and local state handling.
 
+<p align="center">
+  <img src="docs/assets/gui_home.png" width="80%">
+</p>
+
 Use the `carla_app` environment to launch it:
 
 ```bash
@@ -118,24 +126,40 @@ The project has been tested on:
 
 ### OpenPCDet
 
-| Model | Dataset | mAP | Car AP | Truck AP | Bus AP | Motorcycle AP | Bicycle AP | Pedestrian AP |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TransFusion-L | `carla_nuscenes6` | `X` | `X` | `X` | `X` | `X` | `X` | `X` |
-| CenterPoint-PointPillar | `carla_nuscenes6` | `X` | `X` | `X` | `X` | `X` | `X` | `X` |
+OpenPCDet results use the project-specific `carla_nuscenes6` dataset family prepared from CARLA recordings.
+
+| Model | mAP (%) | Car AP (%) | Truck AP (%) | Bus AP (%) | Motorcycle AP (%) | Bicycle AP (%) | Pedestrian AP (%) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TransFusion-L | 67.79 | 87.46 | 74.95 | 87.13 | 76.75 | 44.32 | 36.14 |
+| CenterPoint-PointPillar | 49.77 | 81.61 | 79.43 | 70.30 | 25.74 | 14.69 | 26.84 |
 
 ### LaneDet
 
-| Model | Dataset | Accuracy | FP | FN | Matched Lane MAE (px) | Matched Lane RMSE (px) | Point MAE (px) | Point RMSE (px) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| LaneATT-ResNet34 | `tusimple` | `X` | `X` | `X` | `X` | `X` | `X` | `X` |
+LaneDet results use a CARLA-derived dataset prepared in a TuSimple-compatible format.
+
+| Model | Accuracy (%) | FP (%) | FN (%) | Matched Lane MAE | Matched Lane RMSE | Point MAE | Point RMSE |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LaneATT-ResNet34 | 91.69 | 14.36 | 13.62 | 8.44 px | 9.39 px | 4.81 px | 16.81 px |
+| RESA-ResNet34 | 93.55 | 7.75 | 11.15 | 5.47 px | 7.33 px | 3.47 px | 14.77 px |
 
 ### Benchmark Summary
 
-| Model | Model FPS | Runtime FPS | Notes |
-| --- | --- | --- | --- |
-| OpenPCDet TransFusion-L | `X` | `X` | `X` |
-| OpenPCDet CenterPoint-PointPillar | `X` | `X` | `X` |
-| LaneDet LaneATT-ResNet34 | `X` | `X` | `X` |
+| Model | Model FPS | Runtime FPS |
+| --- | --- | --- |
+| OpenPCDet TransFusion-L | 31 FPS | 23 FPS |
+| OpenPCDet CenterPoint-PointPillar | 48 FPS | 38 FPS |
+| LaneDet LaneATT-ResNet34 | 124 FPS | 48 FPS |
+| LaneDet RESA-ResNet34 | 43 FPS | 25 FPS |
+
+### Visualization Latency
+
+Latency experiments use `TransFusion-L` as the 3D object detector and `LaneATT-ResNet34` as the lane detector.
+
+| Detector Setup | Scene Latency |
+| --- | --- |
+| No detectors | ~ 3.5 ms |
+| 3D object detector only | ~ 88 ms |
+| 3D object detector + lane detector | ~ 104 ms |
 
 ## Third-Party Components
 

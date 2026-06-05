@@ -152,22 +152,21 @@ LaneDet results use a CARLA-derived dataset prepared in a TuSimple-compatible fo
 
 ### Benchmark Summary
 
-| Model | Model FPS | Runtime FPS |
-| --- | :---: | :---: |
-| OpenPCDet TransFusion-L | 31 FPS | 23 FPS |
-| OpenPCDet CenterPoint-PointPillar | 48 FPS | 38 FPS |
-| LaneDet LaneATT-ResNet34 | 124 FPS | 48 FPS |
-| LaneDet RESA-ResNet34 | 43 FPS | 25 FPS |
+| Framework | Model | Model FPS | Runtime FPS |
+| --- | --- | :---: | :---: |
+| OpenPCDet | TransFusion-L | 31 FPS | 23 FPS |
+| OpenPCDet | CenterPoint-PointPillar | 48 FPS | 38 FPS |
+| LaneDet | LaneATT-ResNet34 | 124 FPS | 48 FPS |
+| LaneDet | RESA-ResNet34 | 43 FPS | 25 FPS |
 
 ### Visualization Latency
 
-Latency experiments use `TransFusion-L` as the 3D object detector and `LaneATT-ResNet34` as the lane detector.
-
 | Detector Setup | Scene Latency |
 | --- | :---: |
-| No detectors | ~ 3.5 ms |
-| 3D object detector only | ~ 88 ms |
-| 3D object detector + lane detector | ~ 104 ms |
+| CenterPoint-PointPillar + LaneATT-ResNet34 | ~66 ms |
+| CenterPoint-PointPillar + RESA-ResNet34 | ~102 ms |
+| TransFusion-L + LaneATT-ResNet34 | ~106 ms |
+| TransFusion-L + RESA-ResNet34 | ~136 ms |
 
 ## Third-Party Components
 
